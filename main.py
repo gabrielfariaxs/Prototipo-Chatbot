@@ -1,100 +1,81 @@
 import os
-import google.generativeai as genai
-from supabase import create_client, Client
-from dotenv import load_dotenv
+from src.engine import ArthromedEngine
 
-# Carrega as variáveis do arquivo .env
-load_dotenv()
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-def setup_clients():
-    """Configura as conexões com Google e Supabase"""
-    google_key = os.getenv("GOOGLE_API_KEY")
-    if not google_key:
-        print("⚠️  Aviso: GOOGLE_API_KEY não configurada.")
-    else:
-        genai.configure(api_key=google_key)
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
+def start_chat():
+    clear_screen()
+    print("\n" + "═"*50)
+    print("      🤖 ASSISTENTE VIRTUAL ARTHROMED")
+    print("═"*50)
     
-    if not supabase_url or not supabase_key:
-        return None
     try:
-        supabase: Client = create_client(supabase_url.strip(), supabase_key.strip())
-        return supabase
+        engine = ArthromedEngine()
     except Exception as e:
-        print(f"❌ Erro Supabase: {e}")
-        return None
+        print(f"\n❌ Erro ao inicializar o sistema: {e}")
+        return
 
-def buscar_contexto(supabase, texto_usuario, setor_escolhido):
-    """Busca no Supabase filtrando pelo setor"""
-    embedding_result = genai.embed_content(
-        model="models/gemini-embedding-001",
-        content=texto_usuario,
-        task_type="retrieval_query"
-    )
-    vetor_pergunta = embedding_result['embedding']
-
-    try:
-        response = supabase.rpc(
-            'buscar_processos', 
-            {
-                'query_embedding': vetor_pergunta,
-                'match_threshold': 0.3,
-                'match_count': 3,
-                'filter_setor': setor_escolhido # Filtro enviado ao banco
-            }
-        ).execute()
-
-        if response.data:
-            contexto = "\n\n".join([f"Processo: {d['processo']}\nConteúdo: {d['conteudo']}" for d in response.data])
-            return contexto
-    except Exception as e:
-        print(f"⚠️ Erro na busca: {e}")
+    setor = ""
+    while not setor.strip():
+        entrada = input("\n🏢 Para começar, digite seu setor: ").strip()
+        
+        # Lógica especial para Orçamento (Arthromed ou Medic)
+        if entrada.lower() == "orçamento":
+            empresa = ""
+            while empresa.lower() not in ["arthromed", "medic"]:
+                empresa = input("   👉 É para Arthromed ou Medic?: ").strip()
+                if empresa.lower() not in ["arthromed", "medic"]:
+                    print("   ⚠️ Por favor, escolha entre 'Arthromed' ou 'Medic'.")
+            setor = f"Orçamento - {empresa.capitalize()}"
+        else:
+            setor = entrada
     
-    return "Nenhuma informação específica encontrada para este setor."
-
-def start_chat(supabase):
-    # Usando o nome exato da sua lista de modelos
-    model = genai.GenerativeModel('gemini-flash-latest')
-    print("\n🤖 Assistente Arthromed")
-    print("-" * 30)
-    setor = input("Para começar, qual é o seu setor? (ex: Financeiro, RH, Administrativo): ")
-    print(f"\n✅ Setor '{setor}' selecionado. Como posso te ajudar hoje?")
+    clear_screen()
+    print(f"\n✅ Conectado: {setor.upper()}")
+    print("─"*50)
+    print(f"Olá! Sou o assistente do setor {setor}. Como posso ajudar?")
+    print("(Digite 'sair' para encerrar ou 'setor' para trocar)")
+    print("─"*50)
     
     while True:
-        user_input = input("\nVocê: ")
-        if user_input.lower() in ["sair", "exit", "quit", "mudar setor"]:
-            if user_input.lower() == "mudar setor":
-                setor = input("Qual o novo setor?: ")
-                print(f"Setor alterado para {setor}.")
-                continue
-            break
-            
-        # Busca contexto filtrado pelo setor escolhido
-        contexto = buscar_contexto(supabase, user_input, setor)
-        
-        prompt = f"""
-        Você é um assistente virtual da Arthromed especializado no setor {setor}.
-        Use APENAS as informações do contexto abaixo para responder. 
-        Se a pergunta não tiver relação com o setor {setor} ou não estiver no contexto, explique que sua base de conhecimento atual é limitada a esse setor.
-
-        CONTEXTO:
-        {contexto}
-
-        PERGUNTA:
-        {user_input}
-        """
-
         try:
-            response = model.generate_content(prompt)
-            print(f"\nGemini: {response.text}")
+            user_input = input("\n👤 Você: ").strip()
+            
+            if not user_input: continue
+            if user_input.lower() in ["sair", "exit", "quit"]:
+                print("\n👋 Até logo! Encerrando...")
+                break
+                
+            # Comandos para mudar de setor
+            comandos_mudar = ["mudar setor", "mudar de setor", "trocar setor", "trocar de setor", "setor"]
+            if user_input.lower() in comandos_mudar:
+                setor = ""
+                while not setor.strip():
+                    entrada = input("\n🏢 Qual o novo setor?: ").strip()
+                    if entrada.lower() == "orçamento":
+                        empresa = ""
+                        while empresa.lower() not in ["arthromed", "medic"]:
+                            empresa = input("   👉 É para Arthromed ou Medic?: ").strip()
+                        setor = f"Orçamento - {empresa.capitalize()}"
+                    else:
+                        setor = entrada
+                print(f"✅ Setor alterado para: {setor.upper()}")
+                continue
+                
+            print("⏳ Pensando...", end="\r")
+            contexto = engine.buscar_contexto(user_input, setor)
+            resposta = engine.gerar_resposta(user_input, setor, contexto)
+            
+            # Limpa o 'Pensando...' e mostra a resposta
+            print(" " * 20, end="\r")
+            print(f"🤖 Assistente: {resposta}")
+            print("─"*50)
+            
+        except KeyboardInterrupt:
+            break
         except Exception as e:
-            print(f"❌ Erro: {e}")
+            print(f"\n❌ Ocorreu um erro: {e}")
 
 if __name__ == "__main__":
-    supabase_client = setup_clients()
-    if supabase_client:
-        start_chat(supabase_client)
-    else:
-        print("Erro de configuração. Verifique seu .env")
+    start_chat()
