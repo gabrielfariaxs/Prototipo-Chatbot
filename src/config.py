@@ -20,5 +20,5 @@ class Config:
     # Modelo de Embeddings (Suportado e Robusto)
     EMBEDDING_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
     
-    # Modelo de Chat (Rápido e Estável)
-    CHAT_MODEL = "google/gemini-2.0-flash-lite-preview-02-05"
+    # Modelo de Chat (Claude - Inteligência Superior)
+    CHAT_MODEL = "anthropic/claude-3.5-sonnet"
