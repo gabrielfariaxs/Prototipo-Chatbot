@@ -21,4 +21,4 @@ class Config:
     EMBEDDING_MODEL = 'paraphrase-multilingual-MiniLM-L12-v2'
     
     # Modelo de Chat (OpenRouter)
-    CHAT_MODEL = "google/gemini-2.0-flash-001"
+    CHAT_MODEL = "google/gemini-flash-1.5"

@@ -61,7 +61,9 @@ class ArthromedEngine:
         return "Nenhuma informação específica encontrada para este setor."
 
     def gerar_resposta(self, user_input, setor, contexto):
-        """Gera resposta usando OpenRouter"""
+        """Gera resposta usando OpenRouter com tentativa de reenvio em caso de erro"""
+        import time
+        
         prompt = f"""
         Você é um assistente virtual da Arthromed especializado no setor {setor}.
         Use APENAS as informações do contexto abaixo para responder. 
@@ -74,8 +76,15 @@ class ArthromedEngine:
         {user_input}
         """
         
-        response = self.chat_client.chat.completions.create(
-            model=Config.CHAT_MODEL,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
+        for tentativa in range(3):
+            try:
+                response = self.chat_client.chat.completions.create(
+                    model=Config.CHAT_MODEL,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                if tentativa < 2:
+                    time.sleep(2) # Espera 2 segundos antes de tentar de novo
+                    continue
+                raise e
