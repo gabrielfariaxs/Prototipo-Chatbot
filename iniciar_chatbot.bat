@@ -30,10 +30,14 @@ if not exist venv (
     %PY_CMD% -m venv venv
 )
 
-:: Instala dependencias
-echo Verificando dependencias...
+:: Instala dependencias apenas se necessario
+echo Verificando inicializacao...
 call venv\Scripts\activate
-pip install -r requirements.txt --quiet
+if not exist .dependencies_installed (
+    echo Instalando ferramentas necessarias (isso so ocorre uma vez)...
+    pip install -r requirements.txt --quiet
+    echo ok > .dependencies_installed
+)
 
 :: Inicia o Chatbot
 echo.
