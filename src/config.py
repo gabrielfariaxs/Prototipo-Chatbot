@@ -17,8 +17,8 @@ class Config:
     SUPABASE_KEY = _s_k1 + _s_k2
     OPENROUTER_API_KEY = _or_k1 + _or_k2 + _or_k3
     
-    # Modelo de Embeddings (HuggingFace Local)
-    EMBEDDING_MODEL = 'paraphrase-multilingual-MiniLM-L12-v2'
+    # Modelo de Embeddings (Ligeiro e Rápido)
+    EMBEDDING_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
     
     # Modelo de Chat (OpenRouter)
     CHAT_MODEL = "google/gemini-2.0-flash-001"

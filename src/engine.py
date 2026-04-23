@@ -6,25 +6,18 @@ import logging
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from supabase import create_client, Client
 from openai import OpenAI
 from src.config import Config
 
 # Desativa logs de bibliotecas externas
-logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
-logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("fastembed").setLevel(logging.ERROR)
 
 class ArthromedEngine:
     def __init__(self):
-        # Redireciona o stdout temporariamente para esconder o relatório do BertModel
-        old_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        
-        try:
-            self.model_embedding = SentenceTransformer(Config.EMBEDDING_MODEL)
-        finally:
-            sys.stdout = old_stdout
+        # Inicializa o modelo de embeddings (rápido e sem PyTorch)
+        self.model_embedding = TextEmbedding(model_name=Config.EMBEDDING_MODEL)
             
         # Clientes
         self.supabase: Client = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
@@ -34,8 +27,9 @@ class ArthromedEngine:
         )
 
     def gerar_embedding(self, texto):
-        """Gera o vetor usando SentenceTransformers"""
-        return self.model_embedding.encode(texto).tolist()
+        """Gera o vetor usando FastEmbed"""
+        # O fastembed retorna um gerador, pegamos o primeiro resultado
+        return list(self.model_embedding.embed([texto]))[0].tolist()
 
     def buscar_contexto(self, texto_usuario, setor_escolhido):
         """Busca no Supabase filtrando pelo setor"""
