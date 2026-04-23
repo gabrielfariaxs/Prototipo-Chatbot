@@ -1,17 +1,22 @@
 @echo off
+:: Configura o caminho para a pasta atual
 cd /d %~dp0
+
+:: Tenta configurar para UTF-8 para mostrar acentos
 chcp 65001 >nul
+
 title Assistente Virtual Arthromed
+
 echo ======================================================
 echo    🤖 INICIALIZANDO ASSISTENTE VIRTUAL ARTHROMED
 echo ======================================================
 echo.
 
 :: Verifica se o Python está instalado (tenta 'python' e depois 'py')
-set PYTHON_CMD=python
+set PY_EXE=python
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
-    set PYTHON_CMD=py
+    set PY_EXE=py
     py --version >nul 2>&1
     if %errorlevel% neq 0 (
         echo [ERRO] Python não encontrado!
@@ -28,7 +33,7 @@ if %errorlevel% neq 0 (
 :: Verifica se existe o ambiente virtual, se não, cria
 if not exist venv (
     echo Criando ambiente virtual para o primeiro uso...
-    %PYTHON_CMD% -m venv venv
+    %PY_EXE% -m venv venv
 )
 
 :: Ativa o ambiente e instala as dependencias
@@ -42,6 +47,6 @@ echo ======================================================
 echo    ✅ TUDO PRONTO! INICIANDO O CHAT...
 echo ======================================================
 echo.
-%PYTHON_CMD% main.py
+python main.py
 
 pause
