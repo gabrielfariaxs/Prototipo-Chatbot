@@ -24,6 +24,7 @@ class ArthromedEngine:
         self.chat_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=Config.OPENROUTER_API_KEY,
+            timeout=60.0
         )
 
     def gerar_embedding(self, texto):
@@ -70,7 +71,7 @@ class ArthromedEngine:
         {user_input}
         """
         
-        for tentativa in range(3):
+        for tentativa in range(5):
             try:
                 response = self.chat_client.chat.completions.create(
                     model=Config.CHAT_MODEL,
@@ -78,7 +79,7 @@ class ArthromedEngine:
                 )
                 return response.choices[0].message.content
             except Exception as e:
-                if tentativa < 2:
-                    time.sleep(2) # Espera 2 segundos antes de tentar de novo
+                if tentativa < 4:
+                    time.sleep(3) # Espera 3 segundos antes de tentar de novo
                     continue
                 raise e
