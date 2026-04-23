@@ -17,7 +17,7 @@ class Config:
     SUPABASE_KEY = _s_k1 + _s_k2
     OPENROUTER_API_KEY = _or_k1 + _or_k2 + _or_k3
     
-    # Modelo de Embeddings (Ligeiro e Rápido)
+    # Modelo de Embeddings (Suportado e Robusto)
     EMBEDDING_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
     
     # Modelo de Chat (OpenRouter)

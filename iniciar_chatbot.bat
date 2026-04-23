@@ -39,9 +39,9 @@ if not exist .dependencies_installed (
     pip install -r requirements.txt --quiet
     
     echo ⏳ Passo 2/2: Baixando motor de IA (isso so ocorre uma vez)...
-    echo [TEMPO ESTIMADO: 1 MINUTO]
+    echo [TEMPO ESTIMADO: 1 A 2 MINUTOS]
     echo.
-    python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='intfloat/multilingual-e5-small')"
+    python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
     
     echo ok > .dependencies_installed
     
