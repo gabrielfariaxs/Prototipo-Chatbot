@@ -35,7 +35,7 @@ echo Verificando inicializacao...
 call venv\Scripts\activate
 if not exist .dependencies_installed (
     echo Instalando ferramentas necessarias (isso so ocorre uma vez)...
-    pip install -r requirements.txt --quiet
+    pip install -r requirements.txt
     echo ok > .dependencies_installed
 )
 
