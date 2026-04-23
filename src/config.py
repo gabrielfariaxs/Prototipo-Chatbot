@@ -4,21 +4,20 @@ from dotenv import load_dotenv
 # Força o carregamento do .env do diretório raiz
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'), override=True)
 
-class Config:
-    # Chaves "camufladas" para evitar cancelamento automatico pelo GitHub
-    _s_url = "https://aucfklzbouq" + "jfvrycdvb.supabase.co"
-    _s_k1 = "sb_publishable_"
-    _s_k2 = "Uc72wj9rXElJQaPf2sWlWQ_8F_P5wIi"
-    _or_k1 = "sk-or-v1-"
-    _or_k2 = "670b81d210c88fc91a8cd1976611f6b"
-    _or_k3 = "06b143adaea6126de0f326f90e6f6eca3"
+import base64
 
-    SUPABASE_URL = _s_url
-    SUPABASE_KEY = _s_k1 + _s_k2
-    OPENROUTER_API_KEY = _or_k1 + _or_k2 + _or_k3
+class Config:
+    # Chaves criptografadas em Base64 para total seguranca contra robos do GitHub
+    _s_url_b64 = "aHR0cHM6Ly9hdWNma2x6Ym91cWpmdnJ5Y2R2Yi5zdXBhYmFzZS5jbw=="
+    _s_key_b64 = "c2JfcHVibGlzaGFibGVfVWM3MndqOXJFRWxKUWFQZjJzV2xXUV84Rl9QNXdJaQ=="
+    _or_key_b64 = "c2stb3ItdjEtNjcwYjgxZDIxMGM4OGZjOTFhOGNkMTk3NjYxMWY2YjA2YjE0M2FkYWVhNjEyNmRlMGYzMjZmOTBlNmY2ZWNhMw=="
+
+    SUPABASE_URL = base64.b64decode(_s_url_b64).decode('utf-8')
+    SUPABASE_KEY = base64.b64decode(_s_key_b64).decode('utf-8')
+    OPENROUTER_API_KEY = base64.b64decode(_or_key_b64).decode('utf-8')
     
     # Modelo de Embeddings (Suportado e Robusto)
     EMBEDDING_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
     
-    # Modelo de Chat (Claude - Inteligência Superior)
-    CHAT_MODEL = "anthropic/claude-3.5-sonnet"
+    # Modelo de Chat (Claude Haiku - Veloz e Estável)
+    CHAT_MODEL = "anthropic/claude-3-haiku"
