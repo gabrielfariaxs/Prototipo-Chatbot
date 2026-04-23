@@ -28,17 +28,25 @@ call venv\Scripts\activate
 if not exist .dependencies_installed (
     cls
     echo ======================================================
-    echo    🤖 PREPARANDO O ASSISTENTE PARA O PRIMEIRO USO
+    echo    🤖 PREPARANDO O ASSISTENTE (PRIMEIRA VEZ)
     echo ======================================================
     echo.
-    echo Estamos baixando as ferramentas e dependencias...
-    echo Isso pode levar de 1 a 3 minutos dependendo da sua internet.
-    echo Por favor, aguarde e nao feche esta janela.
+    echo ⏳ Passo 1/2: Baixando ferramentas basicas...
+    echo [TEMPO ESTIMADO: 1 a 2 MINUTOS]
     echo.
     
-    :: Executa a instalacao em silencio
+    :: Executa a instalacao
     pip install -r requirements.txt --quiet
+    
+    echo ⏳ Passo 2/2: Baixando motor de IA (isso so ocorre uma vez)...
+    echo [TEMPO ESTIMADO: 1 MINUTO]
+    echo.
+    python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='intfloat/multilingual-e5-small')"
+    
     echo ok > .dependencies_installed
+    
+    echo ✅ Tudo pronto! O chat vai abrir agora...
+    timeout /t 3 >nul
 )
 
 echo.
