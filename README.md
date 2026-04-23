@@ -20,7 +20,8 @@ Certifique-se de que todos os arquivos desta pasta (incluindo a pasta `src` e o 
 Basta dar um **clique duplo** no arquivo:
 👉 `iniciar_chatbot.bat`
 
-*(Na primeira vez, ele pode demorar um minutinho para preparar tudo, mas depois abrirá automaticamente.)*
+*   **Na primeira vez**: Ele perguntará as chaves de acesso (Supabase e OpenRouter). Basta colá-las e apertar Enter. Ele salvará tudo sozinho para os próximos usos.
+*   **Nas próximas vezes**: Ele abrirá o chat automaticamente em poucos segundos.
 
 ---
 
