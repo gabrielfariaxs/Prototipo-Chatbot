@@ -10,8 +10,8 @@ class Config:
     _s_k1 = "sb_publishable_"
     _s_k2 = "Uc72wj9rXElJQaPf2sWlWQ_8F_P5wIi"
     _or_k1 = "sk-or-v1-"
-    _or_k2 = "99f564bcf5a888cacfb6383e9edaffb5"
-    _or_k3 = "48aaf7e5def7cbe6a6d4adb35db7d8ad"
+    _or_k2 = "670b81d210c88fc91a8cd1976611f6b"
+    _or_k3 = "06b143adaea6126de0f326f90e6f6eca3"
 
     SUPABASE_URL = _s_url
     SUPABASE_KEY = _s_k1 + _s_k2
