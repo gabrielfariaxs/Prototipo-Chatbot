@@ -42,8 +42,8 @@ class ArthromedEngine:
                 {
                     'query_embedding': vetor_pergunta,
                     'match_threshold': 0.1,
-                    'match_count': 3,
-                    'filter_setor': setor_escolhido.strip()
+                    'match_count': 5,
+                    'filter_setor': setor_escolhido.strip().upper()
                 }
             ).execute()
 
