@@ -131,7 +131,7 @@ processos_conhecimento = [
         "processo": "Orçamento Prévio",
         "setor": "Orçamento - Medic",
         "sistema": "Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS",
-        "conteudo": "Verificar plataformas(Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS). No Gtplan ir em Cotações OPME > Limpar Filtros > Colocar UF > Pesquisar. Se o status estiver em “aberto” cotar. Copiar ID do paciente e seus dados. Mandar para o representante da área para saber se vai cotar. Se for para cotar: Abrir Emultec > Movimentos > Cirurgias > Cadastro > Clicar no ícone de papel (responsável pelo cadastramento de um novo) e preencher os dados com base no portal. Ir em Orçamentos > Clicar no icone de papel > Gera o ID de Orçamento > Adicionar produtos avulsos ou conjunto > Sincronizar com SysWeb. Colocar ID do produto no Gtplan. Finalizar proposta."
+        "conteudo": "Verificar plataformas(Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS). No Gtplan ir em Cotações OPME > Limpar Filtros > Colocar UF > Pesquisar. Se o status estiver em “aberto” cotar. Copiar ID do paciente e seus dados. Mandar para o representante da área para saber se vai cotar. Se for para cotar: Abrir Emultec > Movimentos > Cirurgias > Cadastro > Clicar no ícone de papel (responsável pelo cadastramento de um novo) e preencher os dados com base no portal (preencher a aba parte do corpo). Ir em Orçamentos > Clicar no icone de papel > Gera o ID de Orçamento > Adicionar produtos avulsos ou conjunto > Sincronizar com SysWeb. Colocar ID do produto no Gtplan. Finalizar proposta."
     },
     {
         "processo": "Orçamento Pós-Cirurgia",
