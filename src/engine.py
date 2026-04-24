@@ -33,41 +33,67 @@ class ArthromedEngine:
         return list(self.model_embedding.embed([texto]))[0].tolist()
 
     def buscar_contexto(self, texto_usuario, setor_escolhido):
-        """Busca no Supabase filtrando pelo setor"""
+        """Busca no Supabase no setor escolhido E na base de materiais"""
         vetor_pergunta = self.gerar_embedding(texto_usuario)
+        contextos = []
 
         try:
-            response = self.supabase.rpc(
+            # 1. Busca no Setor Específico
+            res_setor = self.supabase.rpc(
                 'buscar_processos', 
                 {
                     'query_embedding': vetor_pergunta,
                     'match_threshold': 0.1,
-                    'match_count': 5,
+                    'match_count': 3,
                     'filter_setor': setor_escolhido.strip().upper()
                 }
             ).execute()
+            
+            if res_setor.data:
+                contextos.extend([f"SETOR {setor_escolhido.upper()}:\nProcesso: {d['processo']}\nConteúdo: {d['conteudo']}" for d in res_setor.data])
 
-            if response.data:
-                return "\n\n".join([f"Processo: {d['processo']}\nConteúdo: {d['conteudo']}" for d in response.data])
+            # 2. Busca Global em Materiais (Excel e PDF de Faturamento)
+            res_materiais = self.supabase.rpc(
+                'buscar_processos', 
+                {
+                    'query_embedding': vetor_pergunta,
+                    'match_threshold': 0.4,
+                    'match_count': 5,
+                    'filter_setor': '' 
+                }
+            ).execute()
+
+            if res_materiais.data:
+                # Filtra apenas o que for relacionado a MATERIAIS no resultado global
+                for d in res_materiais.data:
+                    if "MATERIAIS" in str(d.get('setor', '')).upper():
+                        contextos.append(f"BASE TÉCNICA (Materiais/Emultec):\nItem: {d['processo']}\nInformação: {d['conteudo']}")
+
+            if contextos:
+                return "\n\n".join(contextos)
         except Exception as e:
-            # Silencioso em produção
+            print(f"Erro na busca: {e}")
             pass
         
-        return "Nenhuma informação específica encontrada para este setor."
+        return "Nenhuma informação específica encontrada."
 
     def gerar_resposta(self, user_input, setor, contexto):
-        """Gera resposta usando OpenRouter com tentativa de reenvio em caso de erro"""
+        """Gera resposta usando OpenRouter"""
         import time
         
         prompt = f"""
-        Você é um assistente virtual da Arthromed especializado no setor {setor}.
-        Use APENAS as informações do contexto abaixo para responder. 
-        Se a pergunta não tiver relação com o setor {setor} ou não estiver no contexto, explique que sua base de conhecimento atual é limitada a esse setor.
-
+        Você é o Especialista Técnico da Arthromed/Medic.
+        
+        REGRAS DE RESPOSTA:
+        1. Seja EXTREMAMENTE DIRETO.
+        2. RESPONDA APENAS com base no CONTEXTO fornecido. NÃO use seu conhecimento geral sobre medicina ou materiais.
+        3. Se a informação NÃO estiver no contexto (mesmo que você saiba a resposta por fora), responda exatamente: "Este material ou procedimento não consta no meu mapeamento técnico atual."
+        4. NUNCA invente referências ou nomes de materiais.
+        
         CONTEXTO:
         {contexto}
 
-        PERGUNTA:
+        PERGUNTA DO USUÁRIO:
         {user_input}
         """
         
