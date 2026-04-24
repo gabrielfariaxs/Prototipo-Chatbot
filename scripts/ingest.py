@@ -6,9 +6,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.engine import ArthromedEngine
 
-# Lista Completa e Atualizada de Processos da Arthromed
-processos_arthromed = [
-    # --- SETOR FINANCEIRO (ATUALIZADO) ---
+# Lista Completa de Processos (Arthromed + Medic)
+processos_conhecimento = [
+    # --- SETOR FINANCEIRO (ARTHROMED) ---
     {
         "processo": "Gestão de Ponto (Jornada de Trabalho)",
         "setor": "Financeiro",
@@ -52,7 +52,7 @@ processos_arthromed = [
         "conteudo": "Objetivo: Manter conformidade das cartas de comercialização. Gestão organizada por pastas de cada fornecedor."
     },
 
-    # --- SETOR DE ORÇAMENTO ---
+    # --- SETOR DE ORÇAMENTO (ARTHROMED) ---
     {
         "processo": "Conferência de Cirurgias (Segunda-feira)",
         "setor": "Orçamento - Arthromed",
@@ -114,14 +114,46 @@ processos_arthromed = [
         "conteudo": "Caminho: Movimentos > Comercial > Novo. Inserir: Data, Hora, Parte do corpo, Médico, Hospital, Convênio e Representante. Eletiva: Conferir autorização, marcar Aprovado, confirmar e clicar no Capacete. Urgência: Criar cadastro com info disponível, marcar Aprovado, confirmar e Capacete. Markup baixo exige aprovação da coordenação."
     },
     {
-        "processo": "Geração de Relatórios",
+        "processo": "Visualização de Nota Fiscal (DANFE)",
         "setor": "Orçamento - Arthromed",
-        "sistema": "Menu Relatórios",
-        "conteudo": "NF Emitidas: Relatórios > NF Emitidas (Tipo: Saída, Operação: Venda/Consignada). Cirurgias Realizadas: Movimento > Visualização (Ícone Excel). Orçamentos Abertos: Comercial > Relatórios > Orçamentos/Cotações Abertas. Pendências: Movimento > Comercial > Cirurgias Finalizadas > Relatório de Pendências."
+        "sistema": "Servidor / Emultec",
+        "conteudo": "Opção 1: Movimentos > Visualização > Aba NF > Inserir número > Conectar Servidor > Visualizar DANFE. Opção 2: Pela Cirurgia > Aba Nota Fiscal > Clicar na Nota > Conectar Servidor > Gerar DANFE."
+    },
+
+    # --- SETOR DE ORÇAMENTO (MEDIC) ---
+    {
+        "processo": "Conferência de Cirurgias",
+        "setor": "Orçamento - Medic",
+        "sistema": "Emultec",
+        "conteudo": "Abrir o Emultec. Ir em Estoque > Cirurgia Agendadas > Filtrar por data(1 semana anterior). Clicar em “Ver todos” e exportar em Excel. Filtrar por representantes(vendedores). Verificar comandas pelo fluxo de região, caso não teve material utilizado tira do sistema. Caso tenha material utilizado ir em Movimentos > Cirurgias. Coloca o nome do paciente > Anexos. Anexar a comanda e encaminhar comanda impressa para logística para dar baixa."
+    },
+    {
+        "processo": "Orçamento Prévio",
+        "setor": "Orçamento - Medic",
+        "sistema": "Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS",
+        "conteudo": "Verificar plataformas(Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS). No Gtplan ir em Cotações OPME > Limpar Filtros > Colocar UF > Pesquisar. Se o status estiver em “aberto” cotar. Copiar ID do paciente e seus dados. Mandar para o representante da área para saber se vai cotar. Se for para cotar: Abrir Emultec > Movimentos > Cirurgias > Cadastro > Clicar no ícone de papel (responsável pelo cadastramento de um novo) e preencher os dados com base no portal. Ir em Orçamentos > Clicar no icone de papel > Gera o ID de Orçamento > Adicionar produtos avulsos ou conjunto > Sincronizar com SysWeb. Colocar ID do produto no Gtplan. Finalizar proposta."
+    },
+    {
+        "processo": "Orçamento Pós-Cirurgia",
+        "setor": "Orçamento - Medic",
+        "sistema": "Emultec",
+        "conteudo": "Copiar o ID do paciente do sistema. Ir em Cadastro > Cirurgia > Procura pelos dados do paciente(nome ou ID) e verificar se tem baixa. Ir em “Material Utilizado-Pós” se tiver a comanda pode-se valorizar. Conferir comanda com a baixa. Verificar os valores e apertar em Precificado. Colocar no Portal do cliente, email."
+    },
+    {
+        "processo": "Fluxo de Cadastro (Hospital, Médico, Convênio)",
+        "setor": "Orçamento - Medic",
+        "sistema": "Cadastro Emultec",
+        "conteudo": "Hospital/Convênio: Cadastro > Clientes > Novo (usar CNPJ). Marcar 'Cliente Final' para faturamento direto. Médico: Lupa ao lado do campo Médico > Novo. Obrigatório: Nome, CRM, Cidade, Estado e Vendedor."
+    },
+    {
+        "processo": "Fluxo de Agendamento de Cirurgias",
+        "setor": "Orçamento - Medic",
+        "sistema": "Movimentos Comercial",
+        "conteudo": "Caminho: Movimentos > Comercial > Novo. Inserir: Data, Hora, Parte do corpo, Médico, Hospital, Convênio e Representante. Eletiva: Conferir autorização, marcar Aprovado, confirmar e clicar no Capacete. Urgência: Criar cadastro com info disponível, marcar Aprovado, confirmar e Capacete. Markup baixo exige aprovação da coordenação."
     },
     {
         "processo": "Visualização de Nota Fiscal (DANFE)",
-        "setor": "Orçamento - Arthromed",
+        "setor": "Orçamento - Medic",
         "sistema": "Servidor / Emultec",
         "conteudo": "Opção 1: Movimentos > Visualização > Aba NF > Inserir número > Conectar Servidor > Visualizar DANFE. Opção 2: Pela Cirurgia > Aba Nota Fiscal > Clicar na Nota > Conectar Servidor > Gerar DANFE."
     }
@@ -135,8 +167,8 @@ def atualizar_conhecimento():
     except Exception as e:
         print(f"Aviso ao limpar: {e}")
     
-    for item in processos_arthromed:
-        print(f"Processando: {item['processo']}...")
+    for item in processos_conhecimento:
+        print(f"Processando: {item['processo']} ({item['setor']})...")
         try:
             texto_para_embedding = f"{item['processo']}: {item['conteudo']}"
             vetor = engine.gerar_embedding(texto_para_embedding)
@@ -154,6 +186,6 @@ def atualizar_conhecimento():
             print(f"  ERRO em {item['processo']}: {e}")
 
 if __name__ == "__main__":
-    print("--- Atualizando Conhecimento Arthromed (Financeiro + Orçamento) ---")
+    print("--- Atualizando Conhecimento (Arthromed + Medic) ---")
     atualizar_conhecimento()
     print("--- Tudo pronto! ---")
