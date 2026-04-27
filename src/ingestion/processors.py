@@ -54,45 +54,58 @@ class DataProcessor:
             reader = PdfReader(file_path)
             full_text = "\n".join([page.extract_text() for page in reader.pages])
             
-            # Divide por cirurgias
-            chunks = re.split(r'ORTOPEDIA -', full_text)
+            # Divide por cirurgias usando "Hospital:" como marcador de início, que é mais confiável
+            chunks = re.split(r'Hospital:', full_text)
             results = []
             
             for chunk in chunks[1:]:
-                lines = chunk.split('\n')
-                # Nome do procedimento (primeira linha do chunk)
-                proc_header = lines[0].split('-')[0].strip()
+                # Readiciona "Hospital:" ao início para manter a estrutura se necessário
+                chunk = "Hospital:" + chunk
+                lines = [line.strip() for line in chunk.split('\n') if line.strip()]
+                if not lines: continue
+
+                # Nome do procedimento: busca a linha que contém "ORTOPEDIA"
+                proc_header = "Procedimento não identificado"
+                for line in lines:
+                    if "ORTOPEDIA" in line.upper():
+                        parts = re.split(r'ORTOPEDIA\s*[-–]\s*', line, flags=re.IGNORECASE)
+                        if len(parts) > 1:
+                            proc_header = re.split(r'ELETIVA|URG[ÊE]NCIA|Cirurgia', parts[1])[0].strip()
+                            break
                 
                 materials = []
                 capturing = False
                 for line in lines:
-                    if "Código Produto" in line:
+                    # Inicia captura após o cabeçalho da tabela (muito flexível para erros de encoding)
+                    if "DIGO" in line.upper() and "PRODUTO" in line.upper():
                         capturing = True
                         continue
-                    if "PIS/COFINS" in line:
-                        capturing = False
-                        break
                     
-                    if capturing and line.strip():
-                        # Padrão: Código (letras/números/traços) seguido de espaço e texto
-                        match = re.match(r'^([A-Z0-9.\-/]+)\s+(.*)', line.strip())
+                    # Para a captura ao chegar no resumo financeiro da página/cirurgia
+                    if any(x in line.upper() for x in ["PIS/COFINS", "IRR/CSLL", "ICMS", "DESPESA"]):
+                        capturing = False
+                        continue
+                    
+                    if capturing:
+                        # Padrão: Permite símbolos opcionais no início (ex: ?) e captura o código
+                        match = re.search(r'([A-Z0-9.\-/]{4,})\s+(.*)', line)
                         if match:
                             codigo = match.group(1)
-                            # Tenta limpar a descrição (remove valores no final)
-                            desc_completa = match.group(2)
-                            # Remove marcas e valores (heurística simples: pega os primeiros termos)
-                            desc_clean = re.sub(r'\d+,\d+.*', '', desc_completa).strip()
-                            if len(codigo) > 3:
-                                materials.append(f"- {desc_clean} (Ref: {codigo})")
+                            desc_raw = match.group(2)
+                            # Limpa a descrição removendo marcas, quantidades e valores no final
+                            desc_clean = re.split(r'\s{2,}|\d+,\d+', desc_raw)[0].strip()
+                            materials.append(f"- {desc_clean} (Ref: {codigo})")
                 
                 if materials:
-                    # Remove duplicados e cria o registro
+                    # Tenta detectar a parte do corpo com base no nome do procedimento
+                    parte_corpo = DataProcessor.get_body_part(proc_header)
+                    
                     materials = sorted(list(set(materials)))
                     results.append({
                         "processo": f"Materiais para: {proc_header}",
                         "setor": "MATERIAIS - HISTÓRICO",
                         "sistema": "PDF Faturamento",
-                        "conteudo": f"Procedimento: {proc_header}\nMateriais comumente utilizados:\n" + "\n".join(materials)
+                        "conteudo": f"Procedimento: {proc_header}\nParte do Corpo Relacionada: {parte_corpo}\nMateriais comumente utilizados:\n" + "\n".join(materials)
                     })
             return results
         except Exception as e:
@@ -105,7 +118,9 @@ class DataProcessor:
         mapping = {
             "FIBULA": "Fibula", "RADIO": "Rádio", "METACARPO": "Metacarpo",
             "TIBIA": "Tibia", "CLAVICULA": "Clavícula", "JOELHO": "Joelho",
-            "PE ": "Pé", "HALLUX": "Pé", "MAO": "Mão", "OMBRO": "Ombro"
+            "PE ": "Pé", "HALLUX": "Pé", "MAO": "Mão", "OMBRO": "Ombro",
+            "CALCANHAR": "Pé/Calcâneo", "FEMUR": "Fêmur", "UMERO": "Úmero",
+            "OSTEOMELITE": "Osso (Infecção)", "OSTEOMIELITE": "Osso (Infecção)"
         }
         for key, value in mapping.items():
             if key in procedure.upper():

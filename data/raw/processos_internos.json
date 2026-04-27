@@ -1,4 +1,3 @@
-
 [
     {
         "processo": "Gestão de Ponto (Jornada de Trabalho)",
@@ -7,39 +6,51 @@
         "conteudo": "Objetivo: Garantir a exatidão das horas trabalhadas. Abrir a plataforma Flash, procurar na aba esquerda 'Controle de Jornada'. Procurar 'Espelho da equipe' e em cada funcionário 'Espelho de ponto'. Preencher planilha da contabilidade com horas extras e benefícios. Caso precise ajustar, realizar o ajuste; caso não, exportar para logística e comercial. Fechar o ponto na opção: Fechar espelho e calcular a hora."
     },
     {
+        "processo": "Homologação de Admissão e Demissão",
+        "setor": "Financeiro",
+        "sistema": "Contabilidade / Gerência",
+        "conteudo": "Objetivo: Padronizar a entrada e saída de colaboradores. Se Admissional: Solicita a abertura de vaga/registro à contabilidade. Se Demissional: Solicita o cálculo de rescisão à contabilidade."
+    },
+    {
         "processo": "Análise de Fluxo de Caixa",
         "setor": "Financeiro",
         "sistema": "EMULTEC",
         "conteudo": "Objetivo: Previsibilidade financeira para as próximas 4 semanas. Abrir o EMULTEC, clicar em Financeiro. Ir em Movimentos > Conciliação de Fundos. Selecionar o Fundos (Banco) e preencher data inicial e final. Clicar em conciliar. Se estiver ok, exportar em excel no botão próprio."
     },
     {
+        "processo": "Gestão de Contas a Pagar",
+        "setor": "Financeiro",
+        "sistema": "EMULTEC",
+        "conteudo": "Objetivo: Organização e liquidação de obrigações. 1. Abrir EMULTEC > Relatórios > Contas-Vencimento-Paisagem. 2. Inserir data semanal, ir em 'Não-Pagos' e gerar Excel. 3. Organizar Excel e colocar na planilha Fluxograma_2026_mês. 4. Enviar contas físicas para Maria. 5. Com comprovantes, dar baixa: Movimentos > Pagamento em lote. 6. Para anexar notas: Movimentos > Contas a pagar - Completo > Pesquisar nota > Anexos > Adicionar registro."
+    },
+    {
+        "processo": "Gestão de Contas a Receber",
+        "setor": "Financeiro",
+        "sistema": "EMULTEC",
+        "conteudo": "Objetivo: Monitoramento de entradas e controle de inadimplência. Abrir EMULTEC > Movimentos > Gerenciamento de Notas Faturadas. Selecionar nota (valor ou cliente). Ir em 'Parcelas', clicar na parcela e preencher: datas, fundo, tipo de cobrança, juros e desconto."
+    },
+    {
+        "processo": "Gestão de Benefícios (Plataforma Flash)",
+        "setor": "Financeiro",
+        "sistema": "Plataforma Flash",
+        "conteudo": "Objetivo: Gestão do cartão de benefícios. Abrir Flash > Benefícios > Pedidos de benefícios. Clicar 'Fazer novo pedido' (Benefício padrão > Seleção ou plataforma). Selecionar colaborador, adicionar valor, escolher forma de pagamento e colocar no fluxo para pagar."
+    },
+    {
+        "processo": "Gestão de Carta de Recomendação",
+        "setor": "Financeiro",
+        "sistema": "Pastas Físicas/Digitais",
+        "conteudo": "Objetivo: Manter a conformidade das cartas de comercialização de produtos. Realizar a gestão por pastas de cada fornecedor individualmente."
+    },
+    {
         "processo": "Orçamento Prévio (Fluxo Unificado)",
         "setor": "Orçamento - Arthromed",
         "sistema": "WhatsApp / E-mail / Emultec",
-        "conteudo": "1. Verificar WhatsApp e e-mails.\n2. Registrar cotação no Emultec (Movimentos > Comercial > Cadastro > Novo).\n3. Preencher os dados com base no portal e OBRIGATORIAMENTE preencher a aba 'Parte do Corpo'.\n4. Se não souber o médico ou a cirurgia, confirmar com coordenação/vendedor."
+        "conteudo": "1. Verificar WhatsApp e e-mails. 2. Registrar cotação no Emultec (Movimentos > Comercial > Cadastro > Novo). 3. Preencher os dados com base no portal e OBRIGATORIAMENTE preencher a aba 'Parte do Corpo'. 4. Se não souber o médico ou a cirurgia, confirmar com coordenação/vendedor."
     },
     {
         "processo": "Orçamento Prévio (Fluxo Unificado)",
         "setor": "Orçamento - Medic",
         "sistema": "WhatsApp / E-mail / Emultec / Gtplan",
-        "conteudo": "1. Verificar plataformas (Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS).\n2. No Gtplan, pesquisar cotações em aberto por UF.\n3. Abrir Emultec > Movimentos > Cirurgias > Cadastro.\n4. Preencher os dados com base no portal e OBRIGATORIAMENTE preencher a aba 'Parte do Corpo'.\n5. Gerar ID de Orçamento, adicionar produtos e sincronizar com SysWeb."
-    },
-    {
-        "processo": "Conferência de Cirurgias",
-        "setor": "Orçamento - Arthromed",
-        "sistema": "Emultec",
-        "conteudo": "Garantir que todas as cirurgias do final de semana estejam lançadas. Conferir nos grupos Arthromed PE e CE. Se não lançada, realizar lançamento imediato. Conferir comandas e anexar no Emultec."
-    },
-    {
-        "processo": "Conferência de Cirurgias",
-        "setor": "Orçamento - Medic",
-        "sistema": "Emultec",
-        "conteudo": "Abrir Emultec > Estoque > Cirurgia Agendadas. Filtrar por data (1 semana anterior) e exportar Excel. Verificar comandas pelo fluxo de região. Se teve material, anexar comanda em Movimentos > Cirurgias > Anexos e enviar física para logística."
-    },
-    {
-        "processo": "Relatório de Endividamentos e Empréstimos (Tudo em Aberto)",
-        "setor": "Financeiro",
-        "sistema": "EMULTEC",
-        "conteudo": "Como faço para puxar tudo em aberto incluindo endividamentos/emprestimos? Caminho: Modulo Financeiro > Relatórios Gerenciais > Listagem Compras > Seleciona o quadrado de 'vencimento de duplicatas' e emiti o relatorio."
+        "conteudo": "1. Verificar plataformas (Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS). 2. No Gtplan, pesquisar cotações em aberto por UF. 3. Abrir Emultec > Movimentos > Cirurgias > Cadastro. 4. Preencher os dados com base no portal e OBRIGATORIAMENTE preencher a aba 'Parte do Corpo'. 5. Gerar ID de Orçamento, adicionar produtos e sincronizar com SysWeb."
     }
 ]

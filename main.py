@@ -102,7 +102,8 @@ def start_chat():
                 if historico:
                     contexto_busca = f"{' '.join(historico[-2:])} {user_input}"
                 
-                contexto = engine.buscar_contexto(contexto_busca, setor)
+                # Busca contexto no Supabase (Passando o histórico para manter o foco no assunto)
+                contexto = engine.buscar_contexto(contexto_busca, setor, historico=historico)
                 resposta = engine.gerar_resposta(user_input, setor, contexto)
                 
                 historico.append(user_input)

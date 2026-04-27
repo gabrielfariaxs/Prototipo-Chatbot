@@ -12,4 +12,4 @@ class Config:
     # Configurações de Acesso (Prioriza .env, depois usa valores fixos)
     SUPABASE_URL = os.getenv("SUPABASE_URL", "https://aucfklzbouqjfvrycdvb.supabase.co")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_Uc72wj9rXElJQaPf2sWlWQ_8F_P5wIi")
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
