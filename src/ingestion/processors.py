@@ -101,6 +101,7 @@ class DataProcessor:
 
     @staticmethod
     def get_body_part(procedure):
+        """Mapeia o procedimento para a parte do corpo correspondente."""
         mapping = {
             "FIBULA": "Fibula", "RADIO": "Rádio", "METACARPO": "Metacarpo",
             "TIBIA": "Tibia", "CLAVICULA": "Clavícula", "JOELHO": "Joelho",

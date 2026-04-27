@@ -9,6 +9,7 @@ from src.engine import ArthromedEngine
 from src.ingestion.processors import DataProcessor
 
 def find_file(filename, search_dirs):
+    """Localiza um arquivo em uma lista de diretórios possíveis."""
     for d in search_dirs:
         path = os.path.join(d, filename)
         if os.path.exists(path):
@@ -56,20 +57,34 @@ def run_update():
     print(f"\nSincronizando {len(all_data)} registros com o banco de dados...")
     
     try:
+        # Limpa o banco atual
         engine.supabase.table("documentos_arthromed").delete().neq("id", 0).execute()
-    except:
-        pass
+        
+        # Prepara os textos para o embedding em lote (muito mais rápido)
+        textos_para_vetor = [f"{item['processo']}: {item['conteudo']}" for item in all_data]
+        
+        print("[*] Gerando vetores em lote...")
+        vetores = list(engine.model_embedding.embed(textos_para_vetor))
+        
+        # Prepara os dados finais
+        records = []
+        for i, item in enumerate(all_data):
+            records.append({
+                **item,
+                "embedding": vetores[i].tolist()
+            })
+        
+        # Insere em blocos de 50 para evitar limites de timeout
+        print(f"[*] Inserindo dados no Supabase...")
+        for i in range(0, len(records), 50):
+            batch = records[i:i+50]
+            engine.supabase.table("documentos_arthromed").insert(batch).execute()
 
-    for item in all_data:
-        try:
-            texto = f"{item['processo']}: {item['conteudo']}"
-            vetor = engine.gerar_embedding(texto)
-            data = {**item, "embedding": vetor}
-            engine.supabase.table("documentos_arthromed").insert(data).execute()
-        except:
-            pass
+    except Exception as e:
+        print(f"❌ Erro na sincronização: {e}")
+        return
 
-    print("\nBANCO DE DADOS ATUALIZADO E ORGANIZADO!")
+    print("\n✅ BANCO DE DADOS ATUALIZADO E ORGANIZADO!")
 
 if __name__ == "__main__":
     run_update()

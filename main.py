@@ -79,14 +79,14 @@ def start_chat():
                 if not user_input: continue
                 if user_input.lower() in ["sair", "exit", "quit"]: return
 
-                # Comandos flexíveis para mudar de setor
+                # Verifica se o usuário deseja trocar de setor
                 msg = user_input.lower()
                 if ("mudar" in msg or "trocar" in msg or "outro" in msg) and "setor" in msg:
                     setor = escolher_setor()
-                    historico = [] # Limpa o histórico ao mudar de setor
+                    historico = [] 
                     break
 
-                # Lógica de Aprendizado de Materiais
+                # Comando para adicionar novos materiais ao conhecimento
                 if msg.startswith("adicionar material"):
                     print("⏳ Aprendendo...", end="\r")
                     sucesso, nome = salvar_material_extra(user_input)
@@ -97,7 +97,7 @@ def start_chat():
 
                 print("⏳ Pensando...", end="\r")
                 
-                # Combina o histórico para a busca (memória de curto prazo)
+                # Constrói o contexto de busca incluindo as últimas interações
                 contexto_busca = user_input
                 if historico:
                     contexto_busca = f"{' '.join(historico[-2:])} {user_input}"
@@ -105,7 +105,6 @@ def start_chat():
                 contexto = engine.buscar_contexto(contexto_busca, setor)
                 resposta = engine.gerar_resposta(user_input, setor, contexto)
                 
-                # Atualiza histórico
                 historico.append(user_input)
                 
                 print(" " * 20, end="\r")

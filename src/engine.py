@@ -39,25 +39,27 @@ class ArthromedEngine:
 
         try:
             # 1. Busca no Setor Específico
+            # Aumentado threshold de 0.1 para 0.3 para evitar ruído
             res_setor = self.supabase.rpc(
                 'buscar_processos', 
                 {
                     'query_embedding': vetor_pergunta,
-                    'match_threshold': 0.1,
+                    'match_threshold': 0.3,
                     'match_count': 3,
                     'filter_setor': setor_escolhido.strip().upper()
                 }
             ).execute()
             
             if res_setor.data:
-                contextos.extend([f"SETOR {setor_escolhido.upper()}:\nProcesso: {d['processo']}\nConteúdo: {d['conteudo']}" for d in res_setor.data])
+                for d in res_setor.data:
+                    contextos.append(f"SETOR {setor_escolhido.upper()}:\nProcesso: {d['processo']}\nConteúdo: {d['conteudo']}")
 
             # 2. Busca Global em Materiais (Excel e PDF de Faturamento)
             res_materiais = self.supabase.rpc(
                 'buscar_processos', 
                 {
                     'query_embedding': vetor_pergunta,
-                    'match_threshold': 0.4,
+                    'match_threshold': 0.35, # Ligeiramente maior para materiais técnicos
                     'match_count': 5,
                     'filter_setor': '' 
                 }
@@ -66,11 +68,13 @@ class ArthromedEngine:
             if res_materiais.data:
                 # Filtra apenas o que for relacionado a MATERIAIS no resultado global
                 for d in res_materiais.data:
-                    if "MATERIAIS" in str(d.get('setor', '')).upper():
+                    setor_item = str(d.get('setor', '')).upper()
+                    if "MATERIAIS" in setor_item or "TÉCNICO" in setor_item:
                         contextos.append(f"BASE TÉCNICA (Materiais/Emultec):\nItem: {d['processo']}\nInformação: {d['conteudo']}")
 
             if contextos:
-                return "\n\n".join(contextos)
+                # Remove duplicados mantendo a ordem
+                return "\n\n".join(list(dict.fromkeys(contextos)))
         except Exception as e:
             print(f"Erro na busca: {e}")
             pass
@@ -78,17 +82,17 @@ class ArthromedEngine:
         return "Nenhuma informação específica encontrada."
 
     def gerar_resposta(self, user_input, setor, contexto):
-        """Gera resposta usando OpenRouter"""
+        """Gera resposta baseada no contexto via OpenRouter"""
         import time
         
         prompt = f"""
         Você é o Especialista Técnico da Arthromed/Medic.
         
-        REGRAS DE RESPOSTA:
+        REGRAS:
         1. Seja EXTREMAMENTE DIRETO.
-        2. RESPONDA APENAS com base no CONTEXTO fornecido. NÃO use seu conhecimento geral sobre medicina ou materiais.
-        3. Se a informação NÃO estiver no contexto (mesmo que você saiba a resposta por fora), responda exatamente: "Este material ou procedimento não consta no meu mapeamento técnico atual."
-        4. NUNCA invente referências ou nomes de materiais.
+        2. RESPONDA APENAS com base no CONTEXTO fornecido.
+        3. Se a informação NÃO estiver no contexto, responda exatamente: "Este material ou procedimento não consta no meu mapeamento técnico atual."
+        4. NUNCA invente referências ou nomes.
         
         CONTEXTO:
         {contexto}
@@ -106,6 +110,6 @@ class ArthromedEngine:
                 return response.choices[0].message.content
             except Exception as e:
                 if tentativa < 4:
-                    time.sleep(3) # Espera 3 segundos antes de tentar de novo
+                    time.sleep(3) 
                     continue
                 raise e
