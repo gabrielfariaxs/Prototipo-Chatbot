@@ -1,98 +1,99 @@
-
 import os
 import sys
 
 # Ajusta path para importar do src
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.engine import ArthromedEngine
+from src.services.engine import ArthromedEngine
 from src.ingestion.processors import DataProcessor
 
-def find_file(filename, search_dirs):
+def find_file(filename: str, search_dirs: list[str]) -> str | None:
     """Localiza um arquivo em uma lista de diretórios possíveis."""
-    for d in search_dirs:
-        path = os.path.join(d, filename)
+    for directory in search_dirs:
+        path = os.path.join(directory, filename)
         if os.path.exists(path):
             return path
     return None
 
-def run_update():
-    engine = ArthromedEngine()
-    processor = DataProcessor()
-    
-    print("SISTEMA DE ATUALIZACAO UNIFICADO")
-    print("----------------------------------")
-    
+def extract_data_from_sources(processor: DataProcessor, search_dirs: list[str]) -> list[dict]:
+    """Extrai os dados de todos os arquivos suportados de forma genérica."""
     all_data = []
-    search_dirs = ["data/raw", "Dados_Analisar", "."]
     
-    # 1. Processos Internos (JSON)
-    json_path = find_file("processos_internos.json", search_dirs)
-    if json_path:
-        print(f"[*] Lendo processos: {json_path}")
-        data_json = processor.process_json(json_path)
-        print(f"    -> {len(data_json)} registros encontrados.")
-        all_data.extend(data_json)
+    # Mapeamento de fontes e funções de processamento
+    sources = [
+        ("processos_internos.json", processor.process_json, "processos internos"),
+        ("materiais_extras.json", processor.process_extra_materials, "materiais extras"),
+        ("Produtos (3).xlsx", processor.process_excel, "Excel de materiais"),
+        ("Relatorio de faturamento.pdf", processor.process_pdf_faturamento, "PDF de faturamento")
+    ]
     
-    # 2. Materiais Extras
-    extra_path = find_file("materiais_extras.json", search_dirs)
-    if extra_path:
-        print(f"[*] Lendo materiais extras: {extra_path}")
-        data_extras = processor.process_extra_materials(extra_path)
-        print(f"    -> {len(data_extras)} registros encontrados.")
-        all_data.extend(data_extras)
-    
-    # 3. Materiais (Excel)
-    excel_path = find_file("Produtos (3).xlsx", search_dirs)
-    if excel_path:
-        print(f"[*] Lendo Excel de materiais: {excel_path}")
-        data_excel = processor.process_excel(excel_path)
-        print(f"    -> {len(data_excel)} registros encontrados.")
-        all_data.extend(data_excel)
-    
-    # 4. Histórico de Cirurgias (PDF)
-    pdf_path = find_file("Relatorio de faturamento.pdf", search_dirs)
-    if pdf_path:
-        print(f"[*] Lendo PDF de faturamento: {pdf_path}")
-        data_pdf = processor.process_pdf_faturamento(pdf_path)
-        print(f"    -> {len(data_pdf)} registros encontrados.")
-        all_data.extend(data_pdf)
-    
-    if not all_data:
-        print("Nenhum dado encontrado para processar.")
-        return
+    for filename, process_func, description in sources:
+        filepath = find_file(filename, search_dirs)
+        if filepath:
+            print(f"[*] Lendo {description}: {filepath}")
+            try:
+                data = process_func(filepath)
+                print(f"    -> {len(data)} registros encontrados.")
+                all_data.extend(data)
+            except Exception as e:
+                print(f"    -> Erro ao processar {filename}: {e}")
+                
+    return all_data
 
-    print(f"\nSincronizando {len(all_data)} registros com o banco de dados...")
-    
+def sync_database(engine: ArthromedEngine, data: list[dict]) -> None:
+    """Gera vetores e sincroniza os registros com o Supabase em lotes."""
     try:
-        # Limpa o banco atual
+        print("\n[*] Limpando o banco atual...")
         engine.supabase.table("documentos_arthromed").delete().neq("id", 0).execute()
         
-        # Prepara os textos para o embedding em lote (muito mais rápido)
-        textos_para_vetor = [f"{item['processo']}: {item['conteudo']}" for item in all_data]
+        print("[*] Preparando textos para vetorização...")
+        textos_para_vetor = [f"{item['processo']}: {item['conteudo']}" for item in data]
         
         print("[*] Gerando vetores em lote...")
         vetores = list(engine.model_embedding.embed(textos_para_vetor))
         
-        # Prepara os dados finais com setor em MAIÚSCULO para facilitar a busca
-        records = []
-        for i, item in enumerate(all_data):
-            records.append({
+        records = [
+            {
                 **item,
-                "setor": item.get("setor", "GERAL").upper(), # Normaliza o setor
+                "setor": item.get("setor", "GERAL").upper(),
                 "embedding": vetores[i].tolist()
-            })
+            }
+            for i, item in enumerate(data)
+        ]
         
-        print("[*] Inserindo dados no Supabase...")
-        for i in range(0, len(records), 50):
-            batch = records[i:i+50]
+        print(f"[*] Inserindo {len(records)} registros no Supabase...")
+        batch_size = 50
+        for i in range(0, len(records), batch_size):
+            batch = records[i:i+batch_size]
             engine.supabase.table("documentos_arthromed").insert(batch).execute()
 
+        print("\n✅ BANCO DE DADOS ATUALIZADO E ORGANIZADO!")
+
     except Exception as e:
-        print(f"Erro na sincronizacao: {e}")
+        print(f"\n❌ Erro na sincronização: {e}")
+
+def run_update():
+    """Fluxo principal de atualização do conhecimento."""
+    print("\n" + "═"*50)
+    print("      SISTEMA DE ATUALIZACAO UNIFICADO")
+    print("═"*50)
+    
+    try:
+        engine = ArthromedEngine()
+        processor = DataProcessor()
+    except Exception as e:
+        print(f"\n❌ Erro na inicialização: {e}")
+        return
+    
+    search_dirs = ["data/raw", "."]
+    all_data = extract_data_from_sources(processor, search_dirs)
+    
+    if not all_data:
+        print("\n⚠️ Nenhum dado encontrado para processar.")
         return
 
-    print("\nBANCO DE DADOS ATUALIZADO E ORGANIZADO!")
+    print(f"\nSincronizando {len(all_data)} registros com o banco de dados...")
+    sync_database(engine, all_data)
 
 if __name__ == "__main__":
     run_update()

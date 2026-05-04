@@ -115,6 +115,12 @@ class DataProcessor:
     @staticmethod
     def get_body_part(procedure):
         """Mapeia o procedimento para a parte do corpo correspondente."""
+        import unicodedata
+        def remove_accents(s):
+            return "".join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+        
+        proc_clean = remove_accents(procedure).upper()
+        
         mapping = {
             "FIBULA": "Fibula", "RADIO": "Rádio", "METACARPO": "Metacarpo",
             "TIBIA": "Tibia", "CLAVICULA": "Clavícula", "JOELHO": "Joelho",
@@ -123,6 +129,6 @@ class DataProcessor:
             "OSTEOMELITE": "Osso (Infecção)", "OSTEOMIELITE": "Osso (Infecção)"
         }
         for key, value in mapping.items():
-            if key in procedure.upper():
+            if key in proc_clean:
                 return value
         return "Diversos"
