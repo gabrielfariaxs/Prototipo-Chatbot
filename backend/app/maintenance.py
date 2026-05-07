@@ -1,11 +1,11 @@
 import os
 import sys
 
-# Ajusta path para importar do src
+# Ajusta path para importar do back
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.services.engine import ArthromedEngine
-from src.ingestion.processors import DataProcessor
+from back.services.engine import ArthromedEngine
+from back.ingestion.processors import DataProcessor
 
 def find_file(filename: str, search_dirs: list[str]) -> str | None:
     """Localiza um arquivo em uma lista de diretórios possíveis."""
@@ -43,8 +43,8 @@ def extract_data_from_sources(processor: DataProcessor, search_dirs: list[str]) 
 def sync_database(engine: ArthromedEngine, data: list[dict]) -> None:
     """Gera vetores e sincroniza os registros com o Supabase em lotes."""
     try:
-        print("\n[*] Limpando o banco atual...")
-        engine.supabase.table("documentos_arthromed").delete().neq("id", 0).execute()
+        print("\n[*] Mantendo os registros atuais e adicionando os novos...")
+        # A linha de deleção foi removida para não apagar o banco atual
         
         print("[*] Preparando textos para vetorização...")
         textos_para_vetor = [f"{item['processo']}: {item['conteudo']}" for item in data]
@@ -74,9 +74,9 @@ def sync_database(engine: ArthromedEngine, data: list[dict]) -> None:
 
 def run_update():
     """Fluxo principal de atualização do conhecimento."""
-    print("\n" + "═"*50)
+    print("\n" + "="*50)
     print("      SISTEMA DE ATUALIZACAO UNIFICADO")
-    print("═"*50)
+    print("="*50)
     
     try:
         engine = ArthromedEngine()

@@ -42,15 +42,123 @@
         "conteudo": "Objetivo: Manter a conformidade das cartas de comercialização de produtos. Realizar a gestão por pastas de cada fornecedor individualmente."
     },
     {
-        "processo": "Orçamento Prévio (Fluxo Unificado)",
-        "setor": "Orçamento - Arthromed",
-        "sistema": "WhatsApp / E-mail / Emultec",
-        "conteudo": "1. Verificar WhatsApp e e-mails. 2. Registrar cotação no Emultec (Movimentos > Comercial > Cadastro > Novo). 3. Preencher os dados com base no portal e OBRIGATORIAMENTE preencher a aba 'Parte do Corpo'. 4. Se não souber o médico ou a cirurgia, confirmar com coordenação/vendedor."
+        "processo": "Processo de Negociação de Orçamento / Novos Valores",
+        "setor": "Comercial",
+        "sistema": "Emultec",
+        "conteudo": "Setores envolvidos: Hospital/Convênio, Comercial Interno e Coordenação. Objetivo: Ajustar e validar valores orçados através de negociações entre a empresa e o cliente. Passo a Passo: 1. Observar orçamento. 2. Entrar no Sistema Emultec em Movimentos > Cirurgias. 3. Procurar paciente, e após isso, clicar em 'Material Utilizado Pós' e verificar. 4. Apertar as teclas de uma vez: Fn + Alt + F9 > Produtos > Pesquisar o código do material e ver o custo."
     },
     {
-        "processo": "Orçamento Prévio (Fluxo Unificado)",
+        "processo": "Processo de Análise de Pendência de Faturamento",
+        "setor": "Faturamento",
+        "sistema": "Emultec",
+        "conteudo": "Objetivo: Identificar cirurgias realizadas que ainda não foram faturadas. Fluxo Passo a Passo: 1. Abrir o Emultec. 2. Ir em Movimentos > Cirurgias > Cirurgias Finalizadas. 3. Clicar em Relatório finalizado. 4. Colocar data da cirurgia > Clicar em Gerar Excel. 5. Dentro do Excel filtrar pelos clientes."
+    },
+    {
+        "processo": "Processo de Cobrança de Faturamento",
+        "setor": "Faturamento",
+        "sistema": "Emultec / Email / Whatsapp / Portal",
+        "conteudo": "Objetivo: Solicitar a autorização para emissão da nota fiscal junto ao cliente. Fluxo Passo a Passo: 1. Abrir o Emultec. 2. Ir em Movimentos > Cirurgias > Cirurgias Finalizadas. 3. Clicar em Relatório finalizado. 4. Colocar data da cirurgia > Clicar em Gerar Excel. 5. Dentro do Excel filtrar pelos clientes. 6. Entrar em contato por Email, Whatsapp ou Portal."
+    },
+    {
+        "processo": "Emissão de Boleto e Nota Fiscal, Envio de NF e Boleto (NF)",
+        "setor": "Faturamento",
+        "sistema": "Emultec",
+        "conteudo": "Objetivo: Geração dos documentos financeiros oficiais no sistema. Fluxo Passo a Passo: 1. Abrir o Emultec. 2. Movimentos > Cirurgias > Procurar pelo Nome do paciente ou ID da Cirurgia. 3. Ir em 'Material Utilizado-Pós'. 4. Conferir os valores de acordo com a autorização do faturamento. 5. Conferir todos os dados do paciente. 6. Ir na Aba Notas Fiscais > NF e Venda. 7. Clicar em Cirurgias \\\\ Avulsos > Ir em Parcelas e colocar o número de parcelas. 8. Clicar em Gerar Parcela. 9. Editar o registro. 10. Clicar no botão ao lado de 'Peso Liq'. 11. Ir em dados adicionais > Preencher de acordo com a nota fiscal (dados bancarios) > Gravar. 12. Ir em NF Gerenciamento > Conectar > Criar XML > Validar > Apertar em DANFE > Verificar os dados > Transmitir XML > Apertar icone de PDF. 13. Mandar pro cliente."
+    },
+    {
+        "processo": "Acompanhamento e Análise de Glosas",
+        "setor": "Faturamento",
+        "sistema": "Portal Cassi",
+        "conteudo": "Objetivo: Garantir o recebimento dos documentos e tratar possíveis divergências (glosas). Fluxo Passo a Passo: 1. Abrir o Portal Cassi. 2. Ir em Gestão de Documentos Eletrônicos. 3. Verificar pelo portal os documentos."
+    },
+    {
+        "processo": "Orçamento Prévio",
         "setor": "Orçamento - Medic",
         "sistema": "WhatsApp / E-mail / Emultec / Gtplan",
-        "conteudo": "1. Verificar plataformas (Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS). 2. No Gtplan, pesquisar cotações em aberto por UF. 3. Abrir Emultec > Movimentos > Cirurgias > Cadastro. 4. Preencher os dados com base no portal e OBRIGATORIAMENTE preencher a aba 'Parte do Corpo'. 5. Gerar ID de Orçamento, adicionar produtos e sincronizar com SysWeb."
+        "conteudo": "1. Verificar plataformas(Whatsapp, Gmail, OMPnexo, Inpart, Gtplan, EMS). 2. No Gtplan ir em Cotações OPME > Limpar Filtros > Colocar UF > Pesquisar. 3. Se o status estiver em 'aberto' cotar. 4. Copiar ID do paciente e seus dados. 5. Mandar para o representante da área para saber se vai cotar. 6. Se for para cotar: Abrir Emultec > Movimentos > Cirurgias > Cadastro > Clicar no ícone de papel e preencher os dados com base no portal. 7. Ir em Orçamentos > Clicar no icone de papel > Gera o ID de Orçamento > Adicionar produtos avulsos ou conjunto > Sincronizar com SysWeb. 8. Colocar ID do produto no Gtplan. 9. Finalizar proposta."
+    },
+    {
+        "processo": "Conferência de Cirurgias",
+        "setor": "Orçamento - Medic",
+        "sistema": "Emultec",
+        "conteudo": "1. Conferência de Cirurgias: 1. Abrir o Emultec. 2. Ir em Estoque > Cirurgia Agendadas > Filtrar por data(1 semana anterior). 3. Clicar em 'Ver todos' e exportar em Excel. 4. Filtrar por representantes(vendedores). 5. Verificar comandas pelo fluxo de região, caso não teve material utilizado tira do sistema. 6. Caso tenha material utilizado ir em Movimentos > Cirurgias. 7. Coloca o nome do paciente > Anexos. 8. Anexar a comanda e encaminhar comanda impressa para logística para dar baixa"
+    },
+    {
+        "processo": "Orçamento Pós-Cirurgia",
+        "setor": "Orçamento - Medic",
+        "sistema": "Emultec",
+        "conteudo": "1. Copiar o ID do paciente do sistema. 2. Ir em Cadastro > Cirurgia > Procura pelos dados do paciente(nome ou ID) e verificar se tem baixa. 3. Ir em 'Material Utilizado-Pós' se tiver a comanda pode-se valorizar. 4. Conferir comanda com a baixa. 5. Verificar os valores e apertar em Precificado. 6. Colocar no Porta do cliente, email."
+    },
+    {
+        "processo": "Fluxo de cadastro",
+        "setor": "Orçamento - Medic",
+        "sistema": "Vários",
+        "conteudo": "Objetivo: Garantir que hospitais, convênios e médicos estejam corretamente cadastrados no sistema. Cadastro de Hospital ou Convênio (Cliente): 1. Acessar: Cadastro > Clientes > Novo. 2. Inserir o CNPJ e clicar na bolinha de busca. 3. Conferir as informações. Se o cliente será faturado diretamente, marcar como Cliente Final. Se for hospital, é obrigatório vinculá-lo às cirurgias. Vinculação do Hospital às Cirurgias: 1. Acessar: Movimentos > Comercial. 2. Abrir qualquer cirurgia. 3. No cabeçalho, localizar o campo Hospital. 4. Clicar na lupa e importar o CNPJ. Cadastro apenas do Convênio: Convênios > Novo > Inserir nome e salvar. Cadastro de Médico: 1. Clicar na lupa ao lado do campo Médico. 2. Selecionar Novo. 3. Preencher obrigatoriamente: Nome, CRM, Cidade, Estado, Vendedor."
+    },
+    {
+        "processo": "Fluxo de agendamento de cirurgias",
+        "setor": "Orçamento - Medic",
+        "sistema": "Vários",
+        "conteudo": "Objetivo: Registrar corretamente todos os agendamentos. 1. Acessar: Movimentos > Comercial > Novo. 2. Inserir todas as informações recebidas (Data, Hora, Parte do corpo, Tipo de cirurgia, Médico, Hospital, Convênio, Representante). Cirurgia Eletiva: Conferir se o agendamento está de acordo com a autorização > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete para sincronização. Cirurgia de Urgência: Criar novo cadastro > Inserir informações > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete. Se o markup (margem) estiver baixo, solicitar aprovação da coordenação."
+    },
+    {
+        "processo": "Fluxo de visualização de Nota Fiscal",
+        "setor": "Orçamento - Medic",
+        "sistema": "Vários",
+        "conteudo": "Caminho 1 - Pela Visualização Geral: 1. Habilitar o servidor. 2. Acessar: Movimentos > Visualização. 3. Clicar em NF e inserir a numeração. 4. Abrir a nota com dois cliques. 5. Conectar ao servidor. 6. Visualizar DANFE ou PDF. Caminho 2 - Pela Cirurgia: 1. Acessar: Movimentos > Comercial > Visualização. 2. Abrir a cirurgia desejada. 3. Acessar a aba Nota Fiscal. 4. Clicar na nota. 5. Conectar ao servidor. 6. Gerar o DANFE."
+    },
+    {
+        "processo": "Conferência de Cirurgias (Fluxo de Segunda-feira)",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Emultec / WhatsApp",
+        "conteudo": "Objetivo: Garantir que cirurgias do fim de semana estejam lançadas. 1. Abrir o Emultec. 2. Acessar: Movimentos > Comercial > Visualização. 3. Filtrar a data do fim de semana e ordenar. 4. Abrir WhatsApp Waseler > grupos Arthromed PE e CE. 5. Conferir se todas as cirurgias informadas estão lançadas. 6. Caso não estejam, lançar imediatamente. 7. Conferir se possuem comanda > Salvar documento na pasta > Anexar no Emultec (Aba Anexos > Inserir documento)."
+    },
+    {
+        "processo": "Orçamento Prévio",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Emultec / WhatsApp",
+        "conteudo": "Objetivo: Registrar cotações antes da cirurgia. 1. Verificar WhatsApp e e-mails. 2. Registrar cotação para o vendedor e no Emultec (Movimentos > Comercial > Cadastro > Novo > Preencher cabeçalho). Regras: Se não sabe médico -> perguntar ao hospital. Se não sabe parte do corpo -> confirmar com coordenação. Conferir representante e gerente."
+    },
+    {
+        "processo": "Atenção Especial – Convênios Unimed",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Vários",
+        "conteudo": "A Unimed trabalha com preços abaixo da margem, materiais devem ser de custo menor. Substituições comuns: Parafuso ToolVIP -> Parafuso Hallufix; Fresas BRM -> Brocas Lamiquali; Lâmina especial -> Lâmina de bisturi Razek. Parafusos cotados com fio incluso."
+    },
+    {
+        "processo": "Identificação do Tipo de Cirurgia pelo Material",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Vários",
+        "conteudo": "Exemplo 1 Joelho: Equipo, lâmina de shaver, cânula, kit sutura -> Artroscopia de joelho. Exemplo 2 Pé: Fresa, parafuso chanfrado, lâmina Beaver -> Percutânea / Hallux. Exemplo 3 Mão: Dissector, gancho -> Túnel do carpo. Exemplo 4 Ligamentar: Âncoras (metálica, Anchorfix) -> Lesão ligamentar."
+    },
+    {
+        "processo": "Orçamento Pós-Cirurgia",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Emultec",
+        "conteudo": "Objetivo: Finalizar cirurgias e realizar baixas. 1. Movimentos > Comercial > Visualização. 2. Filtrar por data. 3. Identificar cirurgias para baixa. 4. Cirurgias que não aconteceram: Estoque > Cirurgias consignadas > Finalizar e suspender. 5. Cirurgia de doação: Editar ID > Marcar sem faturamento. 6. Precificação: Eletiva -> valores aba Orçamento; Urgência -> puxar valores do Cifrão. 7. Clicar em Precificar."
+    },
+    {
+        "processo": "Fluxo de Cadastro",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Emultec",
+        "conteudo": "Objetivo: Garantir que hospitais, convênios e médicos estejam corretamente cadastrados no sistema. Cadastro de Hospital ou Convênio (Cliente): 1. Acessar: Cadastro > Clientes > Novo. 2. Inserir o CNPJ e clicar na bolinha de busca. 3. Conferir as informações. Se o cliente será faturado diretamente, marcar como Cliente Final. Se for hospital, é obrigatório vinculá-lo às cirurgias. Vinculação do Hospital às Cirurgias: 1. Acessar: Movimentos > Comercial. 2. Abrir qualquer cirurgia. 3. No cabeçalho, localizar o campo Hospital. 4. Clicar na lupa e importar o CNPJ. Cadastro apenas do Convênio: Convênios > Novo > Inserir nome e salvar. Cadastro de Médico: 1. Clicar na lupa ao lado do campo Médico. 2. Selecionar Novo. 3. Preencher obrigatoriamente: Nome, CRM, Cidade, Estado, Vendedor."
+    },
+    {
+        "processo": "Fluxo de Agendamento de Cirurgias",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Emultec",
+        "conteudo": "Objetivo: Registrar corretamente todos os agendamentos. 1. Acessar: Movimentos > Comercial > Novo. 2. Inserir todas as informações recebidas (Data, Hora, Parte do corpo, Tipo de cirurgia, Médico, Hospital, Convênio, Representante). Cirurgia Eletiva: Conferir se o agendamento está de acordo com a autorização > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete para sincronização. Cirurgia de Urgência: Criar novo cadastro > Inserir informações > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete. Se o markup (margem) estiver baixo, solicitar aprovação da coordenação."
+    },
+    {
+        "processo": "Fluxo de Relatórios",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Emultec",
+        "conteudo": "Relatório de Faturamento: Relatórios > NF Emitidas > Filtrar por Saída, Data, Médico/Cliente, Tipo (Venda e Consignada). Relatório de Cirurgias Realizadas: Movimento > Visualização > Filtrar data > Clicar no ícone do Excel. Relatório de Todas as Cirurgias: Comercial > Relatórios > Orçamentos / Cotações Abertas. Relatório de Pendências: Movimento > Comercial > Cirurgias Finalizadas > Clicar em Relatório de Pendências > Aplicar filtros."
+    },
+    {
+        "processo": "Fluxo de Visualização de Nota Fiscal",
+        "setor": "Orçamento - Arthromed",
+        "sistema": "Emultec",
+        "conteudo": "Caminho 1 - Pela Visualização Geral: 1. Habilitar o servidor. 2. Acessar: Movimentos > Visualização. 3. Clicar em NF e inserir a numeração. 4. Abrir a nota com dois cliques. 5. Conectar ao servidor. 6. Visualizar DANFE ou PDF. Caminho 2 - Pela Cirurgia: 1. Acessar: Movimentos > Comercial > Visualização. 2. Abrir a cirurgia desejada. 3. Acessar a aba Nota Fiscal. 4. Clicar na nota. 5. Conectar ao servidor. 6. Gerar o DANFE."
     }
 ]

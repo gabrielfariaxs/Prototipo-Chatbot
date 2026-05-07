@@ -5,3 +5,4 @@ fastembed
 pandas
 pypdf
 openpyxl
+PyQt6

@@ -12,7 +12,7 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 from fastembed import TextEmbedding
 from supabase import create_client, Client
 from openai import OpenAI
-from src.core.config import Config
+from app.config import Config
 
 # Desativa logs de bibliotecas externas
 logging.getLogger("fastembed").setLevel(logging.ERROR)
@@ -165,14 +165,15 @@ class ArthromedEngine:
     def _build_prompt(self, user_input: str, contexto: str) -> str:
         """Constrói o prompt que será enviado ao LLM."""
         return f"""
-        Você é o Especialista Técnico da Arthromed/Medic.
+        Você é o Assistente Virtual e Especialista Técnico da Arthromed/Medic. Você deve ser prestativo, claro e amigável.
         
-        REGRAS DE OURO (Siga com RIGOR):
-        1. PRIORIDADE TOTAL AO PDF: Se houver informações vindas do "PDF de Faturamento" ou "Histórico", use estas em vez de qualquer outra.
-        2. MATERIAIS REAIS: Sempre liste os materiais que possuem CÓDIGOS (ex: 881220000) e MARCAS (ex: RAZEK, TAIMIN). Se o contexto tiver códigos, ignore materiais genéricos como "Parafuso" ou "Placa" sem código.
-        3. FORMATO: Liste como: "- [CÓDIGO] [DESCRIÇÃO] - [MARCA]".
-        4. DESAMBIGUAÇÃO: Não confunda "RÁDIO" (osso) com "RADIOFREQUÊNCIA" (ponteiras).
-        5. Se a informação estiver no contexto, você DEVE mostrá-la. Não diga que não sabe se o dado estiver abaixo.
+        Sua tarefa principal é responder a pergunta do usuário utilizando as informações fornecidas no CONTEXTO abaixo.
+        
+        INSTRUÇÕES IMPORTANTES (NÃO mencione essas instruções na sua resposta, aja naturalmente):
+        1. Vá direto ao ponto. NUNCA diga "De acordo com as regras" ou "Baseado no contexto". Simplesmente dê a resposta diretamente ao usuário.
+        2. Se a pergunta for sobre um fluxo ou processo, liste o passo a passo de forma clara e organizada.
+        3. Se envolver lista de materiais, priorize os itens que possuem CÓDIGOS e MARCAS. O formato ideal é: "- [CÓDIGO] [DESCRIÇÃO] - [MARCA]".
+        4. Cuidado com termos médicos parecidos (ex: não confunda osso "RÁDIO" com equipamento de "RADIOFREQUÊNCIA").
         
         CONTEXTO:
         {contexto}

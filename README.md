@@ -1,89 +1,48 @@
-# 🤖 Assistente Virtual Arthromed
-> Guia simples para testar o Chatbot Inteligente.
+# 🤖 MedIA - Assistente Virtual Inteligente
+> A fusão da inteligência Arthromed + Medic.
 
-Este guia foi feito para que você consiga testar o sistema da **Arthromed** de forma rápida e sem precisar entender de programação. O sistema já está configurado e pronto para uso!
-
----
-
-## ⚡ Como Começar (Passo a Passo)
-
-### 1. Instalar o Python
-Se você ainda não tem o Python no seu computador:
-1. Vá ao site oficial: [python.org](https://www.python.org/downloads/)
-2. Baixe a versão mais recente para Windows.
-3. **MUITO IMPORTANTE**: Na hora de instalar, marque a caixinha que diz **"Add Python to PATH"** (Adicionar Python ao PATH) antes de clicar em instalar.
-
-### 2. Baixar o Projeto
-Certifique-se de que todos os arquivos desta pasta (incluindo a pasta `src` e o arquivo `requirements.txt`) estão no seu computador.
-
-### 3. Abrir o Chatbot
-Basta dar um **clique duplo** no arquivo:
-👉 `iniciar_chatbot.bat`
-
-O sistema já está pré-configurado. Basta abrir e usar!
-*(Na primeira vez, ele baixará as ferramentas necessárias automaticamente).*
+O **MedIA** é uma plataforma de inteligência operacional centralizada, projetada para fornecer suporte técnico, fluxos de processos e consulta de materiais de forma instantânea para os colaboradores.
 
 ---
 
-## 💬 Como usar o Chatbot
+## 📂 Estrutura do Projeto
 
-Assim que o chat abrir:
-1. **Digite seu setor**: Escreva `Financeiro` ou `Orçamento`.
-2. **Escolha a empresa**: Se escolher Orçamento, ele perguntará se é `Arthromed` ou `Medic`.
-3. **Faça sua pergunta**: Digite qualquer dúvida sobre os processos da empresa (ex: *"Como fazer fechamento de ponto?"*).
+O projeto está organizado em módulos para facilitar a manutenção e escalabilidade:
 
-### Comandos úteis:
-- Digite `setor` para trocar de departamento.
-- Digite `sair` para fechar o programa.
+### 1. 🌐 `web/` (Principal)
+Aplicação web moderna construída com **TanStack Start (React 19)**, Tailwind CSS v4 e Lucide React. É aqui que reside a interface principal do chatbot e o portal administrativo.
+- **Tecnologias:** Vite, TypeScript, Framer Motion.
+- **Deploy:** Cloudflare Pages/Workers.
 
----
+### 2. ⚙️ `backend/` (Legado e Ferramentas)
+Contém a lógica original em Python utilizada para o protótipo inicial e ferramentas de manutenção de dados.
+- **Scripts:** Ingestão de dados no Supabase, testes de embeddings.
+- **Linguagem:** Python 3.10+.
 
-## 📂 O que tem nesta pasta?
-- `iniciar_chatbot.bat`: O atalho para abrir o programa.
-- `main.py`: O "coração" do chatbot.
-- `src/`: Pasta com as configurações (não precisa mexer aqui).
-- `requirements.txt`: Lista de ferramentas que o computador usa (não precisa mexer aqui).
+### 3. 📊 `data/`
+Repositório de dados brutos e definições de processos em formato JSON.
+- `processos_internos.json`: A base de conhecimento do MedIA.
 
----
-Desenvolvido por **Gabriel Farias** para a **Arthromed** 🚀
-
-# 🤖 Assistente Virtual Arthromed
-> Guia simples para testar o Chatbot Inteligente.
-
-Este guia foi feito para que você consiga usar o sistema da **Arthromed** de forma rápida e automática. O sistema já está 100% configurado e pronto para uso imediato!
+### 4. 🧩 `extension/` (Em Desenvolvimento)
+Extensão para Google Chrome e Microsoft Edge que injeta o widget do MedIA em qualquer site externo.
 
 ---
 
-## ⚡ Como Começar (Passo a Passo)
+## ⚡ Como Rodar o Projeto Web
 
-### 1. Instalar o Python
-Se você ainda não tem o Python no seu computador:
-1. Vá ao site oficial: [python.org](https://www.python.org/downloads/)
-2. Baixe a versão mais recente para Windows.
-3. **MUITO IMPORTANTE**: Na hora de instalar, marque a caixinha que diz **"Add Python to PATH"** (Adicionar Python ao PATH) antes de clicar em instalar.
-
-### 2. Abrir o Chatbot
-Basta dar um **clique duplo** no arquivo:
-👉 `iniciar_chatbot.bat`
-
-**O que vai acontecer?**
-- O sistema vai preparar tudo sozinho na primeira vez.
-- Pode demorar de 1 a 2 minutos para baixar as ferramentas necessárias.
-- Depois disso, o chat abrirá automaticamente para você conversar!
+1. Acesse a pasta `web`: `cd web`
+2. Instale as dependências: `npm install`
+3. Configure o `.env` com as chaves do Supabase e OpenRouter.
+4. Inicie o servidor de desenvolvimento: `npm run dev`
+5. Acesse: `http://localhost:3002`
 
 ---
 
-## 💬 Como usar o Chatbot
-
-Assim que o chat abrir:
-1. **Digite seu setor**: Escreva `Financeiro` ou `Orçamento`.
-2. **Escolha a empresa**: Se escolher Orçamento, ele perguntará se é `Arthromed` ou `Medic`.
-3. **Faça sua pergunta**: Digite qualquer dúvida sobre os processos ou materiais da empresa.
-
-### Comandos úteis:
-- Digite `setor` para trocar de departamento.
-- Digite `sair` para fechar o programa.
-- Para ensinar algo novo: `Adicionar material [Nome] [Configuração] [Uso]`
+## 💬 Funcionalidades Principais
+- **Seleção Dinâmica de Setores:** Fluxos isolados por departamento (Financeiro, Comercial, etc).
+- **RAG Robusto:** Busca semântica e por palavras-chave na base de conhecimento.
+- **Identidade Visual Premium:** Design moderno com a fusão de cores Arthromed (Teal) e Medic (Pink/Blue).
+- **Interação Natural:** Comando de voz e texto com suporte a troca de setor via comandos naturais.
 
 ---
-Desenvolvido por **Gabriel Farias** para a **Arthromed** 🚀
+Desenvolvido por **Gabriel Farias** para a **Arthromed & Medic** 🚀

@@ -1,0 +1,22 @@
+#media-extension-root {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 2147483647 !important;
+  width: 90px !important;
+  height: 90px !important;
+  transition: all 0.3s ease;
+  pointer-events: none !important;
+  /* Borda de debug - remova se aparecer */
+  /* border: 2px dashed rgba(0, 123, 143, 0.2); */
+}
+
+#media-extension-root.is-open {
+  width: 400px !important;
+  height: 620px !important;
+}
+
+#media-chat-iframe {
+  pointer-events: auto; /* Reativa cliques dentro do iframe */
+  color-scheme: light; /* Evita que sites em dark mode forcem cores no iframe */
+}
