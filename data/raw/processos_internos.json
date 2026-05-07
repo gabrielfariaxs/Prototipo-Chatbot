@@ -48,7 +48,7 @@
         "conteudo": "Setores envolvidos: Hospital/Convênio, Comercial Interno e Coordenação. Objetivo: Ajustar e validar valores orçados através de negociações entre a empresa e o cliente. Passo a Passo: 1. Observar orçamento. 2. Entrar no Sistema Emultec em Movimentos > Cirurgias. 3. Procurar paciente, e após isso, clicar em 'Material Utilizado Pós' e verificar. 4. Apertar as teclas de uma vez: Fn + Alt + F9 > Produtos > Pesquisar o código do material e ver o custo."
     },
     {
-        "processo": "Processo de Análise de Pendência de Faturamento",
+        "processo": "Processo de Análise de Pendência de mento",
         "setor": "Faturamento",
         "sistema": "Emultec",
         "conteudo": "Objetivo: Identificar cirurgias realizadas que ainda não foram faturadas. Fluxo Passo a Passo: 1. Abrir o Emultec. 2. Ir em Movimentos > Cirurgias > Cirurgias Finalizadas. 3. Clicar em Relatório finalizado. 4. Colocar data da cirurgia > Clicar em Gerar Excel. 5. Dentro do Excel filtrar pelos clientes."
