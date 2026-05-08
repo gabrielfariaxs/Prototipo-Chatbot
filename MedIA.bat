@@ -1,23 +1,18 @@
 @echo off
 cd /d "%~dp0"
 title MedIA - Sistema de Inteligencia
-echo Limpando processos antigos... aguarde.
+title MedIA - Assistente Virtual
+cls
 
-:: Mata processos que possam estar travando as portas ou widgets antigos
-taskkill /f /im python.exe >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000') do taskkill /f /pid %%a >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3001') do taskkill /f /pid %%a >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3002') do taskkill /f /pid %%a >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3003') do taskkill /f /pid %%a >nul 2>&1
+echo ==========================================
+echo    MedIA - Assistente Virtual (Online)
+echo ==========================================
+echo.
 
-echo Iniciando o MedIA...
-:: Inicia o servidor Web em segundo plano
-cd web
-start /b npm run dev -- --port 3002
+:: Fecha processos antigos do Python se existirem
+taskkill /f /im python.exe /t >nul 2>&1
 
-:: Volta para a raiz e inicia o aplicativo Desktop
-cd ..
-echo Aguardando inicializacao do motor de inteligencia...
+:: Inicia o assistente desktop
+echo Iniciando assistente...
 python desktop_app.py
-
 pause
