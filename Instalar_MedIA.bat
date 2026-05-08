@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title Instalador MedIA - Configurando seu Assistente
 setlocal enabledelayedexpansion
 
