@@ -14,6 +14,14 @@ const chatClient = new OpenAI({
   },
 })
 
+const normalizeString = (str: string) => {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
 export const getContext = createServerFn({ method: 'GET' })
   .inputValidator(z.object({
     text: z.string(),
@@ -24,13 +32,13 @@ export const getContext = createServerFn({ method: 'GET' })
     const { text, sector, history = '' } = data
 
     try {
-      const searchTerm = text.toLowerCase().trim()
-      const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 3)
+      const searchTerm = normalizeString(text)
+      const searchWords = searchTerm.split(/\s+/).filter(w => w.length >= 3)
       
       // Busca local no JSON
       let results = processosJson.filter((doc: any) => {
-        const conteudo = (doc.conteudo || '').toLowerCase()
-        const processo = (doc.processo || '').toLowerCase()
+        const conteudo = normalizeString(doc.conteudo || '')
+        const processo = normalizeString(doc.processo || '')
         
         // Verifica se a frase exata ou as palavras-chave estão no documento
         const hasExact = conteudo.includes(searchTerm) || processo.includes(searchTerm)

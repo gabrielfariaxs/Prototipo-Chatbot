@@ -26,7 +26,7 @@ function App() {
           body::before, body::after { display: none !important; opacity: 0 !important; }
         `}} />
         <div className="pointer-events-auto h-full w-full relative">
-          <ChatWidget inline={false} />
+          <ChatWidget isDesktop={true} />
         </div>
       </main>
     )

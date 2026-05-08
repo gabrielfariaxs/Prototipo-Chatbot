@@ -4,8 +4,8 @@ import sys
 # Ajusta path para importar do back
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from back.services.engine import ArthromedEngine
-from back.ingestion.processors import DataProcessor
+from app.engine import ArthromedEngine
+from app.processors import DataProcessor
 
 def find_file(filename: str, search_dirs: list[str]) -> str | None:
     """Localiza um arquivo em uma lista de diretórios possíveis."""
@@ -36,7 +36,7 @@ def extract_data_from_sources(processor: DataProcessor, search_dirs: list[str]) 
                 print(f"    -> {len(data)} registros encontrados.")
                 all_data.extend(data)
             except Exception as e:
-                print(f"    -> Erro ao processar {filename}: {e}")
+                print(f"    -> [ERRO] ao processar {filename}: {e}")
                 
     return all_data
 
@@ -67,10 +67,10 @@ def sync_database(engine: ArthromedEngine, data: list[dict]) -> None:
             batch = records[i:i+batch_size]
             engine.supabase.table("documentos_arthromed").insert(batch).execute()
 
-        print("\n✅ BANCO DE DADOS ATUALIZADO E ORGANIZADO!")
+        print("\n[SUCESSO] BANCO DE DADOS ATUALIZADO E ORGANIZADO!")
 
     except Exception as e:
-        print(f"\n❌ Erro na sincronização: {e}")
+        print(f"\n[ERRO] na sincronizacao: {e}")
 
 def run_update():
     """Fluxo principal de atualização do conhecimento."""
@@ -82,14 +82,14 @@ def run_update():
         engine = ArthromedEngine()
         processor = DataProcessor()
     except Exception as e:
-        print(f"\n❌ Erro na inicialização: {e}")
+        print(f"\n[ERRO] na inicializacao: {e}")
         return
     
     search_dirs = ["data/raw", "."]
     all_data = extract_data_from_sources(processor, search_dirs)
     
     if not all_data:
-        print("\n⚠️ Nenhum dado encontrado para processar.")
+        print("\n[AVISO] Nenhum dado encontrado para processar.")
         return
 
     print(f"\nSincronizando {len(all_data)} registros com o banco de dados...")

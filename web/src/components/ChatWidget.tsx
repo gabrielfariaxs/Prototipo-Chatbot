@@ -11,8 +11,8 @@ type Message = {
   timestamp: Date
 }
 
-export const ChatWidget = () => {
-  const [isOpen, setIsOpen] = useState(false)
+export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
+  const [isOpen, setIsOpen] = useState(isDesktop)
   
   useEffect(() => {
     // Notificar o pai (extensão) sobre o estado do chat
@@ -146,19 +146,25 @@ export const ChatWidget = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className={cn(
+      isDesktop ? "w-full h-full" : "fixed bottom-6 right-6 z-50",
+      "font-sans"
+    )}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="w-[380px] h-[600px] bg-white rounded-[2rem] shadow-2xl flex flex-col overflow-hidden border border-slate-200 mb-4"
+            className={cn(
+              isDesktop ? "w-full h-full border-none rounded-none mb-0" : "w-[380px] h-[520px] rounded-[2rem] border border-slate-200 mb-4 shadow-2xl",
+              "bg-white flex flex-col overflow-hidden"
+            )}
           >
             {/* Header */}
-            <div className="bg-[var(--gradient-header)] p-6 flex justify-between items-center text-white">
+            <div className="bg-[var(--color-primary)]/10 p-6 flex justify-between items-center text-[var(--color-primary)]">
               <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2.5 rounded-xl">
+                <div className="bg-[var(--color-primary)]/20 p-2.5 rounded-xl">
                   <img src="/logo.png" className="h-6 w-6 object-contain" alt="Logo" />
                 </div>
                 <div>
@@ -172,18 +178,20 @@ export const ChatWidget = () => {
                 {step === 'chat' && (
                   <button
                     onClick={handleBackToSectors}
-                    className="hover:bg-white/20 p-1.5 rounded-full transition-colors"
+                    className="hover:bg-[var(--color-primary)]/20 p-1.5 rounded-full transition-colors"
                     title="Mudar Setor"
                   >
                     <Layers size={20} />
                   </button>
                 )}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="hover:bg-white/20 p-1.5 rounded-full transition-colors"
-                >
-                  <X size={20} />
-                </button>
+                {!isDesktop && (
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="hover:bg-[var(--color-primary)]/20 p-1.5 rounded-full transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -333,7 +341,7 @@ export const ChatWidget = () => {
                         </button>
                       </div>
                       <p className="text-[10px] text-center mt-3 text-slate-400 uppercase tracking-widest font-bold">
-                        Powered by MedIA • Arthromed
+                        Powered by MedIA • Arthromed/Medic
                       </p>
                     </div>
                   </motion.div>
@@ -345,19 +353,21 @@ export const ChatWidget = () => {
       </AnimatePresence>
 
       {/* Toggle Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={cn(
-            'p-5 rounded-full transition-all duration-300 flex items-center justify-center transform hover:scale-110 active:scale-95',
-            isOpen
-              ? 'bg-white text-[var(--color-primary)] rotate-90 shadow-xl'
-              : 'media-gradient media-glow text-white border-2 border-white/20'
-          )}
-        >
-          {isOpen ? <X size={32} /> : <MessageCircle size={32} />}
-        </button>
-      </div>
+      {!isDesktop && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className={cn(
+              'p-5 rounded-full transition-all duration-300 flex items-center justify-center transform hover:scale-110 active:scale-95',
+              isOpen
+                ? 'bg-white text-[var(--color-primary)] rotate-90 shadow-xl'
+                : 'media-gradient media-glow text-white border-2 border-white/20'
+            )}
+          >
+            {isOpen ? <X size={32} /> : <MessageCircle size={32} />}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
