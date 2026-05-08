@@ -1,11 +1,19 @@
 # 🤖 MedIA - Assistente Virtual Inteligente
 > A fusão da inteligência Arthromed + Medic.
 
-O **MedIA** é uma plataforma de inteligência operacional centralizada, projetada para fornecer suporte técnico, fluxos de processos e consulta de materiais de forma instantânea para os colaboradores da Arthromed e Medic.
+---
+
+## 🚀 Uso Simplificado (Para todos os usuários)
+
+Se você quer apenas usar o MedIA no seu dia a dia:
+
+1. **Configuração Inicial**: Se é a primeira vez usando nesta máquina, execute o arquivo **`Instalar_MedIA.bat`**. Ele vai configurar tudo e criar um atalho na sua Área de Trabalho.
+2. **Acesso Diário**: Basta dar um clique duplo no ícone **"MedIA - Assistente Virtual"** que apareceu na sua Área de Trabalho.
 
 ---
 
-## 🚀 Como Iniciar (Quick Start)
+## 📂 Visão Geral
+O **MedIA** é uma plataforma de inteligência operacional centralizada...
 
 Se você já tem o ambiente configurado, basta executar o arquivo principal:
 1. Localize o arquivo `MedIA.bat` na raiz do projeto.
