@@ -6,7 +6,13 @@ import processosJson from '../../../data/raw/processos_internos.json'
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
 
 const getChatClient = () => {
-  const apiKey = process.env.OPENROUTER_API_KEY || ''
+  // Tenta pegar de múltiplas fontes possíveis no ambiente Cloudflare/Nitro
+  const apiKey = process.env.OPENROUTER_API_KEY || (globalThis as any).OPENROUTER_API_KEY || ''
+  
+  if (!apiKey) {
+    console.error('ERRO: OPENROUTER_API_KEY não encontrada no ambiente!')
+  }
+
   return new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: apiKey,
