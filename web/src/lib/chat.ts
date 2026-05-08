@@ -5,14 +5,17 @@ import processosJson from '../../../data/raw/processos_internos.json'
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
 
-const chatClient = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: OPENROUTER_API_KEY,
-  defaultHeaders: {
-    'HTTP-Referer': 'https://arthromed-chatbot.pages.dev',
-    'X-Title': 'Arthromed Chatbot',
-  },
-})
+const getChatClient = () => {
+  const apiKey = process.env.OPENROUTER_API_KEY || ''
+  return new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: apiKey,
+    defaultHeaders: {
+      'HTTP-Referer': 'https://arthromed-chatbot.pages.dev',
+      'X-Title': 'Arthromed Chatbot',
+    },
+  })
+}
 
 const normalizeString = (str: string) => {
   return str
@@ -106,6 +109,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
     `
 
     try {
+      const chatClient = getChatClient()
       const response = await chatClient.chat.completions.create({
         model: 'anthropic/claude-3-haiku',
         messages: [{ role: 'user', content: prompt }],
