@@ -9,12 +9,8 @@ import sys
 # Arquivo de trava para garantir instância única do chat
 LOCK_FILE = os.path.join(os.environ.get('TEMP', '.'), "media_chat.lock")
 
-def check_server_health():
-    try:
-        requests.get("http://localhost:3002", timeout=1)
-        return True
-    except:
-        return False
+# Configurações
+CHAT_URL = "https://chatbot-1uh.pages.dev/?desktop=true"
 
 def run_as_window():
     """Função que roda apenas a janela do chat (pywebview)"""
@@ -28,11 +24,9 @@ def run_as_window():
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywebview"])
         import webview
 
-    if not check_server_health():
-        print("Aguardando servidor...")
-        time.sleep(2)
-        if not check_server_health():
-            return
+    if not CHAT_URL:
+        print("URL do chat não configurada.")
+        return
 
     # Cria o arquivo de trava
     with open(LOCK_FILE, "w") as f:
@@ -41,7 +35,7 @@ def run_as_window():
     try:
         window = webview.create_window(
             'MedIA - Assistente Virtual', 
-            'http://localhost:3002/?desktop=true',
+            CHAT_URL,
             width=400,
             height=540,
             resizable=True,

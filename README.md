@@ -12,6 +12,15 @@ Se você quer apenas usar o MedIA no seu dia a dia:
 
 ---
 
+## 🌐 Uso via Internet (Deploy)
+O MedIA está configurado para deploy automático via **Vercel**:
+1. Conecte seu GitHub ao Vercel.
+2. Nas configurações, defina o **Root Directory** como `web`.
+3. Adicione as **Environment Variables**: `OPENROUTER_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`.
+4. O sistema ficará disponível em um link `.vercel.app` acessível de qualquer lugar sem precisar instalar nada localmente.
+
+---
+
 ## 📂 Visão Geral
 O **MedIA** é uma plataforma de inteligência operacional centralizada...
 
