@@ -3,6 +3,7 @@ import { ChatWidget } from '../components/ChatWidget'
 
 type IndexSearch = {
   desktop?: boolean
+  extension?: boolean
 }
 
 export const Route = createFileRoute('/')({ 
@@ -10,13 +11,15 @@ export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>): IndexSearch => {
     return {
       desktop: search.desktop === 'true' || search.desktop === true,
+      extension: search.extension === 'true' || search.extension === true,
     }
   },
 })
 
 function App() {
-  const { desktop } = Route.useSearch()
+  const { desktop, extension } = Route.useSearch()
   const isDesktop = desktop || (typeof window !== 'undefined' && window.location.search.includes('desktop=true'))
+  const isExtension = extension || (typeof window !== 'undefined' && window.location.search.includes('extension=true'))
 
   if (isDesktop) {
     return (
@@ -27,6 +30,25 @@ function App() {
         `}} />
         <div className="pointer-events-auto h-full w-full relative">
           <ChatWidget isDesktop={true} />
+        </div>
+      </main>
+    )
+  }
+
+  if (isExtension) {
+    return (
+      <main className="fixed inset-0 pointer-events-none">
+        <style dangerouslySetInnerHTML={{__html: `
+          html, body, #root, #app, main {
+            background: transparent !important;
+            background-color: transparent !important;
+            background-image: none !important;
+            overflow: hidden !important;
+          }
+          body::before, body::after { display: none !important; }
+        `}} />
+        <div className="pointer-events-auto h-full w-full relative">
+          <ChatWidget />
         </div>
       </main>
     )

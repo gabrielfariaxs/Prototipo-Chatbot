@@ -12,9 +12,10 @@
   const iframe = document.createElement('iframe');
   
   // No desenvolvimento, apontamos para localhost. No deploy, mudar para a URL do Cloudflare.
-  iframe.src = 'http://localhost:3002'; 
+  iframe.src = 'http://localhost:3000/?extension=true'; 
   
   iframe.id = 'media-chat-iframe';
+  iframe.setAttribute('allowtransparency', 'true');
   iframe.style.cssText = 'border:none !important; width:100% !important; height:100% !important; background:transparent !important; color-scheme: light !important;';
   iframe.allow = 'microphone; clipboard-read; clipboard-write';
 

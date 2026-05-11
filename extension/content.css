@@ -1,22 +1,30 @@
+/* Container principal - cobre o canto inferior direito */
 #media-extension-root {
   position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
+  bottom: 0 !important;
+  right: 0 !important;
   z-index: 2147483647 !important;
-  width: 90px !important;
-  height: 90px !important;
-  transition: all 0.3s ease;
+
+  /* Estado FECHADO: só o botão */
+  width: 120px !important;
+  height: 120px !important;
+
+  transition: width 0.3s ease, height 0.3s ease;
   pointer-events: none !important;
-  /* Borda de debug - remova se aparecer */
-  /* border: 2px dashed rgba(0, 123, 143, 0.2); */
+  overflow: visible !important;
+  background: transparent !important;
 }
 
+/* Estado ABERTO: chat expandido */
+/* Total needed: 24(bottom-6) + 72(button) + 16(mb-4) + 520(panel) = 632px → usando 660px */
 #media-extension-root.is-open {
-  width: 400px !important;
-  height: 540px !important;
+  width: 420px !important;
+  height: 660px !important;
+  overflow: hidden !important;
 }
 
 #media-chat-iframe {
-  pointer-events: auto; /* Reativa cliques dentro do iframe */
-  color-scheme: light; /* Evita que sites em dark mode forcem cores no iframe */
+  pointer-events: auto !important;
+  color-scheme: light !important;
+  background: transparent !important;
 }
