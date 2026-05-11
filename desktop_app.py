@@ -86,17 +86,74 @@ def create_floating_widget():
     logo_path = os.path.join("web", "public", "logo.png")
     
     try:
-        from PIL import Image, ImageTk
-        pil_img = Image.open(logo_path)
-        pil_img = pil_img.resize((60, 60), Image.Resampling.LANCZOS)
-        img = ImageTk.PhotoImage(pil_img)
-    except Exception:
+        from PIL import Image, ImageTk, ImageDraw
+        import numpy as np
+        
+        RENDER_SIZE = 256
+        DISPLAY_SIZE = 72
+        ICON_SCALE = 0.55
+        
+        # 1. Cria a base com o degrade pastel suave (Azul Piscina -> Rosa Bebê)
+        base = Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(base)
+        
+        # Cores Pastel da imagem
+        color_start = (192, 222, 233) # Azul claro
+        color_end = (233, 213, 226)   # Rosa claro
+        
+        for i in range(RENDER_SIZE):
+            t = i / RENDER_SIZE
+            r = int(color_start[0] + (color_end[0] - color_start[0]) * t)
+            g = int(color_start[1] + (color_end[1] - color_start[1]) * t)
+            b = int(color_start[2] + (color_end[2] - color_start[2]) * t)
+            draw.line([(0, i), (RENDER_SIZE, i)], fill=(r, g, b, 255))
+            
+        # 2. Máscara CIRCULAR (Voltando para o círculo, mas com o degrade novo)
+        mask = Image.new("L", (RENDER_SIZE, RENDER_SIZE), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        # Desenha o círculo com uma pequena margem para bordas nítidas
+        mask_draw.ellipse((4, 4, RENDER_SIZE-5, RENDER_SIZE-5), fill=255)
+        
+        final_img = Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), (0, 0, 0, 0))
+        final_img.paste(base, (0, 0), mask)
+
+        
+        # 3. Processa o Logo (Remove fundo branco)
+        if os.path.exists(logo_path):
+            logo = Image.open(logo_path).convert("RGBA")
+            data = np.array(logo)
+            red, green, blue, alpha = data.T
+            white_areas = (red > 230) & (green > 230) & (blue > 230)
+            data[..., 3][white_areas.T] = 0 
+            logo = Image.fromarray(data)
+            
+            logo_w = int(RENDER_SIZE * ICON_SCALE)
+            logo = logo.resize((logo_w, logo_w), Image.Resampling.LANCZOS)
+            offset = (RENDER_SIZE - logo_w) // 2
+            final_img.paste(logo, (offset, offset), logo)
+            
+        # 4. Redimensionamento e limpeza de borda
+        img_final = final_img.resize((DISPLAY_SIZE, DISPLAY_SIZE), Image.Resampling.LANCZOS)
+        
+        # Garante bordas nítidas para o transparentcolor do Windows
+        alpha = img_final.getchannel('A')
+        binary_alpha = alpha.point(lambda p: 255 if p > 160 else 0)
+        img_final.putalpha(binary_alpha)
+        
+        img = ImageTk.PhotoImage(img_final)
+        
+    except Exception as e:
+        print(f"Erro ao criar ícone: {e}")
         img = None
 
     lbl = tk.Label(root, image=img if img else None, text="MedIA" if not img else "", 
                    font=("Arial", 14, "bold"), bg=transparent_color, cursor="hand2")
     if img: lbl.image = img
     lbl.pack(expand=True, fill="both")
+
+
+
+
     
     # Estado do Mouse
     mouse_data = {"x": 0, "y": 0, "start_x": 0, "start_y": 0}
