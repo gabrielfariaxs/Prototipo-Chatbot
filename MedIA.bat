@@ -14,7 +14,7 @@ taskkill /f /im python.exe /t >nul 2>&1
 
 :: Verifica e instala dependencias se necessario
 echo Verificando componentes...
-python -m pip install --user requests pywebview Pillow numpy
+python -m pip install --user --no-cache-dir requests pywebview Pillow numpy
 
 :: Inicia o assistente desktop
 echo Iniciando assistente...
