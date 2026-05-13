@@ -100,37 +100,41 @@ def create_floating_widget():
         DISPLAY_SIZE = 72
         ICON_SCALE = 0.55
         
-        # 1. Cria a base com o degrade pastel suave (Azul Piscina -> Rosa Bebê)
+        # 1. Cria a base com o degradê pastel (estilo Glassmorphism)
         base = Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), (0, 0, 0, 0))
         draw = ImageDraw.Draw(base)
         
-        # Cores Pastel da imagem
-        color_start = (192, 222, 233) # Azul claro
-        color_end = (233, 213, 226)   # Rosa claro
+        # Cores Premium da MedIA (Mais vibrantes e nítidas)
+        color_start = (0, 123, 143, 220)  # Teal Arthromed (com transparência)
+        color_end = (233, 78, 119, 220)   # Pink Medic (com transparência)
         
         for i in range(RENDER_SIZE):
             t = i / RENDER_SIZE
             r = int(color_start[0] + (color_end[0] - color_start[0]) * t)
             g = int(color_start[1] + (color_end[1] - color_start[1]) * t)
             b = int(color_start[2] + (color_end[2] - color_start[2]) * t)
-            draw.line([(0, i), (RENDER_SIZE, i)], fill=(r, g, b, 255))
+            a = int(color_start[3] + (color_end[3] - color_start[3]) * t)
+            draw.line([(0, i), (RENDER_SIZE, i)], fill=(r, g, b, a))
             
-        # 2. Máscara CIRCULAR (Voltando para o círculo, mas com o degrade novo)
+        # 2. Máscara CIRCULAR com Borda de Cristal
         mask = Image.new("L", (RENDER_SIZE, RENDER_SIZE), 0)
         mask_draw = ImageDraw.Draw(mask)
-        # Desenha o círculo com uma pequena margem para bordas nítidas
-        mask_draw.ellipse((4, 4, RENDER_SIZE-5, RENDER_SIZE-5), fill=255)
+        mask_draw.ellipse((8, 8, RENDER_SIZE-9, RENDER_SIZE-9), fill=255)
         
         final_img = Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), (0, 0, 0, 0))
         final_img.paste(base, (0, 0), mask)
 
+        # Adicionar Anel Branco (Efeito de Vidro)
+        draw_final = ImageDraw.Draw(final_img)
+        draw_final.ellipse((8, 8, RENDER_SIZE-9, RENDER_SIZE-9), outline=(255, 255, 255, 100), width=6)
         
-        # 3. Processa o Logo (Remove fundo branco)
+        # 3. Processa o Logo (Maior e mais nítido)
+        ICON_SCALE = 0.50 # Ajustado para ficar elegante
         if os.path.exists(logo_path):
             logo = Image.open(logo_path).convert("RGBA")
             data = np.array(logo)
             red, green, blue, alpha = data.T
-            white_areas = (red > 230) & (green > 230) & (blue > 230)
+            white_areas = (red > 240) & (green > 240) & (blue > 240)
             data[..., 3][white_areas.T] = 0 
             logo = Image.fromarray(data)
             
@@ -139,7 +143,7 @@ def create_floating_widget():
             offset = (RENDER_SIZE - logo_w) // 2
             final_img.paste(logo, (offset, offset), logo)
             
-        # 4. Redimensionamento e limpeza de borda
+        # 4. Redimensionamento
         img_final = final_img.resize((DISPLAY_SIZE, DISPLAY_SIZE), Image.Resampling.LANCZOS)
         
         # Garante bordas nítidas para o transparentcolor do Windows
