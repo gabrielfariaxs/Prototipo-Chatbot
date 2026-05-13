@@ -18,6 +18,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     // Notificar o pai (extensão) sobre o estado do chat
     window.parent.postMessage({ type: 'MEDIA_CHAT_TOGGLE', isOpen }, '*')
     
+    // CHAT_URL = "https://chatbot.gabrielfarias-marques13.workers.dev/?desktop=true&v=premium_v2"
     // Notificar o Python (Desktop App) para redimensionar a janela nativa
     if (typeof window !== 'undefined' && (window as any).pywebview && (window as any).pywebview.api) {
       setTimeout(() => {
@@ -279,7 +280,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     {/* Text Section */}
                     <div className="text-center mb-10">
                       <h2 className="text-3xl font-black text-[var(--sea-ink)] mb-2 tracking-tight">
-                        Bem-vindo ao <span className="media-text-gradient">MedIA</span>
+                        Bem-vindo ao <span className="media-text-gradient">MedIA Premium</span>
                       </h2>
                       <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] opacity-60 mb-4">
                         Sistema de Assistência Virtual
