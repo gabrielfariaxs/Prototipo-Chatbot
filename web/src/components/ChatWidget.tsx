@@ -226,35 +226,35 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
               "bg-white flex flex-col overflow-hidden"
             )}
           >
-            {/* Header */}
-            <div className="bg-[var(--color-primary)]/10 p-6 flex justify-between items-center text-[var(--color-primary)]">
+            {/* Unified Corporate Header */}
+            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="bg-[var(--color-primary)]/20 p-2.5 rounded-xl">
-                  <img src="/logo.png" className="h-6 w-6 object-contain" alt="Logo" />
+                <div className="w-10 h-10 bg-[#1a2332] rounded-lg flex items-center justify-center">
+                  <img src="/logo.png" className="h-5 w-5 object-contain invert brightness-0" alt="Logo" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg leading-tight">MedIA</h3>
-                  <p className="text-xs opacity-80">
-                    {step === 'chat' ? `Setor: ${sector}` : 'Assistente Arthromed'}
-                  </p>
+                  <h1 className="font-bold text-[#1a2332] leading-tight">MedIA</h1>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest">Assistente Arthromed</p>
+                  {step === 'chat' && sector && (
+                    <p className="text-xs text-slate-700 mt-0.5">Departamento: <span className="font-semibold">{sector}</span></p>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 {step === 'chat' && (
                   <button
                     onClick={handleBackToSectors}
-                    className="hover:bg-[var(--color-primary)]/20 p-1.5 rounded-full transition-colors"
-                    title="Mudar Setor"
+                    className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-1.5 rounded text-xs font-semibold hover:bg-slate-50 transition-colors"
                   >
-                    <ArrowLeft size={20} />
+                    <Layers size={14} /> Trocar Setor
                   </button>
                 )}
                 <button
                   onClick={handleClose}
-                  className="hover:bg-red-500/10 hover:text-red-500 p-1.5 rounded-full transition-all duration-200"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors"
                   title={isDesktop ? "Encerrar Programa" : "Fechar Chat"}
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -360,33 +360,6 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     animate={{ opacity: 1 }}
                     className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]"
                   >
-                    <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#1a2332] rounded-lg flex items-center justify-center">
-                          <img src="/logo.png" className="h-5 w-5 object-contain invert brightness-0" alt="Logo" />
-                        </div>
-                        <div>
-                          <h1 className="font-bold text-[#1a2332] leading-tight">MedIA</h1>
-                          <p className="text-[10px] text-slate-500 uppercase tracking-widest">Assistente Arthromed</p>
-                          <p className="text-xs text-slate-700 mt-0.5">Departamento: <span className="font-semibold">{sector}</span></p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={handleBackToSectors}
-                          className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-1.5 rounded text-xs font-semibold hover:bg-slate-50 transition-colors"
-                        >
-                          <Layers size={14} /> Trocar Setor
-                        </button>
-                        <button
-                          onClick={handleClose}
-                          className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-                    </div>
-
                     <div
                       ref={scrollRef}
                       className="flex-1 overflow-y-auto p-6 space-y-6"
