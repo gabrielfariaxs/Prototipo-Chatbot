@@ -267,52 +267,46 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex-1 flex flex-col items-center p-8 mesh-bg"
+                    className="flex-1 flex flex-col items-center justify-center p-8 bg-white"
                   >
-                    {/* Logo Section */}
-                    <div className="mt-4 mb-8 relative">
-                      <div className="absolute inset-0 bg-[var(--color-primary)] opacity-10 blur-3xl rounded-full" />
-                      <div className="relative glass-card p-6 rounded-[2.5rem] shadow-xl">
-                        <img src="/logo.png" className="h-16 w-16 object-contain" alt="Logo" />
+                    <div className="mb-6 flex justify-center w-full">
+                      <div className="w-20 h-20 bg-[#1a2332] rounded-2xl flex items-center justify-center">
+                        <img src="/logo.png" className="h-10 w-10 object-contain invert brightness-0" alt="Logo" />
                       </div>
                     </div>
 
-                    {/* Text Section */}
-                    <div className="text-center mb-10">
-                      <h2 className="text-3xl font-black text-[var(--sea-ink)] mb-2 tracking-tight">
-                        Bem-vindo ao <span className="media-text-gradient">MedIA Premium</span>
+                    <div className="text-center mb-8">
+                      <h2 className="text-2xl font-bold text-[#1a2332] mb-2">
+                        Bem-vindo ao MedIA
                       </h2>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] opacity-60 mb-4">
+                      <p className="text-sm text-slate-500 mb-6">
                         Sistema de Assistência Virtual
                       </p>
-                      <p className="text-slate-500 text-sm leading-relaxed max-w-[280px] mx-auto">
-                        Plataforma inteligente especializada em processos internos, gestão de materiais e suporte técnico.
+                      <p className="text-xs text-slate-500 leading-relaxed max-w-[280px] mx-auto">
+                        Plataforma inteligente especializada em processos internos, gestão de materiais e suporte técnico para as equipes Arthromed e Medic.
                       </p>
                     </div>
 
-                    {/* Features Grid */}
-                    <div className="grid grid-cols-3 gap-3 w-full mb-10">
-                      <div className="feature-icon-box">
-                        <div className="text-[var(--color-primary)] mb-2"><Zap size={20} /></div>
-                        <span className="text-[9px] font-bold text-slate-600 text-center leading-tight">Respostas<br/>Rápidas</span>
+                    <div className="grid grid-cols-3 gap-6 w-full mb-10 max-w-[300px]">
+                      <div className="flex flex-col items-center">
+                        <div className="bg-slate-50 text-slate-600 p-3 rounded-full mb-2"><Zap size={18} strokeWidth={1.5} /></div>
+                        <span className="text-[9px] text-slate-600 text-center">Respostas<br/>Rápidas</span>
                       </div>
-                      <div className="feature-icon-box">
-                        <div className="text-[var(--color-accent)] mb-2"><Shield size={20} /></div>
-                        <span className="text-[9px] font-bold text-slate-600 text-center leading-tight">Seguro e<br/>Confiável</span>
+                      <div className="flex flex-col items-center">
+                        <div className="bg-slate-50 text-slate-600 p-3 rounded-full mb-2"><Shield size={18} strokeWidth={1.5} /></div>
+                        <span className="text-[9px] text-slate-600 text-center">Seguro e<br/>Confiável</span>
                       </div>
-                      <div className="feature-icon-box">
-                        <div className="text-[var(--color-medic-blue)] mb-2"><Clock size={20} /></div>
-                        <span className="text-[9px] font-bold text-slate-600 text-center leading-tight">24/7<br/>Disponível</span>
+                      <div className="flex flex-col items-center">
+                        <div className="bg-slate-50 text-slate-600 p-3 rounded-full mb-2"><Clock size={18} strokeWidth={1.5} /></div>
+                        <span className="text-[9px] text-slate-600 text-center">24/7<br/>Disponível</span>
                       </div>
                     </div>
 
-                    {/* CTA Button */}
                     <button
                       onClick={handleStart}
-                      className="w-full rounded-2xl media-gradient media-glow py-4.5 text-lg font-bold text-white transition-all hover:-translate-y-1 hover:brightness-110 active:scale-95 shadow-lg flex items-center justify-center gap-2"
+                      className="w-full max-w-[320px] corp-btn py-3.5 rounded-lg text-sm font-semibold flex items-center justify-center"
                     >
-                      <span>Iniciar Atendimento</span>
-                      <ArrowRight size={20} />
+                      Iniciar Atendimento
                     </button>
                   </motion.div>
                 )}
@@ -320,54 +314,40 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                 {step === 'sector' && (
                   <motion.div
                     key="sector"
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="flex-1 flex flex-col p-6 overflow-y-auto mesh-bg"
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex-1 flex flex-col p-8 overflow-y-auto bg-white"
                   >
-                    <div className="mb-8 text-center">
-                      <div className="inline-flex p-4 glass-card rounded-2xl text-[var(--color-primary)] mb-4 shadow-sm">
-                        <Layers size={32} />
+                    <div className="mb-8 text-center flex flex-col items-center">
+                      <div className="w-12 h-12 bg-[#1a2332] rounded-xl flex items-center justify-center text-white mb-6">
+                        <Layers size={20} />
                       </div>
-                      <h2 className="text-2xl font-black text-[var(--sea-ink)] mb-2">Seleção de Departamento</h2>
-                      <p className="text-slate-500 text-xs px-4">Escolha sua área para personalizar o atendimento e fornecer informações precisas.</p>
+                      <h2 className="text-xl font-bold text-[#1a2332] mb-2">Seleção de Departamento</h2>
+                      <p className="text-slate-500 text-xs">Selecione sua área de atuação para personalizar o atendimento e fornecer informações precisas.</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-3">
                       {availableSectors.length > 0 ? (
-                        availableSectors.map((s, index) => {
-                          const getIcon = (name: string) => {
-                            if (name.includes('Comercial')) return <TrendingUp size={24} />;
-                            if (name.includes('Faturamento')) return <FileText size={24} />;
-                            if (name.includes('Financeiro')) return <CreditCard size={24} />;
-                            if (name.includes('Orçamento')) return <Calculator size={24} />;
-                            return <Briefcase size={24} />;
-                          };
-
-                          return (
-                            <motion.button
-                              key={s}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: index * 0.05 }}
-                              onClick={() => handleSelectSector(s)}
-                              className="group glass-card p-5 rounded-2xl border border-white flex flex-col items-center gap-3 transition-all hover:-translate-y-1 hover:shadow-lg active:scale-95"
-                            >
-                              <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[var(--color-primary)] group-hover:text-white transition-all duration-300">
-                                {getIcon(s)}
-                              </div>
-                              <span className="font-bold text-[13px] text-slate-700 text-center leading-tight group-hover:text-[var(--color-primary)] transition-colors">
-                                {s}
-                              </span>
-                            </motion.button>
-                          );
-                        })
+                        availableSectors.map((s, index) => (
+                          <motion.button
+                            key={s}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: index * 0.05 }}
+                            onClick={() => handleSelectSector(s)}
+                            className="w-full flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
+                          >
+                            <span className="font-semibold text-sm text-slate-800">{s}</span>
+                            <ChevronLeft className="text-slate-400 rotate-180" size={16} />
+                          </motion.button>
+                        ))
                       ) : (
-                        <div className="col-span-2 text-center py-10 opacity-50">Carregando setores...</div>
+                        <div className="text-center py-10 opacity-50">Carregando setores...</div>
                       )}
                     </div>
 
-                    <p className="mt-8 text-center text-[10px] text-slate-400 font-medium">
+                    <p className="mt-8 text-center text-[10px] text-slate-400">
                       Caso não encontre seu departamento, entre em contato com o suporte.
                     </p>
                   </motion.div>
@@ -378,35 +358,61 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     key="chat"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex-1 flex flex-col overflow-hidden mesh-bg"
+                    className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]"
                   >
-                    {/* Chat List */}
+                    <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[#1a2332] rounded-lg flex items-center justify-center">
+                          <img src="/logo.png" className="h-5 w-5 object-contain invert brightness-0" alt="Logo" />
+                        </div>
+                        <div>
+                          <h1 className="font-bold text-[#1a2332] leading-tight">MedIA</h1>
+                          <p className="text-[10px] text-slate-500 uppercase tracking-widest">Assistente Arthromed</p>
+                          <p className="text-xs text-slate-700 mt-0.5">Departamento: <span className="font-semibold">{sector}</span></p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleBackToSectors}
+                          className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-1.5 rounded text-xs font-semibold hover:bg-slate-50 transition-colors"
+                        >
+                          <Layers size={14} /> Trocar Setor
+                        </button>
+                        <button
+                          onClick={handleClose}
+                          className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    </div>
+
                     <div
                       ref={scrollRef}
-                      className="flex-1 overflow-y-auto p-4 space-y-6"
+                      className="flex-1 overflow-y-auto p-6 space-y-6"
                     >
                       {messages.map((msg) => (
                         <div
                           key={msg.id}
                           className={cn(
-                            'flex items-start gap-3 max-w-[90%] animate-in fade-in slide-in-from-bottom-2 duration-300',
+                            'flex items-start gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300',
                             msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''
                           )}
                         >
                           <div
                             className={cn(
-                              'p-2 rounded-xl shrink-0 shadow-sm',
-                              msg.role === 'user' ? 'media-gradient text-white' : 'glass-card text-[var(--color-primary)]'
+                              'p-2 rounded-full shrink-0 flex items-center justify-center w-8 h-8',
+                              msg.role === 'user' ? 'hidden' : 'bg-[#1a2332] text-white'
                             )}
                           >
-                            {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
+                            {msg.role !== 'user' && <Zap size={14} />}
                           </div>
                           <div
                             className={cn(
-                              'p-4 rounded-2xl text-[13px] leading-relaxed shadow-sm',
+                              'p-3.5 rounded-lg text-[13px] leading-relaxed shadow-sm',
                               msg.role === 'user'
-                                ? 'media-gradient text-white rounded-tr-none'
-                                : 'glass-card text-slate-700 rounded-tl-none border-white/50'
+                                ? 'bg-[#1a2332] text-white'
+                                : 'bg-white border border-slate-200 text-slate-700'
                             )}
                           >
                             {msg.text}
@@ -415,89 +421,97 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                       ))}
                       {isLoading && (
                         <div className="flex items-start gap-3 animate-pulse">
-                          <div className="p-2 rounded-xl glass-card text-slate-300">
-                            <Bot size={18} />
+                          <div className="w-8 h-8 rounded-full bg-[#1a2332] flex items-center justify-center text-white shrink-0">
+                            <Zap size={14} />
                           </div>
-                          <div className="glass-card p-4 rounded-2xl rounded-tl-none border-white/50">
+                          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                             <div className="flex gap-1.5">
-                              <span className="w-2 h-2 bg-[var(--color-primary)]/30 rounded-full animate-bounce"></span>
-                              <span className="w-2 h-2 bg-[var(--color-primary)]/30 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                              <span className="w-2 h-2 bg-[var(--color-primary)]/30 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
+                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
+                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Step-by-Step UI (Fica flutuando sobre o input) */}
                     {stepSession && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="mx-4 mb-2 rounded-2xl border border-white/50 glass-card shadow-xl overflow-hidden"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mx-6 mb-4 rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden"
                       >
-                        {/* Barra de progresso */}
-                        <div className="h-1.5 bg-slate-100">
-                          <div
-                            className="h-full transition-all duration-500"
-                            style={{
-                              width: `${((stepSession.current + 1) / stepSession.steps.length) * 100}%`,
-                              background: 'linear-gradient(90deg, #007B8F, #4A90E2)'
-                            }}
-                          />
-                        </div>
-                        {/* Header do passo */}
-                        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)]">
-                            Passo {stepSession.current + 1} de {stepSession.steps.length}
+                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 tracking-wider">
+                            PASSO {stepSession.current + 1} DE {stepSession.steps.length}
                           </span>
-                          <button onClick={() => setStepSession(null)} className="text-slate-400 hover:text-slate-600 text-xs transition-colors">✕</button>
+                          <span className="text-[10px] text-slate-500">
+                            {Math.round(((stepSession.current + 1) / stepSession.steps.length) * 100)}% concluído
+                          </span>
                         </div>
-                        {/* Texto do passo */}
-                        <p className="px-4 pb-3 text-sm font-semibold text-slate-700 leading-relaxed">
-                          {stepSession.steps[stepSession.current].replace(/^\d+[\.)\-]\s*/, '')}
-                        </p>
-                        {/* Botões */}
-                        <div className="flex gap-2 px-4 pb-4">
-                          <button
-                            onClick={handleStepYes}
-                            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 active:scale-95"
-                            style={{ background: 'linear-gradient(135deg, #007B8F, #4A90E2)' }}
-                          >
-                            ✅ Sim, feito!
-                          </button>
-                          <button
-                            onClick={handleStepNo}
-                            className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold hover:bg-slate-200 transition-all active:scale-95"
-                          >
-                            ❌ Preciso de ajuda
-                          </button>
+                        <div className="px-5 mb-4">
+                          <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[#1a2332] transition-all duration-500"
+                              style={{ width: `${((stepSession.current + 1) / stepSession.steps.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="px-5 pb-5">
+                          <h3 className="text-sm font-bold text-slate-800 mb-4">
+                            {stepSession.steps[stepSession.current].replace(/^\d+[\.)\-]\s*/, '')}
+                          </h3>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={handleStepYes}
+                              className="flex-1 corp-btn py-2.5 rounded text-xs font-semibold flex items-center justify-center gap-2"
+                            >
+                              <span>✓ Concluído</span>
+                            </button>
+                            <button
+                              onClick={handleStepNo}
+                              className="flex-1 py-2.5 rounded border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                            >
+                              <span>✕ Preciso de Ajuda</span>
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     )}
 
-                    {/* Input */}
-                    <div className="p-4 bg-white border-top border-slate-100">
-                      <div className={cn("relative flex items-center gap-2 p-1 rounded-xl transition-all input-branded-focus")}>
+                    <div className="p-4 bg-white border-t border-slate-200">
+                      <div className="corp-input-area p-1.5 flex items-center">
+                        <button 
+                          className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                          title="Adicionar Anexo"
+                          onClick={() => document.getElementById('file-upload')?.click()}
+                        >
+                          <Paperclip size={18} />
+                          <input type="file" id="file-upload" className="hidden" />
+                        </button>
+                        
                         <input
                           type="text"
                           value={input}
                           onChange={(e) => setInput(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                          placeholder="Digite sua dúvida..."
-                          className="w-full pl-4 pr-12 py-3 bg-slate-50 border-none rounded-lg text-sm outline-none transition-all"
+                          placeholder="Digite sua mensagem..."
+                          className="flex-1 border-none outline-none text-sm text-slate-700 placeholder-slate-400 px-2"
                         />
+                        
                         <button
                           onClick={handleSend}
                           disabled={!input.trim() || isLoading}
-                          className="absolute right-2 p-2 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all shadow-md"
+                          className="p-2 bg-slate-200 text-slate-500 rounded disabled:opacity-50 hover:bg-slate-300 transition-colors"
                         >
-                          <Send size={18} />
+                          <Send size={16} />
                         </button>
                       </div>
-                      <p className="text-[10px] text-center mt-3 text-slate-400 uppercase tracking-widest font-bold">
-                        Powered by MedIA • Arthromed/Medic
-                      </p>
+                      <div className="text-center mt-3">
+                        <p className="text-[9px] font-semibold text-slate-400">
+                          ARTHROMED • MEDIC
+                        </p>
+                      </div>
                     </div>
                   </motion.div>
                 )}
