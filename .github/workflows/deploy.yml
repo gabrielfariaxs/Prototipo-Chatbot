@@ -34,4 +34,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: ./web
-          command: deploy .output/server/index.mjs
+          command: deploy dist/server/index.js
