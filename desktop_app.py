@@ -32,6 +32,12 @@ def run_as_window():
     with open(LOCK_FILE, "w") as f:
         f.write(str(os.getpid()))
 
+    class JSApi:
+        def close_window(self):
+            window.destroy()
+
+    api = JSApi()
+
     try:
         window = webview.create_window(
             'MedIA - Assistente Virtual', 
@@ -39,7 +45,8 @@ def run_as_window():
             width=400,
             height=540,
             resizable=True,
-            on_top=True
+            on_top=True,
+            js_api=api
         )
         webview.start()
     finally:

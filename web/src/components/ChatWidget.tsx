@@ -98,6 +98,14 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     ])
   }
 
+  const handleClose = () => {
+    if (isDesktop && (window as any).pywebview) {
+      (window as any).pywebview.api.close_window()
+    } else {
+      setIsOpen(false)
+    }
+  }
+
   const handleBackToSectors = () => {
     setStep('sector')
     setMessages([])
@@ -237,17 +245,16 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     className="hover:bg-[var(--color-primary)]/20 p-1.5 rounded-full transition-colors"
                     title="Mudar Setor"
                   >
-                    <Layers size={20} />
+                    <ArrowLeft size={20} />
                   </button>
                 )}
-                {!isDesktop && (
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="hover:bg-[var(--color-primary)]/20 p-1.5 rounded-full transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                )}
+                <button
+                  onClick={handleClose}
+                  className="hover:bg-red-500/10 hover:text-red-500 p-1.5 rounded-full transition-all duration-200"
+                  title={isDesktop ? "Encerrar Programa" : "Fechar Chat"}
+                >
+                  <X size={20} />
+                </button>
               </div>
             </div>
 
@@ -256,30 +263,55 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                 {step === 'onboarding' && (
                   <motion.div
                     key="onboarding"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="flex-1 flex flex-col items-center justify-center p-8 text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 flex flex-col items-center p-8 mesh-bg"
                   >
-                    <div className="mb-6 p-8 media-gradient media-glow rounded-[2.5rem] text-white animate-pulse-slow opacity-30">
-                      <img src="/logo.png" className="h-16 w-16 object-contain" alt="Logo" />
+                    {/* Logo Section */}
+                    <div className="mt-4 mb-8 relative">
+                      <div className="absolute inset-0 bg-[var(--color-primary)] opacity-10 blur-3xl rounded-full" />
+                      <div className="relative glass-card p-6 rounded-[2.5rem] shadow-xl">
+                        <img src="/logo.png" className="h-16 w-16 object-contain" alt="Logo" />
+                      </div>
                     </div>
-                    <p className="text-[var(--color-primary)] font-bold text-[10px] uppercase tracking-[0.2em] mb-3">
-                      Arthromed + Medic = <span className="text-[var(--color-medic-pink)]">MedIA</span>
-                    </p>
-                    <h2 className="text-3xl font-extrabold text-[var(--sea-ink)] mb-4 leading-tight">
-                      Seu Assistente<br/>
-                      <span className="text-4xl media-text-gradient">MedIA Virtual.</span>
-                    </h2>
-                    <p className="text-slate-500 text-sm mb-10 leading-relaxed">
-                      Especialista em processos internos,<br/>
-                      materiais e suporte técnico.
-                    </p>
+
+                    {/* Text Section */}
+                    <div className="text-center mb-10">
+                      <h2 className="text-3xl font-black text-[var(--sea-ink)] mb-2 tracking-tight">
+                        Bem-vindo ao <span className="media-text-gradient">MedIA</span>
+                      </h2>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--color-primary)] opacity-60 mb-4">
+                        Sistema de Assistência Virtual
+                      </p>
+                      <p className="text-slate-500 text-sm leading-relaxed max-w-[280px] mx-auto">
+                        Plataforma inteligente especializada em processos internos, gestão de materiais e suporte técnico.
+                      </p>
+                    </div>
+
+                    {/* Features Grid */}
+                    <div className="grid grid-cols-3 gap-3 w-full mb-10">
+                      <div className="feature-icon-box">
+                        <div className="text-[var(--color-primary)] mb-2"><Zap size={20} /></div>
+                        <span className="text-[9px] font-bold text-slate-600 text-center leading-tight">Respostas<br/>Rápidas</span>
+                      </div>
+                      <div className="feature-icon-box">
+                        <div className="text-[var(--color-accent)] mb-2"><Shield size={20} /></div>
+                        <span className="text-[9px] font-bold text-slate-600 text-center leading-tight">Seguro e<br/>Confiável</span>
+                      </div>
+                      <div className="feature-icon-box">
+                        <div className="text-[var(--color-medic-blue)] mb-2"><Clock size={20} /></div>
+                        <span className="text-[9px] font-bold text-slate-600 text-center leading-tight">24/7<br/>Disponível</span>
+                      </div>
+                    </div>
+
+                    {/* CTA Button */}
                     <button
                       onClick={handleStart}
-                      className="w-full rounded-2xl media-gradient media-glow py-4 text-lg font-bold text-white transition hover:-translate-y-1 hover:scale-[1.02] active:scale-95 opacity-60"
+                      className="w-full rounded-2xl media-gradient media-glow py-4.5 text-lg font-bold text-white transition-all hover:-translate-y-1 hover:brightness-110 active:scale-95 shadow-lg flex items-center justify-center gap-2"
                     >
-                      Começar agora
+                      <span>Iniciar Atendimento</span>
+                      <ArrowRight size={20} />
                     </button>
                   </motion.div>
                 )}
@@ -287,37 +319,56 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                 {step === 'sector' && (
                   <motion.div
                     key="sector"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="flex-1 flex flex-col p-8 overflow-y-auto"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="flex-1 flex flex-col p-6 overflow-y-auto mesh-bg"
                   >
-                    <div className="mb-8">
-                      <div className="inline-block p-3 bg-[var(--color-primary)]/10 rounded-2xl text-[var(--color-primary)] mb-4">
+                    <div className="mb-8 text-center">
+                      <div className="inline-flex p-4 glass-card rounded-2xl text-[var(--color-primary)] mb-4 shadow-sm">
                         <Layers size={32} />
                       </div>
-                      <h2 className="text-2xl font-bold text-[var(--sea-ink)] mb-2">Selecione seu Setor</h2>
-                      <p className="text-slate-500 text-sm">Para fornecer as melhores respostas, precisamos saber qual sua área de atuação.</p>
+                      <h2 className="text-2xl font-black text-[var(--sea-ink)] mb-2">Seleção de Departamento</h2>
+                      <p className="text-slate-500 text-xs px-4">Escolha sua área para personalizar o atendimento e fornecer informações precisas.</p>
                     </div>
                     
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
                       {availableSectors.length > 0 ? (
-                        availableSectors.map((s) => (
-                          <button
-                            key={s}
-                            onClick={() => handleSelectSector(s)}
-                            className="w-full flex items-center justify-between p-5 rounded-2xl border-2 border-slate-100 sector-button-hover transition-all shadow-sm"
-                          >
-                            <span className="font-bold text-slate-700">{s}</span>
-                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center transition-colors">
-                               <Send size={14} className="ml-0.5" />
-                             </div>
-                          </button>
-                        ))
+                        availableSectors.map((s, index) => {
+                          const getIcon = (name: string) => {
+                            if (name.includes('Comercial')) return <TrendingUp size={24} />;
+                            if (name.includes('Faturamento')) return <FileText size={24} />;
+                            if (name.includes('Financeiro')) return <CreditCard size={24} />;
+                            if (name.includes('Orçamento')) return <Calculator size={24} />;
+                            return <Briefcase size={24} />;
+                          };
+
+                          return (
+                            <motion.button
+                              key={s}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: index * 0.05 }}
+                              onClick={() => handleSelectSector(s)}
+                              className="group glass-card p-5 rounded-2xl border border-white flex flex-col items-center gap-3 transition-all hover:-translate-y-1 hover:shadow-lg active:scale-95"
+                            >
+                              <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[var(--color-primary)] group-hover:text-white transition-all duration-300">
+                                {getIcon(s)}
+                              </div>
+                              <span className="font-bold text-[13px] text-slate-700 text-center leading-tight group-hover:text-[var(--color-primary)] transition-colors">
+                                {s}
+                              </span>
+                            </motion.button>
+                          );
+                        })
                       ) : (
-                        <div className="text-center py-10 opacity-50">Carregando setores...</div>
+                        <div className="col-span-2 text-center py-10 opacity-50">Carregando setores...</div>
                       )}
                     </div>
+
+                    <p className="mt-8 text-center text-[10px] text-slate-400 font-medium">
+                      Caso não encontre seu departamento, entre em contato com o suporte.
+                    </p>
                   </motion.div>
                 )}
 
@@ -326,35 +377,35 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     key="chat"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex-1 flex flex-col overflow-hidden"
+                    className="flex-1 flex flex-col overflow-hidden mesh-bg"
                   >
                     {/* Chat List */}
                     <div
                       ref={scrollRef}
-                      className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#F8FAFC]"
+                      className="flex-1 overflow-y-auto p-4 space-y-6"
                     >
                       {messages.map((msg) => (
                         <div
                           key={msg.id}
                           className={cn(
-                            'flex items-start gap-2 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300',
+                            'flex items-start gap-3 max-w-[90%] animate-in fade-in slide-in-from-bottom-2 duration-300',
                             msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''
                           )}
                         >
                           <div
                             className={cn(
-                              'p-2 rounded-lg shrink-0',
-                              msg.role === 'user' ? 'bg-[var(--color-accent)] text-white' : 'bg-white border border-slate-200 text-slate-700'
+                              'p-2 rounded-xl shrink-0 shadow-sm',
+                              msg.role === 'user' ? 'media-gradient text-white' : 'glass-card text-[var(--color-primary)]'
                             )}
                           >
-                            {msg.role === 'user' ? <User size={16} /> : <img src="/logo.png" className="h-4 w-4 object-contain" alt="Logo" />}
+                            {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
                           </div>
                           <div
                             className={cn(
-                              'p-3 rounded-2xl text-sm shadow-sm',
+                              'p-4 rounded-2xl text-[13px] leading-relaxed shadow-sm',
                               msg.role === 'user'
-                                ? 'bg-[var(--color-accent)] text-white rounded-tr-none'
-                                : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
+                                ? 'media-gradient text-white rounded-tr-none'
+                                : 'glass-card text-slate-700 rounded-tl-none border-white/50'
                             )}
                           >
                             {msg.text}
@@ -362,27 +413,27 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                         </div>
                       ))}
                       {isLoading && (
-                        <div className="flex items-start gap-2 animate-pulse">
-                          <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400">
-                            <img src="/logo.png" className="h-4 w-4 object-contain opacity-50" alt="Logo" />
+                        <div className="flex items-start gap-3 animate-pulse">
+                          <div className="p-2 rounded-xl glass-card text-slate-300">
+                            <Bot size={18} />
                           </div>
-                          <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-100">
-                            <div className="flex gap-1">
-                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></span>
-                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                          <div className="glass-card p-4 rounded-2xl rounded-tl-none border-white/50">
+                            <div className="flex gap-1.5">
+                              <span className="w-2 h-2 bg-[var(--color-primary)]/30 rounded-full animate-bounce"></span>
+                              <span className="w-2 h-2 bg-[var(--color-primary)]/30 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                              <span className="w-2 h-2 bg-[var(--color-primary)]/30 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Step-by-Step UI */}
+                    {/* Step-by-Step UI (Fica flutuando sobre o input) */}
                     {stepSession && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mx-3 mb-3 rounded-2xl border border-[var(--color-primary)]/20 bg-white shadow-md overflow-hidden"
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="mx-4 mb-2 rounded-2xl border border-white/50 glass-card shadow-xl overflow-hidden"
                       >
                         {/* Barra de progresso */}
                         <div className="h-1.5 bg-slate-100">
