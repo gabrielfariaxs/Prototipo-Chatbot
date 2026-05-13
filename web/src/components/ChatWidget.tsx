@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Bot, Layers, ChevronLeft } from 'lucide-react'
+import { MessageCircle, X, Send, User, Bot, Layers, ChevronLeft, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors } from '../lib/chat'
 import { cn } from '../lib/utils'
