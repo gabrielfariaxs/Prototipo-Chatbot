@@ -112,12 +112,11 @@
         "setor": "Orçamento - Arthromed",
         "sistema": "Emultec / WhatsApp",
         "conteudo": "Objetivo: Garantir que cirurgias do fim de semana estejam lançadas. 1. Abrir o Emultec. 2. Acessar: Movimentos > Comercial > Visualização. 3. Filtrar a data do fim de semana e ordenar. 4. Abrir WhatsApp Waseler > grupos Arthromed PE e CE. 5. Conferir se todas as cirurgias informadas estão lançadas. 6. Caso não estejam, lançar imediatamente. 7. Conferir se possuem comanda > Salvar documento na pasta > Anexar no Emultec (Aba Anexos > Inserir documento)."
-    },
     {
         "processo": "Orçamento Prévio",
         "setor": "Orçamento - Arthromed",
         "sistema": "Emultec / WhatsApp",
-        "conteudo": "Objetivo: Registrar cotações antes da cirurgia. 1. Verificar WhatsApp e e-mails. 2. Registrar cotação para o vendedor e no Emultec (Movimentos > Comercial > Cadastro > Novo > Preencher cabeçalho). Regras: Se não sabe médico -> perguntar ao hospital. Se não sabe parte do corpo -> confirmar com coordenação. Conferir representante e gerente."
+        "conteudo": "1. Verificar WhatsApp, e-mails e portais. 2. Para acessar os portais existe uma tabela com senha e login: Abra o explorador de arquivos do notebook > pasta 'office 2-Pessoal' > pesquisar por 'senhas' > abrir o Excel 'Senhas portais'. 3. Avisar ao vendedor sobre a solicitação com as informações: IDC do paciente, Nome, Médico, Convênio e Hospital. 4. Abrir o Emultec (Movimentos > Comercial > Cadastro > Novo > Clicar no ícone do papel antes de preencher o cabeçalho). OBS: A data da cirurgia só deve ser preenchida APÓS a autorização do orçamento/agendamento. Regras: Se não souber o médico, perguntar ao hospital; se não souber a parte do corpo, confirmar com coordenação. Conferir representante e gerente. 5. Clicar no ícone de produtos avulsos ou conjuntos. 6. Após adicionar os produtos/conjuntos, verificar se estão de acordo com a solicitação. 7. Clicar no ícone de parâmetros e depois clicar no capacete para sincronizar com o Sysweb. 8. Lançar as informações no portal. Antes de enviar a proposta no portal, comparar se o valor está correto."
     },
     {
         "processo": "Atenção Especial – Convênios Unimed",
