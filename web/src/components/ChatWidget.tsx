@@ -33,6 +33,26 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [stepSession, setStepSession] = useState<{
+    steps: string[]
+    current: number
+    intro: string
+  } | null>(null)
+
+  // Detecta passos numerados na resposta do bot
+  const parseSteps = (text: string): { intro: string; steps: string[] } | null => {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+    const steps: string[] = []
+    const introLines: string[] = []
+    for (const line of lines) {
+      if (/^\d+[\.)\-]\s+.+/.test(line)) {
+        steps.push(line)
+      } else if (steps.length === 0) {
+        introLines.push(line)
+      }
+    }
+    return steps.length >= 2 ? { intro: introLines.join(' '), steps } : null
+  }
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -81,6 +101,31 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
   const handleBackToSectors = () => {
     setStep('sector')
     setMessages([])
+    setStepSession(null)
+  }
+
+  const handleStepYes = () => {
+    if (!stepSession) return
+    const next = stepSession.current + 1
+    if (next >= stepSession.steps.length) {
+      setStepSession(null)
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'bot',
+        text: '✅ Processo concluído! Posso te ajudar com mais alguma coisa?',
+        timestamp: new Date(),
+      }])
+    } else {
+      setStepSession(prev => prev ? { ...prev, current: next } : null)
+    }
+  }
+
+  const handleStepNo = () => {
+    if (!stepSession) return
+    const stepNum = stepSession.current + 1
+    const stepText = stepSession.steps[stepSession.current].replace(/^\d+[\.)\-]\s*/, '')
+    setStepSession(null)
+    setInput(`Não entendi o passo ${stepNum}. Pode explicar melhor: "${stepText}"?`)
   }
 
   const handleSend = async () => {
@@ -121,14 +166,25 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
         }
       })
 
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'bot',
-        text: botResponse || 'Desculpe, não consegui processar sua solicitação.',
-        timestamp: new Date(),
+      const parsed = parseSteps(botResponse || '')
+      if (parsed) {
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'bot',
+          text: parsed.intro || 'Vou te guiar pelos passos:',
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, botMsg])
+        setStepSession({ ...parsed, current: 0 })
+      } else {
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'bot',
+          text: botResponse || 'Desculpe, não consegui processar sua solicitação.',
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, botMsg])
       }
-
-      setMessages((prev) => [...prev, botMsg])
     } catch (error) {
       console.error(error)
       setMessages((prev) => [
@@ -320,6 +376,53 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                         </div>
                       )}
                     </div>
+
+                    {/* Step-by-Step UI */}
+                    {stepSession && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mx-3 mb-3 rounded-2xl border border-[var(--color-primary)]/20 bg-white shadow-md overflow-hidden"
+                      >
+                        {/* Barra de progresso */}
+                        <div className="h-1.5 bg-slate-100">
+                          <div
+                            className="h-full transition-all duration-500"
+                            style={{
+                              width: `${((stepSession.current + 1) / stepSession.steps.length) * 100}%`,
+                              background: 'linear-gradient(90deg, #007B8F, #4A90E2)'
+                            }}
+                          />
+                        </div>
+                        {/* Header do passo */}
+                        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)]">
+                            Passo {stepSession.current + 1} de {stepSession.steps.length}
+                          </span>
+                          <button onClick={() => setStepSession(null)} className="text-slate-400 hover:text-slate-600 text-xs transition-colors">✕</button>
+                        </div>
+                        {/* Texto do passo */}
+                        <p className="px-4 pb-3 text-sm font-semibold text-slate-700 leading-relaxed">
+                          {stepSession.steps[stepSession.current].replace(/^\d+[\.)\-]\s*/, '')}
+                        </p>
+                        {/* Botões */}
+                        <div className="flex gap-2 px-4 pb-4">
+                          <button
+                            onClick={handleStepYes}
+                            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 active:scale-95"
+                            style={{ background: 'linear-gradient(135deg, #007B8F, #4A90E2)' }}
+                          >
+                            ✅ Sim, feito!
+                          </button>
+                          <button
+                            onClick={handleStepNo}
+                            className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold hover:bg-slate-200 transition-all active:scale-95"
+                          >
+                            ❌ Preciso de ajuda
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
 
                     {/* Input */}
                     <div className="p-4 bg-white border-top border-slate-100">

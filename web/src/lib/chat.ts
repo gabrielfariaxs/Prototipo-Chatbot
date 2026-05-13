@@ -104,7 +104,11 @@ export const generateResponse = createServerFn({ method: 'POST' })
         1. Se a informação NÃO estiver no CONTEXTO, diga educadamente que não possui essa informação específica no momento e peça para o usuário ser mais específico ou entrar em contato com a coordenação.
         2. NUNCA invente passos, URLs, ou procedimentos que não estejam no texto.
         3. Vá direto ao ponto. NUNCA diga "De acordo com o contexto". Simplesmente responda.
-        4. Se o contexto contiver passos (1, 2, 3...), mantenha essa estrutura.
+        4. FORMATO DE PASSOS (MUITO IMPORTANTE): Se a resposta envolver um processo com múltiplos passos, você OBRIGATORIAMENTE deve:
+           - Escrever uma introdução curta (1 frase) antes dos passos.
+           - Listar CADA PASSO EM UMA LINHA SEPARADA, numerado: "1. [ação]\n2. [ação]\n3. [ação]"
+           - NUNCA juntar os passos em um único parágrafo corrido.
+           - Cada passo deve ser uma instrução clara e objetiva.
         5. Se envolver lista de materiais, use o formato: "- [CÓDIGO] [DESCRIÇÃO] - [MARCA]".
         
         CONTEXTO:
