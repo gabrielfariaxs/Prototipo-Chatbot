@@ -29,13 +29,9 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
-      - name: Listar arquivos (Debug)
-        run: find dist -maxdepth 3
-        working-directory: ./web
-
       - name: Deploy para Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: ./web
-          command: deploy dist/server/index.js
+          command: deploy dist/server/server.js
