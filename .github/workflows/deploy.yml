@@ -1,0 +1,37 @@
+name: Deploy MedIA para Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main  # Roda automaticamente a cada push na branch main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build e Deploy
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependências
+        run: npm install
+        working-directory: ./web
+
+      - name: Build da aplicação
+        run: npm run build
+        working-directory: ./web
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      - name: Deploy para Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: ./web
+          command: deploy
