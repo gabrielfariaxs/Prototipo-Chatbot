@@ -24,7 +24,7 @@ jobs:
         working-directory: ./web
 
       - name: Build da aplicação
-        run: npx vinxi build --preset cloudflare
+        run: npm run build
         working-directory: ./web
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
