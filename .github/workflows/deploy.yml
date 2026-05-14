@@ -34,4 +34,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: ./web
-          command: deploy dist/server/server.js
+          command: |
+            echo "${{ secrets.OPENROUTER_API_KEY }}" | npx wrangler secret put OPENROUTER_API_KEY
+            deploy dist/server/server.js
