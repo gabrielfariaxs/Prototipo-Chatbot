@@ -252,8 +252,12 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
         try {
           const result = await (window as any).pywebview.api.extract_pdf_text(base64Data)
           if (result.success) {
-             extractedText = result.text
-             // Para PDFs já extraídos, não enviamos a base64 (economiza banda e evita erros)
+             if (result.text && result.text.trim().length > 0) {
+               extractedText = result.text
+             } else {
+               extractedText = "AVISO DO SISTEMA: O usuário enviou um documento PDF, mas ele parece ser uma imagem digitalizada ou um arquivo sem texto selecionável. Por favor, avise o usuário que você não consegue ler imagens digitalizadas em PDF no momento e peça para ele enviar as informações por texto ou imagem (JPEG/PNG)."
+             }
+             // Para PDFs já extraídos (ou tentados), não enviamos a base64
              finalBase64 = "" 
           }
         } catch (err) {

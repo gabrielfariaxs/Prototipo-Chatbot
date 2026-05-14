@@ -152,7 +152,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
       }
 
       const response = await chatClient.chat.completions.create({
-        model: hasAttachment ? 'anthropic/claude-3.5-sonnet' : 'anthropic/claude-3-haiku',
+        model: hasAttachment ? 'anthropic/claude-sonnet-latest' : 'anthropic/claude-haiku-latest',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent }
