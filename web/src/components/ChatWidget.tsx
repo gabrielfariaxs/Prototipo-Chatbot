@@ -28,8 +28,19 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
       }, 50)
     }
   }, [isOpen])
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat'>('onboarding')
+  const [sector, setSector] = useState<string | null>(null)
+  const [availableSectors, setAvailableSectors] = useState<string[]>([])
+  const [stepSession, setStepSession] = useState<{
+    steps: string[]
+    current: number
     intro: string
   } | null>(null)
+  const [attachedFile, setAttachedFile] = useState<{ name: string; base64: string; type: string } | null>(null)
+  const [sessionContext, setSessionContext] = useState<string>('')
 
   // Detecta passos numerados na resposta do bot
   const parseSteps = (text: string): { intro: string; steps: string[] } | null => {
