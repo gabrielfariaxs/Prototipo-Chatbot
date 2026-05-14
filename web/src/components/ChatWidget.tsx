@@ -28,15 +28,6 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
       }, 50)
     }
   }, [isOpen])
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat'>('onboarding')
-  const [sector, setSector] = useState<string>('')
-  const [availableSectors, setAvailableSectors] = useState<string[]>([])
-  const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [stepSession, setStepSession] = useState<{
-    steps: string[]
-    current: number
     intro: string
   } | null>(null)
 
@@ -159,12 +150,17 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setIsLoading(true)
+    
+    // Armazena cópia do anexo para limpar o estado antes do envio
+    const fileToSend = attachedFile
+    setAttachedFile(null)
 
     try {
       const context = await getContext({
         data: {
           text: input,
-          sector: sector,
+          sector: sector || 'Geral',
+          history: sessionContext, // Passa o contexto extraído anteriormente
         }
       })
 
@@ -172,6 +168,10 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
         data: {
           text: input,
           context: context,
+          fileData: fileToSend ? {
+            base64: fileToSend.base64,
+            mimeType: fileToSend.type
+          } : undefined
         }
       })
 
@@ -193,6 +193,11 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, botMsg])
+        
+        // Se a resposta parece ser uma extração de dados, salvamos no contexto da sessão
+        if (botResponse?.includes('Paciente:') || botResponse?.includes('Médico:')) {
+          setSessionContext((prev) => prev + '\n\n' + botResponse)
+        }
       }
     } catch (error) {
       console.error(error)
@@ -208,6 +213,32 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Limite de 5MB para evitar estouro de memória no Worker
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Arquivo muito grande! Por favor, use arquivos menores que 5MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string
+      setAttachedFile({
+        name: file.name,
+        base64: base64.split(',')[1], // Pega apenas a parte do dado
+        type: file.type
+      })
+      // Sugere ao usuário o que fazer após anexar
+      if (!input.trim()) {
+        setInput(`Analise este documento para mim: ${file.name}`)
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
   return (
@@ -455,12 +486,24 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     <div className="p-4 bg-white border-t border-slate-200">
                       <div className="corp-input-area p-1.5 flex items-center">
                         <button 
-                          className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                          className={cn(
+                            "p-2 transition-colors relative",
+                            attachedFile ? "text-[#1a2332]" : "text-slate-400 hover:text-slate-600"
+                          )}
                           title="Adicionar Anexo"
                           onClick={() => document.getElementById('file-upload')?.click()}
                         >
                           <Paperclip size={18} />
-                          <input type="file" id="file-upload" className="hidden" />
+                          {attachedFile && (
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                          )}
+                          <input 
+                            type="file" 
+                            id="file-upload" 
+                            className="hidden" 
+                            onChange={handleFileUpload}
+                            accept=".pdf,image/*"
+                          />
                         </button>
                         
                         <input
@@ -468,9 +511,19 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                           value={input}
                           onChange={(e) => setInput(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                          placeholder="Digite sua mensagem..."
+                          placeholder={attachedFile ? `Arquivo pronto: ${attachedFile.name}` : "Digite sua mensagem..."}
                           className="flex-1 border-none outline-none text-sm text-slate-700 placeholder-slate-400 px-2"
                         />
+                        
+                        {attachedFile && (
+                          <button
+                            onClick={() => setAttachedFile(null)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 mr-1"
+                            title="Remover arquivo"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
                         
                         <button
                           onClick={handleSend}
