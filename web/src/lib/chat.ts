@@ -110,12 +110,15 @@ export const generateResponse = createServerFn({ method: 'POST' })
         Sua tarefa principal é responder a pergunta do usuário utilizando as informações fornecidas no CONTEXTO abaixo.
       `
 
-      if (fileData) {
+      const isDocumentExtraction = text.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]')
+      const hasAttachment = !!fileData || isDocumentExtraction
+
+      if (hasAttachment) {
         systemPrompt += `
-        O USUÁRIO ANEXOU UM DOCUMENTO.
-        Sua tarefa é ANALISAR o documento e EXTRAIR as informações para uma "Visualização de Pedido Médico".
+        O USUÁRIO FORNECEU UM DOCUMENTO.
+        Sua primeira tarefa é gerar um breve RESUMO dos dados mais importantes que você encontrou neste documento.
         
-        Extraia e formate em Markdown os seguintes campos se encontrados:
+        Caso o documento seja um Pedido Médico, extraia e formate em Markdown:
         - **Paciente**: [Nome]
         - **Médico**: [Nome e CRM]
         - **Hospital/Clínica**: [Nome]
@@ -149,7 +152,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
       }
 
       const response = await chatClient.chat.completions.create({
-        model: fileData ? 'anthropic/claude-3.5-sonnet' : 'anthropic/claude-3-haiku',
+        model: hasAttachment ? 'anthropic/claude-3.5-sonnet' : 'anthropic/claude-3-haiku',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent }

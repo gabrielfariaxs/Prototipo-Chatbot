@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft } from 'lucide-react'
+import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors } from '../lib/chat'
 import { cn } from '../lib/utils'
@@ -296,34 +296,41 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
             )}
           >
             {/* Unified Corporate Header */}
-            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#1a2332] rounded-lg flex items-center justify-center">
-                  <img src="/logo.png" className="h-5 w-5 object-contain invert brightness-0" alt="Logo" />
+            <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-[#1a2332] rounded-xl flex items-center justify-center text-white">
+                  <Bot size={22} strokeWidth={1.5} />
                 </div>
-                <div>
-                  <h1 className="font-bold text-[#1a2332] leading-tight">MedIA</h1>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest">Assistente Arthromed</p>
-                  {step === 'chat' && sector && (
-                    <p className="text-xs text-slate-700 mt-0.5">Departamento: <span className="font-semibold">{sector}</span></p>
-                  )}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-3">
+                    <h1 className="font-bold text-[#1a2332] text-lg leading-tight">MedIA</h1>
+                    {step === 'chat' && sector && (
+                      <div className="flex flex-col ml-2">
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Departamento</span>
+                        <div className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[11px] font-semibold flex items-center border border-slate-200">
+                          {sector}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Assistente Corp</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {step === 'chat' && (
                   <button
                     onClick={handleBackToSectors}
-                    className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-1.5 rounded text-xs font-semibold hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm"
                   >
                     <Layers size={14} /> Trocar Setor
                   </button>
                 )}
                 <button
                   onClick={handleClose}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors"
+                  className="text-slate-400 border border-slate-200 hover:bg-slate-50 hover:text-slate-600 p-1.5 rounded-lg transition-colors shadow-sm"
                   title={isDesktop ? "Encerrar Programa" : "Fechar Chat"}
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
             </div>
@@ -338,44 +345,44 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     exit={{ opacity: 0 }}
                     className="flex-1 flex flex-col items-center justify-center p-8 bg-white"
                   >
-                    <div className="mb-6 flex justify-center w-full">
-                      <div className="w-20 h-20 bg-[#1a2332] rounded-2xl flex items-center justify-center">
-                        <img src="/logo.png" className="h-10 w-10 object-contain invert brightness-0" alt="Logo" />
+                    <div className="mb-8 flex justify-center w-full">
+                      <div className="w-24 h-24 bg-[#1a2332] rounded-2xl flex items-center justify-center text-white shadow-lg">
+                        <Bot size={48} strokeWidth={1.5} />
                       </div>
                     </div>
 
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-[#1a2332] mb-2">
+                    <div className="text-center mb-10">
+                      <h2 className="text-[28px] font-bold text-[#1a2332] mb-2 tracking-tight">
                         Bem-vindo ao MedIA
                       </h2>
-                      <p className="text-sm text-slate-500 mb-6">
-                        Sistema de Assistência Virtual
+                      <p className="text-[13px] font-semibold text-slate-400 uppercase tracking-widest mb-6">
+                        Assistente Virtual Corporativo
                       </p>
-                      <p className="text-xs text-slate-500 leading-relaxed max-w-[280px] mx-auto">
+                      <p className="text-sm text-slate-500 leading-relaxed max-w-[340px] mx-auto">
                         Plataforma inteligente especializada em processos internos, gestão de materiais e suporte técnico para as equipes Arthromed e Medic.
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-6 w-full mb-10 max-w-[300px]">
-                      <div className="flex flex-col items-center">
-                        <div className="bg-slate-50 text-slate-600 p-3 rounded-full mb-2"><Zap size={18} strokeWidth={1.5} /></div>
-                        <span className="text-[9px] text-slate-600 text-center">Respostas<br/>Rápidas</span>
+                    <div className="grid grid-cols-3 gap-8 w-full mb-12 max-w-[380px]">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="bg-slate-50 text-slate-600 p-3.5 rounded-full border border-slate-100"><Zap size={20} strokeWidth={1.5} /></div>
+                        <span className="text-[11px] font-semibold text-slate-600 text-center leading-tight">Respostas<br/>Rápidas</span>
                       </div>
-                      <div className="flex flex-col items-center">
-                        <div className="bg-slate-50 text-slate-600 p-3 rounded-full mb-2"><Shield size={18} strokeWidth={1.5} /></div>
-                        <span className="text-[9px] text-slate-600 text-center">Seguro e<br/>Confiável</span>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="bg-slate-50 text-slate-600 p-3.5 rounded-full border border-slate-100"><Shield size={20} strokeWidth={1.5} /></div>
+                        <span className="text-[11px] font-semibold text-slate-600 text-center leading-tight">Seguro e<br/>Confiável</span>
                       </div>
-                      <div className="flex flex-col items-center">
-                        <div className="bg-slate-50 text-slate-600 p-3 rounded-full mb-2"><Clock size={18} strokeWidth={1.5} /></div>
-                        <span className="text-[9px] text-slate-600 text-center">24/7<br/>Disponível</span>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="bg-slate-50 text-slate-600 p-3.5 rounded-full border border-slate-100"><Clock size={20} strokeWidth={1.5} /></div>
+                        <span className="text-[11px] font-semibold text-slate-600 text-center leading-tight">24/7<br/>Disponível</span>
                       </div>
                     </div>
 
                     <button
                       onClick={handleStart}
-                      className="w-full max-w-[320px] corp-btn py-3.5 rounded-lg text-sm font-semibold flex items-center justify-center"
+                      className="w-full max-w-[380px] bg-[#1a2332] hover:bg-[#253043] text-white py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md"
                     >
-                      Iniciar Atendimento
+                      Iniciar Atendimento <ArrowRight size={16} />
                     </button>
                   </motion.div>
                 )}
@@ -386,38 +393,63 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex-1 flex flex-col p-8 overflow-y-auto bg-white"
+                    className="flex-1 flex flex-col p-8 overflow-y-auto bg-slate-50/50"
                   >
-                    <div className="mb-8 text-center flex flex-col items-center">
-                      <div className="w-12 h-12 bg-[#1a2332] rounded-xl flex items-center justify-center text-white mb-6">
-                        <Layers size={20} />
+                    <div className="mb-10 text-center flex flex-col items-center">
+                      <div className="w-14 h-14 bg-[#1a2332] rounded-full flex items-center justify-center text-white mb-6 shadow-md">
+                        <Layers size={24} />
                       </div>
-                      <h2 className="text-xl font-bold text-[#1a2332] mb-2">Seleção de Departamento</h2>
-                      <p className="text-slate-500 text-xs">Selecione sua área de atuação para personalizar o atendimento e fornecer informações precisas.</p>
+                      <h2 className="text-2xl font-bold text-[#1a2332] mb-3 tracking-tight">Seleção de Departamento</h2>
+                      <p className="text-slate-500 text-sm max-w-[400px] mx-auto leading-relaxed">Por favor, selecione sua área de atuação para personalizarmos o seu atendimento e fornecermos as informações corretas.</p>
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4 max-w-[800px] mx-auto w-full">
                       {availableSectors.length > 0 ? (
-                        availableSectors.map((s, index) => (
-                          <motion.button
-                            key={s}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: index * 0.05 }}
-                            onClick={() => handleSelectSector(s)}
-                            className="w-full flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
-                          >
-                            <span className="font-semibold text-sm text-slate-800">{s}</span>
-                            <ChevronLeft className="text-slate-400 rotate-180" size={16} />
-                          </motion.button>
-                        ))
+                        availableSectors.map((s, index) => {
+                          let Icon = Layers;
+                          let desc = "Gestão de processos e suporte.";
+                          if (s.toLowerCase().includes('comercial')) {
+                            Icon = Briefcase;
+                            desc = "Vendas, contratos e relacionamento corporativo.";
+                          } else if (s.toLowerCase().includes('faturamento')) {
+                            Icon = DollarSign;
+                            desc = "Emissão de notas, cobranças e conciliações.";
+                          } else if (s.toLowerCase().includes('financeiro')) {
+                            Icon = Landmark;
+                            desc = "Contas a pagar, receber e tesouraria geral.";
+                          } else if (s.toLowerCase().includes('orçamento - arthromed')) {
+                            Icon = Calculator;
+                            desc = "Planejamento e controle de custos Arthromed.";
+                          } else if (s.toLowerCase().includes('orçamento - medic')) {
+                            Icon = Activity;
+                            desc = "Planejamento e controle de custos Medic.";
+                          }
+
+                          return (
+                            <motion.button
+                              key={s}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: index * 0.05 }}
+                              onClick={() => handleSelectSector(s)}
+                              className="text-left w-full flex flex-col p-5 bg-white border border-slate-200 rounded-2xl hover:border-slate-300 hover:shadow-md transition-all group relative"
+                            >
+                              <div className="bg-slate-100 text-slate-500 p-2 rounded-lg w-fit mb-4">
+                                <Icon size={18} strokeWidth={1.5} />
+                              </div>
+                              <h3 className="font-bold text-slate-800 text-base mb-1">{s}</h3>
+                              <p className="text-xs text-slate-500 leading-relaxed pr-6">{desc}</p>
+                              <ArrowRight className="text-slate-300 absolute top-5 right-5 group-hover:text-slate-500 transition-colors" size={16} />
+                            </motion.button>
+                          )
+                        })
                       ) : (
-                        <div className="text-center py-10 opacity-50">Carregando setores...</div>
+                        <div className="col-span-2 text-center py-10 opacity-50">Carregando departamentos...</div>
                       )}
                     </div>
 
-                    <p className="mt-8 text-center text-[10px] text-slate-400">
-                      Caso não encontre seu departamento, entre em contato com o suporte.
+                    <p className="mt-auto pt-8 text-center text-xs text-slate-400">
+                      Caso não encontre seu departamento, entre em contato com o suporte de TI.
                     </p>
                   </motion.div>
                 )}
@@ -427,51 +459,65 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     key="chat"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]"
+                    className="flex-1 flex flex-col overflow-hidden bg-white"
                   >
                     <div
                       ref={scrollRef}
-                      className="flex-1 overflow-y-auto p-6 space-y-6"
+                      className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30"
                     >
                       {messages.map((msg) => (
                         <div
                           key={msg.id}
                           className={cn(
-                            'flex items-start gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300',
-                            msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''
+                            'flex gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300',
+                            msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'items-start'
                           )}
                         >
-                          <div
-                            className={cn(
-                              'p-2 rounded-full shrink-0 flex items-center justify-center w-8 h-8',
-                              msg.role === 'user' ? 'hidden' : 'bg-[#1a2332] text-white'
+                          {msg.role !== 'user' && (
+                            <div className="p-2 rounded-full shrink-0 flex items-center justify-center w-8 h-8 bg-[#1a2332] text-white shadow-sm mt-1">
+                              <Lightbulb size={14} />
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-1.5">
+                            <div
+                              className={cn(
+                                'p-4 rounded-2xl text-[14px] leading-relaxed',
+                                msg.role === 'user'
+                                  ? 'bg-[#1a2332] text-white rounded-tr-sm shadow-md'
+                                  : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm'
+                              )}
+                            >
+                              {msg.text}
+                            </div>
+                            {msg.role !== 'user' && (
+                              <div className="flex items-center gap-3 px-1">
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <button className="text-slate-300 hover:text-slate-500 transition-colors"><ThumbsUp size={12} /></button>
+                                  <button className="text-slate-300 hover:text-slate-500 transition-colors"><ThumbsDown size={12} /></button>
+                                  <button className="text-slate-300 hover:text-slate-500 transition-colors"><Copy size={12} /></button>
+                                </div>
+                              </div>
                             )}
-                          >
-                            {msg.role !== 'user' && <Zap size={14} />}
-                          </div>
-                          <div
-                            className={cn(
-                              'p-3.5 rounded-lg text-[13px] leading-relaxed shadow-sm',
-                              msg.role === 'user'
-                                ? 'bg-[#1a2332] text-white'
-                                : 'bg-white border border-slate-200 text-slate-700'
+                            {msg.role === 'user' && (
+                              <span className="text-[10px] text-slate-400 font-medium text-right px-1">
+                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
                             )}
-                          >
-                            {msg.text}
                           </div>
                         </div>
                       ))}
                       {isLoading && (
                         <div className="flex items-start gap-3 animate-pulse">
-                          <div className="w-8 h-8 rounded-full bg-[#1a2332] flex items-center justify-center text-white shrink-0">
-                            <Zap size={14} />
+                          <div className="w-8 h-8 rounded-full bg-[#1a2332] flex items-center justify-center text-white shrink-0 mt-1">
+                            <Lightbulb size={14} />
                           </div>
-                          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                            <div className="flex gap-1.5">
-                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-                            </div>
+                          <div className="bg-white p-4 rounded-2xl rounded-tl-sm border border-slate-200 shadow-sm flex gap-1.5 h-12 items-center">
+                            <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
+                            <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
+                            <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
                           </div>
                         </div>
                       )}
@@ -481,38 +527,38 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mx-6 mb-4 rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden"
+                        className="mx-6 mb-4 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden p-6"
                       >
-                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-500 tracking-wider">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[11px] font-bold text-slate-500 tracking-wider">
                             PASSO {stepSession.current + 1} DE {stepSession.steps.length}
                           </span>
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[11px] font-semibold text-slate-500">
                             {Math.round(((stepSession.current + 1) / stepSession.steps.length) * 100)}% concluído
                           </span>
                         </div>
-                        <div className="px-5 mb-4">
-                          <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="mb-6">
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-[#1a2332] transition-all duration-500"
+                              className="h-full bg-[#1a2332] transition-all duration-500 rounded-full"
                               style={{ width: `${((stepSession.current + 1) / stepSession.steps.length) * 100}%` }}
                             />
                           </div>
                         </div>
-                        <div className="px-5 pb-5">
-                          <h3 className="text-sm font-bold text-slate-800 mb-4">
+                        <div className="pb-2">
+                          <h3 className="text-lg font-bold text-[#1a2332] mb-6">
                             {stepSession.steps[stepSession.current].replace(/^\d+[\.)\-]\s*/, '')}
                           </h3>
                           <div className="flex gap-3">
                             <button
                               onClick={handleStepYes}
-                              className="flex-1 corp-btn py-2.5 rounded text-xs font-semibold flex items-center justify-center gap-2"
+                              className="flex-1 bg-[#1a2332] hover:bg-[#253043] text-white py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
                             >
                               <span>✓ Concluído</span>
                             </button>
                             <button
                               onClick={handleStepNo}
-                              className="flex-1 py-2.5 rounded border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                              className="flex-1 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
                             >
                               <span>✕ Preciso de Ajuda</span>
                             </button>
@@ -521,59 +567,73 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                       </motion.div>
                     )}
 
-                    <div className="p-4 bg-white border-t border-slate-200">
-                      <div className="corp-input-area p-1.5 flex items-center">
-                        <button 
-                          className={cn(
-                            "p-2 transition-colors relative",
-                            attachedFile ? "text-[#1a2332]" : "text-slate-400 hover:text-slate-600"
-                          )}
-                          title="Adicionar Anexo"
-                          onClick={() => document.getElementById('file-upload')?.click()}
-                        >
-                          <Paperclip size={18} />
-                          {attachedFile && (
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full border border-white" />
-                          )}
-                          <input 
-                            type="file" 
-                            id="file-upload" 
-                            className="hidden" 
-                            onChange={handleFileUpload}
-                            accept=".pdf,image/*"
-                          />
-                        </button>
-                        
-                        <input
-                          type="text"
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                          placeholder={attachedFile ? `Arquivo pronto: ${attachedFile.name}` : "Digite sua mensagem..."}
-                          className="flex-1 border-none outline-none text-sm text-slate-700 placeholder-slate-400 px-2"
-                        />
-                        
-                        {attachedFile && (
-                          <button
-                            onClick={() => setAttachedFile(null)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 mr-1"
-                            title="Remover arquivo"
+                    <div className="p-5 bg-white border-t border-slate-100">
+                      {messages.length < 3 && !stepSession && (
+                        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+                          {["Solicitar Férias", "Política de Reembolso", "Problemas com Login", "Benefícios Corporativos"].map((sug) => (
+                            <button
+                              key={sug}
+                              onClick={() => { setInput(sug); handleSend() }}
+                              className="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-medium hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm"
+                            >
+                              {sug}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100/70 border border-slate-200 rounded-full flex items-center p-1.5 pr-2 focus-within:ring-2 focus-within:ring-[#1a2332]/20 focus-within:border-[#1a2332]/30 transition-all">
+                          <button 
+                            className={cn(
+                              "p-2.5 transition-colors relative rounded-full hover:bg-slate-200/50",
+                              attachedFile ? "text-[#1a2332]" : "text-slate-400"
+                            )}
+                            title="Adicionar Anexo"
+                            onClick={() => document.getElementById('file-upload')?.click()}
                           >
-                            <X size={14} />
+                            <Paperclip size={18} />
+                            {attachedFile && (
+                              <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                            )}
+                            <input 
+                              type="file" 
+                              id="file-upload" 
+                              className="hidden" 
+                              onChange={handleFileUpload}
+                              accept=".pdf,image/*"
+                            />
                           </button>
-                        )}
-                        
+                          
+                          <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder={attachedFile ? `Arquivo pronto: ${attachedFile.name}` : "Descreva sua solicitação ou dúvida..."}
+                            className="flex-1 border-none bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400 px-2"
+                          />
+                          
+                          {attachedFile && (
+                            <button
+                              onClick={() => setAttachedFile(null)}
+                              className="p-2 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                              title="Remover arquivo"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
                         <button
                           onClick={handleSend}
                           disabled={!input.trim() || isLoading}
-                          className="p-2 bg-slate-200 text-slate-500 rounded disabled:opacity-50 hover:bg-slate-300 transition-colors"
+                          className="p-3.5 bg-[#1a2332]/10 text-[#1a2332] rounded-full disabled:opacity-50 hover:bg-[#1a2332]/20 transition-colors"
                         >
-                          <Send size={16} />
+                          <Send size={18} />
                         </button>
                       </div>
-                      <div className="text-center mt-3">
-                        <p className="text-[9px] font-semibold text-slate-400">
-                          ARTHROMED • MEDIC
+                      <div className="text-center mt-4">
+                        <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">
+                          MEDIA CORPORATE ASSISTANT • POWERED BY ARTHROMED
                         </p>
                       </div>
                     </div>
