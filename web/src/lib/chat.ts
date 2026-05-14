@@ -97,7 +97,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
     }).optional(),
   }))
   .handler(async ({ data }) => {
-    const { text, context } = data
+    const { text, context, fileData } = data
 
     try {
       const chatClient = getChatClient()
