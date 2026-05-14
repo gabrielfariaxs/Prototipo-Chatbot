@@ -331,10 +331,10 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                 )}
                 <button
                   onClick={handleClose}
-                  className="text-slate-400 border border-slate-200 hover:bg-slate-50 hover:text-slate-600 p-1.5 rounded-lg transition-colors shadow-sm"
+                  className="bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 p-2 rounded-full transition-all shadow-sm border border-slate-100"
                   title={isDesktop ? "Encerrar Programa" : "Fechar Chat"}
                 >
-                  <X size={16} />
+                  <X size={20} />
                 </button>
               </div>
             </div>
