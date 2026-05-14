@@ -35,6 +35,27 @@ def run_as_window():
     class JSApi:
         def close_window(self):
             window.destroy()
+            
+        def extract_pdf_text(self, base64_data):
+            """Lê o texto de um PDF em base64 localmente no desktop"""
+            try:
+                import base64
+                import io
+                from pypdf import PdfReader
+                
+                pdf_bytes = base64.b64decode(base64_data)
+                pdf_file = io.BytesIO(pdf_bytes)
+                
+                reader = PdfReader(pdf_file)
+                text = ""
+                for page in reader.pages:
+                    content = page.extract_text()
+                    if content:
+                        text += content + "\n"
+                
+                return {"success": True, "text": text.strip()}
+            except Exception as e:
+                return {"success": False, "error": str(e)}
 
     api = JSApi()
 

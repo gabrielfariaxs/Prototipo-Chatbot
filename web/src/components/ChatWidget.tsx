@@ -39,7 +39,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     current: number
     intro: string
   } | null>(null)
-  const [attachedFile, setAttachedFile] = useState<{ name: string; base64: string; type: string } | null>(null)
+  const [attachedFile, setAttachedFile] = useState<{ name: string; base64: string; type: string; extractedText?: string } | null>(null)
   const [sessionContext, setSessionContext] = useState<string>('')
 
   // Detecta passos numerados na resposta do bot
@@ -177,9 +177,11 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
 
       const botResponse = await generateResponse({
         data: {
-          text: input,
+          text: fileToSend?.extractedText 
+            ? `${input}\n\n[CONTEÚDO DO DOCUMENTO EXTRAÍDO]:\n${fileToSend.extractedText}`
+            : input,
           context: context,
-          fileData: fileToSend ? {
+          fileData: fileToSend?.base64 ? {
             base64: fileToSend.base64,
             mimeType: fileToSend.type
           } : undefined
@@ -237,16 +239,41 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     }
 
     const reader = new FileReader()
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string
+    reader.onload = async (event) => {
+      const base64Full = event.target?.result as string
+      const base64Data = base64Full.split(',')[1]
+      
+      let finalBase64 = base64Data
+      let extractedText = ""
+
+      // Se for PDF e estiver no Desktop, extraímos o texto via Python para evitar erros de upload
+      if (file.type === 'application/pdf' && (window as any).pywebview?.api?.extract_pdf_text) {
+        setIsLoading(true)
+        try {
+          const result = await (window as any).pywebview.api.extract_pdf_text(base64Data)
+          if (result.success) {
+             extractedText = result.text
+             // Para PDFs já extraídos, não enviamos a base64 (economiza banda e evita erros)
+             finalBase64 = "" 
+          }
+        } catch (err) {
+          console.error("Erro na ponte Python:", err)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+
       setAttachedFile({
         name: file.name,
-        base64: base64.split(',')[1], // Pega apenas a parte do dado
-        type: file.type
+        base64: finalBase64,
+        type: file.type,
+        extractedText: extractedText
       })
+
       // Sugere ao usuário o que fazer após anexar
       if (!input.trim()) {
-        setInput(`Analise este documento para mim: ${file.name}`)
+        const actionText = file.type.includes('image') ? 'analise esta imagem' : 'analise este documento'
+        setInput(`${actionText.charAt(0).toUpperCase() + actionText.slice(1)} para mim: ${file.name}`)
       }
     }
     reader.readAsDataURL(file)
