@@ -206,6 +206,10 @@ def create_floating_widget():
         if dist < 5: # Clique
             open_chat_process()
 
+    lbl.bind("<ButtonPress-1>", start_move)
+    lbl.bind("<B1-Motion>", do_move)
+    lbl.bind("<ButtonRelease-1>", stop_move)
+    
     # Menu de contexto (Botão Direito) para fechar
     menu = tk.Menu(root, tearoff=0)
     menu.add_command(label="Fechar MedIA", command=root.destroy)
@@ -214,9 +218,6 @@ def create_floating_widget():
         menu.post(event.x_root, event.y_root)
 
     lbl.bind("<Button-3>", show_menu)
-    lbl.bind("<ButtonPress-1>", start_move)
-    lbl.bind("<B1-Motion>", do_move)
-    lbl.bind("<ButtonRelease-1>", stop_move)
     
     print("Widget MedIA iniciado!")
     root.mainloop()
