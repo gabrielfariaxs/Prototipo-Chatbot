@@ -1,19 +1,13 @@
 # Variáveis de ambiente (Segurança)
 .env
 .env.local
+/venv/
 
 # Web (TanStack Start)
 web/node_modules/
 web/dist/
 web/.tanstack/
 web/.wrangler/
-
-# Backend (Python Legacy/Tools)
-backend/__pycache__/
-backend/*.py[cod]
-backend/venv/
-backend/.venv/
-backend/addons.txt
 
 # IDEs
 .vscode/
