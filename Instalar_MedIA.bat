@@ -30,7 +30,7 @@ if %errorlevel% neq 0 (
 )
 
 echo [*] Instalando bibliotecas do sistema (Python)...
-pip install requests pywebview pillow >nul 2>&1
+pip install requests pywebview pillow numpy pypdf >nul 2>&1
 
 echo [*] Instalando dependencias da interface (Web)...
 cd web
