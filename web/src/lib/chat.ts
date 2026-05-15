@@ -7,18 +7,25 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
 
 const getChatClient = () => {
   // Tenta pegar de múltiplas fontes possíveis no ambiente Cloudflare/Nitro
-  const apiKey = process.env.OPENROUTER_API_KEY || (globalThis as any).OPENROUTER_API_KEY || ''
+  // No Cloudflare Workers, as envs costumam estar em globalThis ou no contexto da requisição
+  const apiKey = 
+    (globalThis as any).OPENROUTER_API_KEY || 
+    (globalThis as any).process?.env?.OPENROUTER_API_KEY ||
+    process.env.OPENROUTER_API_KEY || 
+    ''
   
   if (!apiKey) {
-    console.error('ERRO: OPENROUTER_API_KEY não encontrada no ambiente!')
+    console.error('ERRO CRÍTICO: OPENROUTER_API_KEY não encontrada!')
+  } else {
+    console.log('API Key carregada com sucesso. Início:', apiKey.substring(0, 10))
   }
 
   return new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: apiKey,
     defaultHeaders: {
-      'HTTP-Referer': 'https://arthromed-chatbot.pages.dev',
-      'X-Title': 'Arthromed Chatbot',
+      'HTTP-Referer': 'https://chatbot.gabrielfarias-marques13.workers.dev',
+      'X-Title': 'MedIA Arthromed',
     },
   })
 }
@@ -106,6 +113,11 @@ export const generateResponse = createServerFn({ method: 'POST' })
     try {
       const chatClient = getChatClient()
       
+      // @ts-ignore
+      if (!chatClient.apiKey) {
+        return '⚠️ Erro de Configuração: A chave da API (OPENROUTER_API_KEY) não foi detectada pelo servidor. Por favor, configure os Secrets no Cloudflare.'
+      }
+      
       const messages: any[] = []
       
       let systemPrompt = `
@@ -172,7 +184,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
       messages.push({ role: 'user', content: userContent })
 
       const response = await chatClient.chat.completions.create({
-        model: hasAttachment ? '~anthropic/claude-sonnet-latest' : '~anthropic/claude-haiku-latest',
+        model: hasAttachment ? 'anthropic/claude-3.5-sonnet' : 'anthropic/claude-3-haiku',
         messages: messages,
         max_tokens: 800,
       })
@@ -189,7 +201,12 @@ export const getSectors = createServerFn({ method: 'GET' })
     try {
       const data = processosJson
       const uniqueSectors = Array.from(new Set(data.map((d: any) => d.setor).filter(Boolean)))
-      return uniqueSectors.sort()
+      // Filtra setores que devem ser apenas contexto global (não exibidos como botão)
+      const visibleSectors = uniqueSectors.filter(s => 
+        s.toUpperCase() !== 'GERAL' && 
+        s.toUpperCase() !== 'MATERIAIS'
+      )
+      return visibleSectors.sort()
     } catch (e) {
       console.error('Erro ao buscar setores:', e)
       return ['Geral', 'Financeiro', 'Comercial'] // Fallback
