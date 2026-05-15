@@ -176,8 +176,6 @@ export const generateResponse = createServerFn({ method: 'POST' })
         messages: messages,
         max_tokens: 800,
       })
-        max_tokens: 800,
-      })
 
       return response.choices[0].message.content
     } catch (e) {
