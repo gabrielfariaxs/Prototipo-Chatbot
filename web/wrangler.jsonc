@@ -8,6 +8,5 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "OPENROUTER_API_KEY": ""
   }
 }
