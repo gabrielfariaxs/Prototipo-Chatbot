@@ -37,15 +37,23 @@ def run_as_window():
             window.destroy()
             
         def extract_pdf_text(self, base64_data):
-            """Lê o texto de um PDF em base64 localmente no desktop"""
+            """Lê o texto de um PDF em base64. Se for imagem, renderiza para o MedIA ver."""
             try:
                 import base64
                 import io
                 from pypdf import PdfReader
                 
+                # Garante que as dependências de imagem estejam presentes
+                try:
+                    import fitz # PyMuPDF
+                except ImportError:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "pymupdf"])
+                    import fitz
+
                 pdf_bytes = base64.b64decode(base64_data)
                 pdf_file = io.BytesIO(pdf_bytes)
                 
+                # 1. Tenta extrair texto normal
                 reader = PdfReader(pdf_file)
                 text = ""
                 for page in reader.pages:
@@ -53,7 +61,20 @@ def run_as_window():
                     if content:
                         text += content + "\n"
                 
-                return {"success": True, "text": text.strip()}
+                text = text.strip()
+
+                # 2. Se não tem texto (PDF Escaneado), renderiza a primeira página como imagem
+                if not text:
+                    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    if len(doc) > 0:
+                        page = doc[0]
+                        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # Alta qualidade
+                        img_data = pix.tobytes("png")
+                        img_b64 = base64.b64encode(img_data).decode('utf-8')
+                        doc.close()
+                        return {"success": True, "text": "", "image": img_b64, "mimeType": "image/png"}
+                
+                return {"success": True, "text": text}
             except Exception as e:
                 return {"success": False, "error": str(e)}
 
@@ -111,7 +132,7 @@ def create_floating_widget():
     y = screen_height - h - 160
     root.geometry(f"{w}x{h}+{x}+{y}")
     
-    logo_path = os.path.join("web", "public", "logo.png")
+    logo_path = os.path.join("web", "public", "logo_new.png")
     
     try:
         from PIL import Image, ImageTk, ImageDraw
@@ -119,44 +140,25 @@ def create_floating_widget():
         
         RENDER_SIZE = 256
         DISPLAY_SIZE = 72
-        ICON_SCALE = 0.55
+        # 1. Cores e Definições da Nova Identidade
+        bg_color = (26, 28, 35, 255)  # Dark Blue/Black da nova identidade
+        ICON_SCALE = 0.50
         
-        # 1. Cria a base com o degradê pastel (estilo Glassmorphism)
-        base = Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(base)
-        
-        # Cores Premium da MedIA (Mais vibrantes e nítidas)
-        color_start = (0, 123, 143, 220)  # Teal Arthromed (com transparência)
-        color_end = (233, 78, 119, 220)   # Pink Medic (com transparência)
-        
-        for i in range(RENDER_SIZE):
-            t = i / RENDER_SIZE
-            r = int(color_start[0] + (color_end[0] - color_start[0]) * t)
-            g = int(color_start[1] + (color_end[1] - color_start[1]) * t)
-            b = int(color_start[2] + (color_end[2] - color_start[2]) * t)
-            a = int(color_start[3] + (color_end[3] - color_start[3]) * t)
-            draw.line([(0, i), (RENDER_SIZE, i)], fill=(r, g, b, a))
-            
-        # 2. Máscara CIRCULAR com Borda de Cristal
-        mask = Image.new("L", (RENDER_SIZE, RENDER_SIZE), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((8, 8, RENDER_SIZE-9, RENDER_SIZE-9), fill=255)
-        
+        # 2. Cria a base com o fundo escuro e bordas arredondadas
         final_img = Image.new("RGBA", (RENDER_SIZE, RENDER_SIZE), (0, 0, 0, 0))
-        final_img.paste(base, (0, 0), mask)
-
-        # Adicionar Anel Branco (Efeito de Vidro)
-        draw_final = ImageDraw.Draw(final_img)
-        draw_final.ellipse((8, 8, RENDER_SIZE-9, RENDER_SIZE-9), outline=(255, 255, 255, 100), width=6)
+        draw = ImageDraw.Draw(final_img)
         
-        # 3. Processa o Logo (Maior e mais nítido)
-        ICON_SCALE = 0.50 # Ajustado para ficar elegante
+        # Desenha o quadrado arredondado (estilo iOS/Premium)
+        radius = 50
+        draw.rounded_rectangle((8, 8, RENDER_SIZE-9, RENDER_SIZE-9), radius=radius, fill=bg_color)
+        
+        # 3. Processa o novo Logo
         if os.path.exists(logo_path):
             logo = Image.open(logo_path).convert("RGBA")
+            
+            # Garante que o ícone fique branco se não for (opcional, mas bom para garantir)
             data = np.array(logo)
-            red, green, blue, alpha = data.T
-            white_areas = (red > 240) & (green > 240) & (blue > 240)
-            data[..., 3][white_areas.T] = 0 
+            # Se o ícone já for branco, isso apenas reforça
             logo = Image.fromarray(data)
             
             logo_w = int(RENDER_SIZE * ICON_SCALE)

@@ -139,6 +139,42 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     setInput(`Não entendi o passo ${stepNum}. Pode explicar melhor: "${stepText}"?`)
   }
 
+  // Suporte a Ctrl+V para colar imagens
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (!isOpen || step !== 'chat') return
+      
+      const items = e.clipboardData?.items
+      if (!items) return
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile()
+          if (file) {
+            const reader = new FileReader()
+            reader.onload = (event) => {
+              const base64Full = event.target?.result as string
+              const base64Data = base64Full.split(',')[1]
+              setAttachedFile({
+                name: `Imagem colada (${new Date().toLocaleTimeString()})`,
+                base64: base64Data,
+                type: file.type
+              })
+              if (!input.trim()) {
+                setInput(`Analise esta imagem colada`)
+              }
+            }
+            reader.readAsDataURL(file)
+            break
+          }
+        }
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [isOpen, step, input])
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
 
@@ -181,6 +217,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
             ? `${input}\n\n[CONTEÚDO DO DOCUMENTO EXTRAÍDO]:\n${fileToSend.extractedText}`
             : input,
           context: context,
+          history: messages.map(m => ({ role: m.role, text: m.text })),
           fileData: fileToSend?.base64 ? {
             base64: fileToSend.base64,
             mimeType: fileToSend.type
@@ -228,6 +265,90 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
     }
   }
 
+  // Renderizador de Mensagens com Suporte a Cards de Dados
+  const renderMessageContent = (text: string) => {
+    // Detecta se é um resumo de documento/extração
+    const isExtraction = text.includes('**Paciente:**') || text.includes('**Médico:**') || text.includes('**Procedimento:**')
+    
+    if (isExtraction) {
+      const lines = text.split('\n')
+      const cardData: { icon: any; label: string; value: string }[] = []
+      const otherLines: string[] = []
+
+      lines.forEach(line => {
+        const match = line.match(/^\s*[\-\*]*\s*\*\*(.*?)\*\*:\s*(.*)/)
+        if (match) {
+          const label = match[1].trim()
+          const value = match[2].trim()
+          
+          let icon = FileText
+          if (label.toLowerCase().includes('paciente')) icon = User
+          if (label.toLowerCase().includes('médico')) icon = Shield
+          if (label.toLowerCase().includes('hospital')) icon = Landmark
+          if (label.toLowerCase().includes('procedimento')) icon = Activity
+          if (label.toLowerCase().includes('material')) icon = Layers
+          if (label.toLowerCase().includes('data')) icon = Clock
+
+          cardData.push({ icon, label, value })
+        } else if (line.trim()) {
+          otherLines.push(line)
+        }
+      })
+
+      if (cardData.length > 0) {
+        return (
+          <div className="flex flex-col gap-4 w-full">
+            {otherLines.length > 0 && (
+              <div className="text-sm font-semibold text-slate-800 mb-1">
+                {otherLines[0].replace(/^#+\s*/, '')}
+              </div>
+            )}
+            <div className="grid grid-cols-1 gap-2.5">
+              {cardData.map((item, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="mt-0.5 p-1.5 bg-white border border-slate-200 rounded-lg text-slate-500">
+                    <item.icon size={14} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">{item.label}</span>
+                    <span className="text-sm text-slate-700 font-medium leading-tight">{item.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {otherLines.length > 1 && (
+              <div className="text-xs text-slate-500 leading-relaxed mt-1 italic">
+                {otherLines.slice(1).join('\n')}
+              </div>
+            )}
+          </div>
+        )
+      }
+    }
+
+    // Renderização Markdown simples (Básico)
+    return (
+      <div className="space-y-2">
+        {text.split('\n').map((line, i) => {
+          if (line.startsWith('###')) return <h3 key={i} className="font-bold text-base mt-3 mb-1 text-slate-900">{line.replace(/^###\s*/, '')}</h3>
+          if (line.startsWith('##')) return <h2 key={i} className="font-bold text-lg mt-4 mb-2 text-slate-900 border-b border-slate-100 pb-1">{line.replace(/^##\s*/, '')}</h2>
+          
+          // Formata negritos **texto**
+          const parts = line.split(/(\*\*.*?\*\*)/g)
+          return (
+            <p key={i} className="leading-relaxed">
+              {parts.map((part, pi) => 
+                part.startsWith('**') && part.endsWith('**') 
+                  ? <strong key={pi} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>
+                  : part
+              )}
+            </p>
+          )
+        })}
+      </div>
+    )
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -245,6 +366,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
       
       let finalBase64 = base64Data
       let extractedText = ""
+      let fileType = file.type
 
       // Se for PDF e estiver no Desktop, extraímos o texto via Python para evitar erros de upload
       if (file.type === 'application/pdf' && (window as any).pywebview?.api?.extract_pdf_text) {
@@ -254,11 +376,16 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
           if (result.success) {
              if (result.text && result.text.trim().length > 0) {
                extractedText = result.text
+               finalBase64 = "" // Não precisa mandar base64 se já extraiu o texto
+             } else if (result.image) {
+               // PDF Escaneado: O Python devolveu a primeira página como imagem
+               finalBase64 = result.image
+               fileType = result.mimeType || 'image/png'
+               extractedText = "" 
              } else {
                extractedText = "AVISO DO SISTEMA: O usuário enviou um documento PDF, mas ele parece ser uma imagem digitalizada ou um arquivo sem texto selecionável. Por favor, avise o usuário que você não consegue ler imagens digitalizadas em PDF no momento e peça para ele enviar as informações por texto ou imagem (JPEG/PNG)."
+               finalBase64 = "" 
              }
-             // Para PDFs já extraídos (ou tentados), não enviamos a base64
-             finalBase64 = "" 
           }
         } catch (err) {
           console.error("Erro na ponte Python:", err)
@@ -270,7 +397,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
       setAttachedFile({
         name: file.name,
         base64: finalBase64,
-        type: file.type,
+        type: fileType,
         extractedText: extractedText
       })
 
@@ -491,7 +618,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                                   : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm'
                               )}
                             >
-                              {msg.text}
+                              {msg.role === 'user' ? msg.text : renderMessageContent(msg.text)}
                             </div>
                             {msg.role !== 'user' && (
                               <div className="flex items-center gap-3 px-1">
@@ -574,7 +701,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
                     <div className="p-5 bg-white border-t border-slate-100">
                       {messages.length < 3 && !stepSession && (
                         <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                          {["Solicitar Férias", "Política de Reembolso", "Problemas com Login", "Benefícios Corporativos"].map((sug) => (
+                          {["Análise de Pendências", "Emissão de Nota Fiscal", "Consultar Glosas", "Status de Orçamento"].map((sug) => (
                             <button
                               key={sug}
                               onClick={() => { setInput(sug); handleSend() }}

@@ -91,13 +91,17 @@ export const generateResponse = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
     text: z.string(),
     context: z.string(),
+    history: z.array(z.object({
+      role: z.enum(['user', 'bot']),
+      text: z.string(),
+    })).optional(),
     fileData: z.object({
       base64: z.string(),
       mimeType: z.string(),
     }).optional(),
   }))
   .handler(async ({ data }) => {
-    const { text, context, fileData } = data
+    const { text, context, history = [], fileData } = data
 
     try {
       const chatClient = getChatClient()
@@ -115,23 +119,26 @@ export const generateResponse = createServerFn({ method: 'POST' })
 
       if (hasAttachment) {
         systemPrompt += `
-        O USUÁRIO FORNECEU UM DOCUMENTO.
-        Sua primeira tarefa é gerar um breve RESUMO dos dados mais importantes que você encontrou neste documento.
+        O USUÁRIO FORNECEU UM DOCUMENTO OU IMAGEM.
+        Sua tarefa é analisar os dados técnicos e responder à solicitação.
         
-        Caso o documento seja um Pedido Médico, extraia e formate em Markdown:
+        SE FOR UMA NOVA SOLICITAÇÃO (Primeira vez vendo o arquivo):
+        Gere um RESUMO ESTRUTURADO dos dados técnicos usando este formato:
         - **Paciente**: [Nome]
         - **Médico**: [Nome e CRM]
-        - **Hospital/Clínica**: [Nome]
-        - **Procedimento**: [Descrição]
-        - **Materiais Solicitados**: [Lista]
+        - **Hospital**: [Nome do Hospital ou Clínica]
+        - **Convênio**: [Nome do Convênio]
+        - **Procedimento**: [Nome da Cirurgia/Procedimento]
+        - **Materiais**: [Lista de materiais ou 'Não especificado']
+        - **Data**: [Data se houver]
         
-        Seja preciso. Se não encontrar um campo, ignore-o.
-        `
+        IMPORTANTE: Use o formato "**Campo**: Valor" para que o sistema possa criar os cards visuais.
+        `;
       }
 
       systemPrompt += `
         INSTRUÇÕES CRÍTICAS:
-        1. Se a informação NÃO estiver no CONTEXTO ou no DOCUMENTO ANEXADO, diga educadamente que não possui essa informação.
+        1. Se a informação NÃO estiver no CONTEXTO ou no DOCUMENTO ANEXADO (mesmo que em mensagens anteriores), diga educadamente que não possui essa informação.
         2. Vá direto ao ponto.
         3. Se envolver processos, use lista numerada.
         
@@ -139,10 +146,20 @@ export const generateResponse = createServerFn({ method: 'POST' })
         ${context}
       `
 
+      messages.push({ role: 'system', content: systemPrompt })
+
+      // Adiciona o histórico (limitado aos últimos 10 para evitar estouro)
+      const recentHistory = history.slice(-10)
+      recentHistory.forEach(msg => {
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        })
+      })
+
       const userContent: any[] = [{ type: 'text', text: text }]
       
-      if (fileData) {
-        // Formato compatível com OpenRouter para mensagens multimodais
+      if (fileData && fileData.mimeType.startsWith('image/')) {
         userContent.push({
           type: 'image_url',
           image_url: {
@@ -151,12 +168,15 @@ export const generateResponse = createServerFn({ method: 'POST' })
         })
       }
 
+      // Adiciona a mensagem atual
+      messages.push({ role: 'user', content: userContent })
+
       const response = await chatClient.chat.completions.create({
-        model: hasAttachment ? 'anthropic/claude-sonnet-latest' : 'anthropic/claude-haiku-latest',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent }
-        ],
+        model: hasAttachment ? '~anthropic/claude-sonnet-latest' : '~anthropic/claude-haiku-latest',
+        messages: messages,
+        max_tokens: 800,
+      })
+        max_tokens: 800,
       })
 
       return response.choices[0].message.content
