@@ -11,7 +11,7 @@ type Message = {
   timestamp: Date
 }
 
-export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
+export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDesktop?: boolean, hideToggle?: boolean }) => {
   const [isOpen, setIsOpen] = useState(isDesktop)
   
   useEffect(() => {
@@ -809,7 +809,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
       </AnimatePresence>
 
       {/* Toggle Button */}
-      {!isDesktop && (
+      {!isDesktop && (!hideToggle || isOpen) && (
         <div className="flex justify-end">
           <button
             onClick={() => setIsOpen(!isOpen)}

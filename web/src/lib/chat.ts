@@ -33,10 +33,6 @@ const getChatClient = () => {
   return new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: apiKey,
-    defaultHeaders: {
-      'HTTP-Referer': 'https://chatbot.gabrielfarias-marques13.workers.dev',
-      'X-Title': 'MedIA Arthromed',
-    },
   })
 }
 
@@ -123,14 +119,27 @@ export const generateResponse = createServerFn({ method: 'POST' })
     try {
       const chatClient = getChatClient()
       
+      // @ts-ignore
+      if (!chatClient.apiKey) {
+        return '⚠️ Erro de Configuração: OPENROUTER_API_KEY não detectada. Por favor, verifique os Secrets no Cloudflare.'
+      }
+      
       const messages: any[] = []
       
       let systemPrompt = `
-        Você é o Assistente Virtual e Especialista Técnico da Arthromed/Medic. Você deve ser prestativo, claro e amigável.
-        
-        Sua tarefa principal é responder a pergunta do usuário utilizando as informações fornecidas no CONTEXTO abaixo.
-      `
+Você é o MedIA, assistente virtual corporativo da Arthromed e Medic.
+Sua missão é ajudar os colaboradores com processos internos, orçamentos e análise de documentos.
 
+REGRAS DE OURO:
+1. Analise documentos (PDF/Imagens) com EXTREMA PRECISÃO. Extraia nomes de pacientes, médicos, convênios, códigos de procedimentos e materiais orçados.
+2. Se o documento for um pedido médico ou orçamento, organize as informações em tópicos claros.
+3. Use sempre as informações do CONTEXTO abaixo para responder sobre processos da empresa.
+4. Mantenha um tom profissional, prestativo e direto.
+5. Se não encontrar uma informação no documento ou no contexto, diga claramente que não foi especificado.
+
+CONTEXTO DA EMPRESA:
+${context}
+`
       const isDocumentExtraction = text.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]')
       const hasAttachment = !!fileData || isDocumentExtraction
 
@@ -189,15 +198,16 @@ export const generateResponse = createServerFn({ method: 'POST' })
       messages.push({ role: 'user', content: userContent })
 
       const response = await chatClient.chat.completions.create({
-        model: hasAttachment ? 'anthropic/claude-3.5-sonnet' : 'anthropic/claude-3-haiku',
+        model: 'anthropic/claude-3.5-sonnet',
         messages: messages,
-        max_tokens: 800,
+        max_tokens: 1500,
+        temperature: 0.3,
       })
 
       return response.choices[0].message.content
     } catch (e: any) {
       console.error('Erro ao gerar resposta:', e)
-      throw new Error('Falha ao gerar resposta da IA.')
+      return `❌ Erro no Servidor: ${e.message || 'Erro desconhecido'}${e.stack ? '\n\nStack: ' + e.stack.substring(0, 100) : ''}`
     }
   })
 

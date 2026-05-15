@@ -3,96 +3,55 @@
 
 ---
 
+## 🚀 Novidades: Inteligência em PDFs
+O MedIA agora possui um sistema de processamento de documentos multiplataforma:
+- **Desktop**: Extração via Python (`pypdf`, `PyMuPDF`) com suporte a arquivos locais.
+- **Web**: Extração cliente-side via `pdf.js`, permitindo análise de documentos direto no navegador com privacidade.
+
+---
+
 ## 🚀 Uso Simplificado (Para todos os usuários)
 
 Se você quer apenas usar o MedIA no seu dia a dia:
 
-1. **Configuração Inicial**: Se é a primeira vez usando nesta máquina, execute o arquivo **`Instalar_MedIA.bat`**. Ele vai configurar tudo e criar um atalho na sua Área de Trabalho.
-2. **Acesso Diário**: Basta dar um clique duplo no ícone **"MedIA - Assistente Virtual"** que apareceu na sua Área de Trabalho.
+1. **Configuração Inicial**: Se é a primeira vez usando nesta máquina, execute o arquivo **`Instalar_MedIA.bat`**. Ele vai configurar tudo e criar um atalho na Área de Trabalho.
+2. **Acesso Diário**: Basta dar um clique duplo no ícone **"MedIA - Assistente Virtual"** na sua Área de Trabalho.
+3. **Versão Web**: Acesse o Portal pelo link oficial enviado pela TI.
 
 ---
 
-## 🌐 Uso via Internet (Deploy)
-O MedIA está configurado para deploy automático via **Vercel**:
-1. Conecte seu GitHub ao Vercel.
-2. Nas configurações, defina o **Root Directory** como `web`.
-3. Adicione as **Environment Variables**: `OPENROUTER_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`.
-4. O sistema ficará disponível em um link `.vercel.app` acessível de qualquer lugar sem precisar instalar nada localmente.
+## 🌐 Deploy e Servidor (Cloudflare Workers)
+O MedIA está configurado para rodar como uma **Cloudflare Worker**:
+1. **Build**: Use `npm run build` na pasta `web`. O sistema possui um script robusto (`scripts/build.js`) que gerencia dependências automaticamente.
+2. **Deploy**: Use `npx wrangler deploy`.
+3. **Secrets**: As chaves de API devem ser configuradas via `wrangler secret put OPENROUTER_API_KEY`.
 
 ---
 
-## 📂 Visão Geral
-O **MedIA** é uma plataforma de inteligência operacional centralizada...
-
-Se você já tem o ambiente configurado, basta executar o arquivo principal:
-1. Localize o arquivo `MedIA.bat` na raiz do projeto.
-2. Dê um duplo clique para iniciar.
-3. O sistema irá:
-   - Fechar processos antigos.
-   - Iniciar o servidor Web (porta 3002).
-   - Abrir o ícone flutuante no seu Desktop.
+## 📂 Funcionalidades Principais
+- **Análise de Pedidos Médicos**: Extração detalhada de Paciente, Médico, Convênio e Procedimentos de PDFs e imagens.
+- **Busca de Processos Internos**: Acesso instantâneo a workflows de todos os setores (Orçamento, Materiais, Geral).
+- **Modo Desktop**: Interface flutuante premium que acompanha sua jornada de trabalho.
 
 ---
 
-## 🛠️ Pré-requisitos e Instalação
+## 🛠️ Para Desenvolvedores
 
-Para rodar o projeto do zero em uma nova máquina, siga estes passos:
-
-### 1. Requisitos de Software
-- **Node.js** (v18 ou superior)
-- **Python** (v3.10 ou superior)
-- **Git**
-
-### 2. Configuração do Ambiente
-Clone o repositório e instale as dependências:
-
+### Configuração do Ambiente
 ```powershell
-# Instalar dependências da Web
+# Web (TanStack Start + Cloudflare)
 cd web
 npm install
-cd ..
+npm run dev
 
-# Instalar dependências do Python
-pip install requests pywebview pillow tkinter
+# Desktop (Python Bridge)
+pip install requests pywebview pillow pypdf pymupdf
 ```
 
-### 3. Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto com as seguintes chaves:
-```env
-SUPABASE_URL=seu_url_do_supabase
-SUPABASE_KEY=sua_chave_do_supabase
-OPENROUTER_API_KEY=sua_chave_do_openrouter
-```
-
----
-
-## 🧠 Como Atualizar o Conhecimento (Sincronização)
-
-O MedIA aprende com os arquivos JSON na pasta `data/raw/`. Sempre que você alterar um processo ou adicionar uma informação nova:
-
-1. Edite o arquivo `data/raw/processos_internos.json`.
-2. No terminal, execute o comando de sincronização:
-   ```powershell
-   python backend/app/maintenance.py
-   ```
-3. O script irá processar os textos, gerar vetores de inteligência e atualizar o banco de dados em nuvem.
-
----
-
-## 📂 Estrutura do Projeto
-
-- **`web/`**: Interface React 19 (TanStack Start). Onde o chat "mora".
-- **`desktop_app.py`**: O ícone flutuante que fica no canto da sua tela.
-- **`backend/app/`**: O motor de busca (RAG) e scripts de manutenção.
-- **`data/raw/`**: Onde você edita as informações que a IA deve saber.
-- **`extension/`**: Extensão para navegadores para usar o MedIA em sites externos.
-
----
-
-## 📂 Funcionalidades
-- **Modo Desktop Responsivo**: A janela do chat se adapta perfeitamente ao tamanho da tela do app.
-- **Busca Inteligente**: Pesquisa que ignora acentos e entende o contexto do seu setor.
-- **Instância Única**: O ícone flutuante gerencia a janela para não abrir várias abas repetidas.
+### Variáveis de Ambiente
+Crie um arquivo `.env` na raiz ou configure no Cloudflare:
+- `OPENROUTER_API_KEY`: Chave para acesso aos modelos Claude 3.5 Sonnet / GPT-4o.
 
 ---
 Desenvolvido por **Gabriel Farias** para a **Arthromed & Medic** 🚀
+

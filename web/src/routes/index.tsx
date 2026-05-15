@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ChatWidget } from '../components/ChatWidget'
+import { MessageCircle, ArrowRight } from 'lucide-react'
 
 type IndexSearch = {
   desktop?: boolean
@@ -81,7 +82,7 @@ function App() {
       </div>
 
       {/* Chat Widget - fixo no canto inferior direito */}
-      <ChatWidget />
+      <ChatWidget hideToggle={true} />
     </main>
   )
 }
