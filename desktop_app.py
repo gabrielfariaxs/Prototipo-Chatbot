@@ -41,7 +41,12 @@ def run_as_window():
             try:
                 import base64
                 import io
-                from pypdf import PdfReader
+                # Garante que as dependências de texto estejam presentes
+                try:
+                    from pypdf import PdfReader
+                except ImportError:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "pypdf"])
+                    from pypdf import PdfReader
                 
                 # Garante que as dependências de imagem estejam presentes
                 try:

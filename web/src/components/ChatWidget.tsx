@@ -368,7 +368,7 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
       let extractedText = ""
       let fileType = file.type
 
-      // Se for PDF e estiver no Desktop, extraímos o texto via Python para evitar erros de upload
+      // 1. Tenta extrair via Python (Se estiver no Desktop App)
       if (file.type === 'application/pdf' && (window as any).pywebview?.api?.extract_pdf_text) {
         setIsLoading(true)
         try {
@@ -376,19 +376,51 @@ export const ChatWidget = ({ isDesktop = false }: { isDesktop?: boolean }) => {
           if (result.success) {
              if (result.text && result.text.trim().length > 0) {
                extractedText = result.text
-               finalBase64 = "" // Não precisa mandar base64 se já extraiu o texto
+               finalBase64 = "" 
              } else if (result.image) {
-               // PDF Escaneado: O Python devolveu a primeira página como imagem
                finalBase64 = result.image
                fileType = result.mimeType || 'image/png'
                extractedText = "" 
-             } else {
-               extractedText = "AVISO DO SISTEMA: O usuário enviou um documento PDF, mas ele parece ser uma imagem digitalizada ou um arquivo sem texto selecionável. Por favor, avise o usuário que você não consegue ler imagens digitalizadas em PDF no momento e peça para ele enviar as informações por texto ou imagem (JPEG/PNG)."
-               finalBase64 = "" 
              }
           }
         } catch (err) {
           console.error("Erro na ponte Python:", err)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+
+      // 2. Tenta extrair via Web (Se o Python não estiver disponível ou falhar na extração de texto)
+      if (file.type === 'application/pdf' && !extractedText) {
+        setIsLoading(true)
+        try {
+          const pdfjs = await import('pdfjs-dist')
+          // Configura o worker via CDN para evitar problemas de bundling complexos no Worker
+          pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+          
+          const binaryString = atob(base64Data)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+
+          const loadingTask = pdfjs.getDocument({ data: bytes })
+          const pdf = await loadingTask.promise
+          let fullText = ""
+          
+          for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) { // Limite de 10 páginas para performance
+            const page = await pdf.getPage(i)
+            const textContent = await page.getTextContent()
+            const pageText = textContent.items.map((item: any) => item.str).join(" ")
+            fullText += pageText + "\n"
+          }
+
+          if (fullText.trim().length > 0) {
+            extractedText = fullText
+            finalBase64 = "" 
+          }
+        } catch (err) {
+          console.error("Erro na extração PDF Web:", err)
         } finally {
           setIsLoading(false)
         }
