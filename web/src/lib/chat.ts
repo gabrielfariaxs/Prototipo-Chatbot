@@ -6,18 +6,28 @@ import processosJson from '../../../data/raw/processos_internos.json'
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ''
 
 const getChatClient = () => {
+  let apiKey = ''
+  
   // Tenta pegar de múltiplas fontes possíveis no ambiente Cloudflare/Nitro
-  // No Cloudflare Workers, as envs costumam estar em globalThis ou no contexto da requisição
-  const apiKey = 
-    (globalThis as any).OPENROUTER_API_KEY || 
-    (globalThis as any).process?.env?.OPENROUTER_API_KEY ||
-    process.env.OPENROUTER_API_KEY || 
-    ''
+  try {
+    // No Cloudflare Workers, segredos são injetados como variáveis globais diretas
+    // @ts-ignore
+    if (typeof OPENROUTER_API_KEY !== 'undefined') {
+      // @ts-ignore
+      apiKey = OPENROUTER_API_KEY
+    }
+  } catch (e) {}
+
+  if (!apiKey) {
+    apiKey = 
+      (globalThis as any).OPENROUTER_API_KEY || 
+      (globalThis as any).process?.env?.OPENROUTER_API_KEY ||
+      process.env.OPENROUTER_API_KEY || 
+      ''
+  }
   
   if (!apiKey) {
-    console.error('ERRO CRÍTICO: OPENROUTER_API_KEY não encontrada!')
-  } else {
-    console.log('API Key carregada com sucesso. Início:', apiKey.substring(0, 10))
+    console.error('ERRO: OPENROUTER_API_KEY não encontrada!')
   }
 
   return new OpenAI({
@@ -113,11 +123,6 @@ export const generateResponse = createServerFn({ method: 'POST' })
     try {
       const chatClient = getChatClient()
       
-      // @ts-ignore
-      if (!chatClient.apiKey) {
-        return '⚠️ Erro de Configuração: A chave da API (OPENROUTER_API_KEY) não foi detectada pelo servidor. Por favor, configure os Secrets no Cloudflare.'
-      }
-      
       const messages: any[] = []
       
       let systemPrompt = `
@@ -190,7 +195,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
       })
 
       return response.choices[0].message.content
-    } catch (e) {
+    } catch (e: any) {
       console.error('Erro ao gerar resposta:', e)
       throw new Error('Falha ao gerar resposta da IA.')
     }
