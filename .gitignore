@@ -1,0 +1,17 @@
+# Variáveis de ambiente (Segurança)
+.env
+.env.local
+/venv/
+
+# Web (TanStack Start)
+web/node_modules/
+web/dist/
+web/.tanstack/
+web/.wrangler/
+.wrangler/
+.wrangler
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store

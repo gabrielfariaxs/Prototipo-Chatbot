@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chatbot",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "dist/server/server.js",
+  "assets": {
+    "directory": "dist/client",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "VITE_SUPABASE_URL": "https://aucfklzbouqjfvrycdvb.supabase.co",
+    "VITE_SUPABASE_KEY": "sb_publishable_Uc72wj9rXElJQaPf2sWlWQ_8F_P5wIi"
+  }
+}
