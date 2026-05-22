@@ -1,6 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import processosJson from '../../../data/raw/processos_internos.json'
+import { supabase } from './supabase'
+
+let isOutOfCreditsGlobal = false
 
 const normalizeString = (str: string) => {
   return str
@@ -8,6 +11,62 @@ const normalizeString = (str: string) => {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
+}
+
+/**
+ * Realiza busca vetorial no banco de dados do Supabase.
+ * Gera o embedding da pergunta do usuário via OpenAI/OpenRouter e executa uma busca RPC 'match_documents'.
+ * @param queryText O texto de pesquisa (pergunta do usuário).
+ * @param apiKey A chave de API do OpenAI/OpenRouter para gerar o embedding.
+ */
+export async function searchVectorSupabase(queryText: string, apiKey: string): Promise<string | null> {
+  try {
+    if (!supabase || supabase.auth.signInWithPassword.toString().includes('Supabase não configurado')) {
+      console.warn('Supabase não está configurado ou está em modo simulador para busca vetorial.')
+      return null
+    }
+
+    // 1. Gerar o embedding da pergunta do usuário usando a API de embeddings da OpenRouter (modelo gratuito)
+    const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'nvidia/llama-nemotron-embed-vl-1b-v2',
+        input: queryText
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Falha ao gerar embeddings via OpenRouter (Status: ${response.status})`)
+    }
+
+    const resJson = await response.json()
+    if (!resJson.data || !resJson.data[0] || !resJson.data[0].embedding) {
+      throw new Error(`Resposta inválida de embeddings do OpenRouter: ${JSON.stringify(resJson)}`)
+    }
+    const queryEmbedding = resJson.data[0].embedding
+    return await queryRpcMatchDocuments(queryEmbedding)
+  } catch (err) {
+    console.error('Erro na busca vetorial RAG do Supabase:', err)
+    return null
+  }
+}
+
+async function queryRpcMatchDocuments(queryEmbedding: number[]): Promise<string | null> {
+  // Executa a função RPC 'match_documents' na base do Supabase
+  const { data: documents, error } = await supabase.rpc('match_documents', {
+    query_embedding: queryEmbedding,
+    match_threshold: 0.3,
+    match_count: 5
+  })
+
+  if (error) throw error
+  if (!documents || documents.length === 0) return null
+
+  return documents.map((doc: any) => doc.content).join('\n\n')
 }
 
 export const getContext = createServerFn({ method: 'GET' })
@@ -20,6 +79,23 @@ export const getContext = createServerFn({ method: 'GET' })
     const { text, sector, history = '' } = data
 
     try {
+      // 1. Busca vetorial no Supabase (se configurado) - Rodando em PARALELO para não travar a CPU
+      let vectorContextPromise = Promise.resolve('')
+      try {
+        const { getChatClient } = await import('./chat-server')
+        const { apiKey } = await getChatClient()
+        if (apiKey) {
+          vectorContextPromise = searchVectorSupabase(text, apiKey)
+            .then(res => res || '')
+            .catch(err => {
+              console.warn('Erro ao tentar buscar no Supabase Vector DB:', err)
+              return ''
+            })
+        }
+      } catch (err) {
+        console.warn('Erro ao importar chatClient:', err)
+      }
+
       const searchTerm = normalizeString(text)
       const searchWords = searchTerm.split(/\s+/).filter(w => w.length >= 3)
       
@@ -59,12 +135,19 @@ export const getContext = createServerFn({ method: 'GET' })
           score += 50
         }
         
-        // 2. Correspondência de termos individuais válidos
+        // 2. Correspondência de termos individuais válidos (com suporte simples a plural/singular)
         filteredSearchWords.forEach(w => {
-          if (processo.includes(w)) {
+          const matchWord = (textSource: string) => {
+            if (textSource.includes(w)) return true
+            if (w.endsWith('s') && w.length > 3 && textSource.includes(w.slice(0, -1))) return true
+            if (!w.endsWith('s') && textSource.includes(w + 's')) return true
+            return false
+          }
+
+          if (matchWord(processo)) {
             score += 15 // correspondência no título do processo é muito importante
           }
-          if (conteudo.includes(w)) {
+          if (matchWord(conteudo)) {
             score += 3 // correspondência no conteúdo
           }
         })
@@ -92,27 +175,35 @@ export const getContext = createServerFn({ method: 'GET' })
       // Filtrar documentos que tenham pontuação > 0
       let matchedDocs = scoredDocs.filter(item => item.score > 0)
 
-      if (matchedDocs.length === 0) {
-        return 'Nenhuma informação específica encontrada na base de dados.'
+      let localContext = ''
+      if (matchedDocs.length > 0) {
+        // Prioriza correspondências do mesmo setor primeiro.
+        // Se tivermos correspondências no setor alvo, usamos elas.
+        // Caso contrário, usamos todas as correspondências como fallback.
+        const targetSectorMatches = matchedDocs.filter(item => item.isTargetSector)
+        const docsToUse = targetSectorMatches.length > 0 ? targetSectorMatches : matchedDocs
+
+        // Ordenar por pontuação (score) decrescente
+        const sortedDocs = docsToUse
+          .sort((a, b) => b.score - a.score)
+          .map(item => item.doc)
+
+        // Pegar até os 6 documentos mais relevantes
+        const contexts = sortedDocs
+          .slice(0, 6)
+          .map((doc: any) => `[SETOR: ${doc.setor}] [PROCESSO: ${doc.processo}]\n${doc.conteudo}`)
+
+        localContext = contexts.join('\n\n---\n\n')
       }
 
-      // Prioriza correspondências do mesmo setor primeiro.
-      // Se tivermos correspondências no setor alvo, usamos elas.
-      // Caso contrário, usamos todas as correspondências como fallback.
-      const targetSectorMatches = matchedDocs.filter(item => item.isTargetSector)
-      const docsToUse = targetSectorMatches.length > 0 ? targetSectorMatches : matchedDocs
+      // Aguarda o resultado da busca vetorial que rodou em paralelo
+      const vectorContext = await vectorContextPromise
 
-      // Ordenar por pontuação (score) decrescente
-      const sortedDocs = docsToUse
-        .sort((a, b) => b.score - a.score)
-        .map(item => item.doc)
+      if (vectorContext) {
+        return `[INFORMAÇÕES VETORIAIS DO SUPABASE (MANUAIS)]:\n${vectorContext}\n\n---\n\n[PROCESSOS INTERNOS LOCAIS]:\n${localContext || 'Nenhuma informação correspondente no arquivo de processos locais.'}`
+      }
 
-      // Pegar até os 6 documentos mais relevantes
-      const contexts = sortedDocs
-        .slice(0, 6)
-        .map((doc: any) => `[SETOR: ${doc.setor}] [PROCESSO: ${doc.processo}]\n${doc.conteudo}`)
-
-      return contexts.join('\n\n---\n\n') || 'Nenhuma informação específica encontrada para este setor.'
+      return localContext || 'Nenhuma informação específica encontrada para este setor.'
     } catch (e) {
       console.error('Erro ao buscar contexto:', e)
       return 'Erro ao buscar informações na base de dados local.'
@@ -132,9 +223,10 @@ export const generateResponse = createServerFn({ method: 'POST' })
       base64: z.string(),
       mimeType: z.string(),
     }).optional(),
+    extractedText: z.string().optional(),
   }))
   .handler(async ({ data }) => {
-    const { text, context, history = [], fileData } = data
+    const { text, context, history = [], fileData, extractedText } = data
 
     try {
       // Importa dinamicamente o arquivo servidor-only que nunca é enviado para o cliente
@@ -161,6 +253,68 @@ export const generateResponse = createServerFn({ method: 'POST' })
           `- **Erro no Evento**: ${debugInfo.error || 'Nenhum'}\n`
       }
       
+      let finalDocText = extractedText || ''
+
+      // Se o documento for longo (> 8000 caracteres) e a pergunta for específica, fazemos um RAG local
+      if (finalDocText && finalDocText.length > 8000) {
+        const lowerText = text.toLowerCase()
+        const isGeneric = 
+          lowerText.includes('analise') || 
+          lowerText.includes('resumo') || 
+          lowerText.includes('extraia') || 
+          lowerText.includes('extrair') ||
+          lowerText.includes('o que e') ||
+          lowerText.includes('tabela') ||
+          lowerText.includes('orcamento') ||
+          lowerText.length < 15
+
+        if (!isGeneric) {
+          // Chunking por parágrafos duplos ou parágrafos simples
+          const paragraphs = finalDocText.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
+          let chunks = paragraphs
+          if (chunks.length < 5) {
+            chunks = finalDocText.split('\n').map(l => l.trim()).filter(l => l.length > 20)
+          }
+
+          const searchWords = lowerText
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(w => w.length >= 3)
+
+          interface ScoredChunk {
+            text: string
+            score: number
+          }
+
+          const scoredChunks: ScoredChunk[] = chunks.map(chunk => {
+            const normChunk = chunk
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toLowerCase()
+            
+            let score = 0
+            searchWords.forEach(w => {
+              if (normChunk.includes(w)) {
+                score += 1
+              }
+            })
+            return { text: chunk, score }
+          })
+
+          let relevantChunks = scoredChunks.filter(c => c.score > 0)
+          if (relevantChunks.length === 0) {
+            relevantChunks = scoredChunks.slice(0, 5)
+          } else {
+            relevantChunks = relevantChunks.sort((a, b) => b.score - a.score).slice(0, 5)
+          }
+
+          finalDocText = `[Trechos selecionados do documento por relevância à pergunta]:\n\n` + 
+            relevantChunks.map(c => c.text).join('\n\n...\n\n')
+        }
+      }
+
       const messages: any[] = []
       
       let systemPrompt = `
@@ -173,11 +327,8 @@ REGRAS DE OURO:
 3. Use sempre as informações do CONTEXTO abaixo para responder sobre processos da empresa.
 4. Mantenha um tom profissional, prestativo e direto.
 5. Se não encontrar uma informação no documento ou no contexto, diga claramente que não foi especificado.
-
-CONTEXTO DA EMPRESA:
-${context}
 `
-      const isDocumentExtraction = text.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]')
+      const isDocumentExtraction = text.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]') || !!finalDocText
       const hasAttachment = !!fileData || isDocumentExtraction
 
       if (hasAttachment) {
@@ -204,7 +355,7 @@ ${context}
         2. Vá direto ao ponto.
         3. Se envolver processos, use lista numerada.
         
-        CONTEXTO:
+        CONTEXTO DA EMPRESA:
         ${context}
       `
 
@@ -232,7 +383,14 @@ ${context}
         `CRÍTICO: Não comece com "O documento é..." ou introduções similares! Comece sua resposta diretamente com "- **Paciente**:" para que a interface desenhe os cards interativos.`
         : ''
 
-      const userContent: any[] = [{ type: 'text', text: text + formattingInstruction }]
+      let promptText = text
+      if (finalDocText) {
+        if (!promptText.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]')) {
+          promptText = `${text}\n\n[CONTEÚDO DO DOCUMENTO EXTRAÍDO]:\n${finalDocText}`
+        }
+      }
+
+      const userContent: any[] = [{ type: 'text', text: promptText + formattingInstruction }]
       
       if (fileData && fileData.mimeType.startsWith('image/')) {
         userContent.push({
@@ -250,19 +408,20 @@ ${context}
       // o bloco `if (!apiKey)` acima já retorna antes de chegar neste ponto.
       if (!chatClient) throw new Error('chatClient não inicializado — chave de API ausente.')
 
-      // Para garantir máxima velocidade, confiabilidade e inteligência, priorizamos gpt-4o-mini e gemini-2.5-flash.
-      // Eles são pagos, porém extremamente baratos (frações de centavo).
-      // Se houver problemas de créditos (erro 402/429), o sistema faz fallback automático para os modelos grátis.
+      // Para garantir máxima velocidade, confiabilidade e inteligência, priorizamos o gemini-2.0-flash-lite gratuito.
       const MODELS = [
+        'google/gemini-2.0-flash-lite-preview-02-05:free', // Modelo mais rápido, com fila menor
+        'google/gemini-2.5-flash:free',
+        'qwen/qwen-2.5-72b-instruct:free',
         'openai/gpt-4o-mini',
         'google/gemini-2.5-flash',
-        'openrouter/free',
         'meta-llama/llama-3.3-70b-instruct:free',
+        'openrouter/free',
       ]
 
       let response: any = null
       let lastError: any = null
-      let isOutOfCredits = false
+      let isOutOfCredits = isOutOfCreditsGlobal
 
       for (let i = 0; i < MODELS.length; i++) {
         const model = MODELS[i]
@@ -287,7 +446,7 @@ ${context}
             messages: messages,
             max_tokens: maxTokens,
             temperature: 0.3,
-          })
+          }, { timeout: 10000 }) // Fails fast em 10s se houver muita fila no modelo grátis
 
           const content = apiResponse?.choices?.[0]?.message?.content?.trim()
           if (!content) {
@@ -310,6 +469,7 @@ ${context}
             errMsg.includes('saldo')
           ) {
             isOutOfCredits = true
+            isOutOfCreditsGlobal = true
             console.warn('Conta sem saldo no OpenRouter. Pulando outros modelos pagos nesta tentativa.')
           }
 

@@ -327,15 +327,14 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
       const botResponse = await generateResponse({
         data: {
-          text: fileToSend?.extractedText 
-            ? `${input}\n\n[CONTEÚDO DO DOCUMENTO EXTRAÍDO]:\n${fileToSend.extractedText}`
-            : input,
+          text: input,
           context: context,
           history: messages.map(m => ({ role: m.role, text: m.text })),
           fileData: fileToSend?.base64 && !fileToSend.extractedText ? {
             base64: fileToSend.base64,
             mimeType: fileToSend.type
-          } : undefined
+          } : undefined,
+          extractedText: fileToSend?.extractedText || undefined
         }
       })
 

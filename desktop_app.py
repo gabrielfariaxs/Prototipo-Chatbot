@@ -39,6 +39,11 @@ def run_as_window():
         def extract_pdf_text(self, base64_data):
             """Lê o texto de um PDF em base64. Se for imagem, renderiza para o MedIA ver."""
             try:
+                # Verifica o tamanho aproximado do arquivo em MB (3 bytes para cada 4 caracteres base64)
+                file_size_mb = (len(base64_data) * 3) / (4 * 1024 * 1024)
+                if file_size_mb > 5.0:
+                    return {"success": False, "error": "O arquivo é muito grande (excede o limite de 5MB)."}
+
                 import base64
                 import io
                 # Garante que as dependências de texto estejam presentes
@@ -58,10 +63,12 @@ def run_as_window():
                 pdf_bytes = base64.b64decode(base64_data)
                 pdf_file = io.BytesIO(pdf_bytes)
                 
-                # 1. Tenta extrair texto normal
+                # 1. Tenta extrair texto normal (limitado a no máximo 10 páginas)
                 reader = PdfReader(pdf_file)
                 text = ""
-                for page in reader.pages:
+                max_pages = min(len(reader.pages), 10)
+                for i in range(max_pages):
+                    page = reader.pages[i]
                     content = page.extract_text()
                     if content:
                         text += content + "\n"

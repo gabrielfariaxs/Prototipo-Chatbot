@@ -31,10 +31,15 @@ function App() {
 
   useEffect(() => {
     // 1. Verifica sessão inicial no carregamento do cliente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setSessionChecked(true)
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setSessionChecked(true)
+      })
+      .catch(err => {
+        console.error('Erro ao verificar sessão do Supabase:', err)
+        setSessionChecked(true) // Libera a splash screen mesmo com erro
+      })
 
     // 2. Escuta mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
