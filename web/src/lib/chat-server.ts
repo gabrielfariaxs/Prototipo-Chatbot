@@ -12,6 +12,7 @@ export async function getChatClient() {
     error: null
   }
 
+
   // 1. Tenta obter o segredo via tanstack-start:start-storage-context (requestOpts)
   // O Cloudflare Worker passa env como 2o argumento do fetch: (request, env, ctx)
   // O TanStack Start wraps isso em requestOpts e o passa via startStorage
@@ -32,8 +33,8 @@ export async function getChatClient() {
       ]
       
       for (const envSource of possibleEnvSources) {
-        if (envSource?.OPENROUTER_API_KEY) {
-          apiKey = envSource.OPENROUTER_API_KEY
+        if (envSource?.AI_GATEWAY_API_KEY) {
+          apiKey = envSource.AI_GATEWAY_API_KEY
           break
         }
       }
@@ -65,8 +66,8 @@ export async function getChatClient() {
           
           if (cfEnv) {
             debugInfo.cfEnvKeys = Object.keys(cfEnv)
-            if (cfEnv.OPENROUTER_API_KEY) {
-              apiKey = cfEnv.OPENROUTER_API_KEY
+            if (cfEnv.AI_GATEWAY_API_KEY) {
+              apiKey = cfEnv.AI_GATEWAY_API_KEY
             }
           }
         }
@@ -79,13 +80,15 @@ export async function getChatClient() {
   // 3. Fallbacks secundários para desenvolvimento local
   if (!apiKey) {
     apiKey = 
-      process.env.OPENROUTER_API_KEY || 
-      (globalThis as any).OPENROUTER_API_KEY || 
+      process.env.AI_GATEWAY_API_KEY || 
+      (import.meta.env ? (import.meta.env as any).AI_GATEWAY_API_KEY : '') ||
+      (globalThis as any).AI_GATEWAY_API_KEY || 
       ''
   }
 
+  // Vercel AI Gateway — compatível com OpenAI SDK, roteia para qualquer provedor
   const chatClient = apiKey ? new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
+    baseURL: 'https://ai-gateway.vercel.sh/v1',
     apiKey: apiKey,
   }) : null
 

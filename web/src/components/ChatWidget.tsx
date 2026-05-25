@@ -493,24 +493,136 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       }
     }
 
-    // Renderização Markdown simples (Básico)
+    // Renderização Markdown aprimorada (Organizada)
+    const blocks: { type: string; content?: string; items?: string[] }[] = []
+    let currentList: { type: 'bullet' | 'number'; items: string[] } | null = null
+
+    const flushList = () => {
+      if (currentList) {
+        blocks.push({
+          type: currentList.type === 'bullet' ? 'bullet_list' : 'numbered_list',
+          items: currentList.items
+        })
+        currentList = null
+      }
+    }
+
+    lines.forEach((line) => {
+      const trimmed = line.trim()
+      if (!trimmed) {
+        flushList()
+        // Adiciona um divisor de parágrafo se o anterior não for um divisor
+        if (blocks.length > 0 && blocks[blocks.length - 1].type !== 'spacer') {
+          blocks.push({ type: 'spacer' })
+        }
+        return
+      }
+
+      // Headings
+      if (trimmed.startsWith('###')) {
+        flushList()
+        blocks.push({ type: 'h3', content: trimmed.replace(/^###\s*/, '') })
+        return
+      }
+      if (trimmed.startsWith('##')) {
+        flushList()
+        blocks.push({ type: 'h2', content: trimmed.replace(/^##\s*/, '') })
+        return
+      }
+      if (trimmed.startsWith('#')) {
+        flushList()
+        blocks.push({ type: 'h1', content: trimmed.replace(/^#\s*/, '') })
+        return
+      }
+
+      // Blockquotes
+      if (trimmed.startsWith('>')) {
+        flushList()
+        blocks.push({ type: 'blockquote', content: trimmed.replace(/^>\s*/, '') })
+        return
+      }
+
+      // Listas ordenadas (numéricas)
+      const numberMatch = line.match(/^(\s*)\d+[\.)\-]\s+(.*)/)
+      if (numberMatch) {
+        const itemContent = numberMatch[2]
+        if (currentList && currentList.type === 'number') {
+          currentList.items.push(itemContent)
+        } else {
+          flushList()
+          currentList = { type: 'number', items: [itemContent] }
+        }
+        return
+      }
+
+      // Listas não ordenadas (bullet)
+      const bulletMatch = line.match(/^(\s*)[\-\*•]\s+(.*)/)
+      if (bulletMatch) {
+        const itemContent = bulletMatch[2]
+        if (currentList && currentList.type === 'bullet') {
+          currentList.items.push(itemContent)
+        } else {
+          flushList()
+          currentList = { type: 'bullet', items: [itemContent] }
+        }
+        return
+      }
+
+      // Texto normal (Parágrafo)
+      flushList()
+      blocks.push({ type: 'paragraph', content: line })
+    })
+
+    flushList()
+
+    const renderTextWithFormatting = (txt: string) => {
+      // Divide por negrito ** e inline code `
+      const parts = txt.split(/(\*\*.*?\*\*|`.*?`)/g)
+      return parts.map((part, idx) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={idx} className="font-bold text-slate-800">{part.slice(2, -2)}</strong>
+        }
+        if (part.startsWith('`') && part.endsWith('`')) {
+          return <code key={idx} className="bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-lg text-xs font-mono text-rose-500">{part.slice(1, -1)}</code>
+        }
+        return part
+      })
+    }
+
     return (
-      <div className="space-y-2">
-        {text.split('\n').map((line, i) => {
-          if (line.startsWith('###')) return <h3 key={i} className="font-bold text-base mt-3 mb-1 text-slate-900">{line.replace(/^###\s*/, '')}</h3>
-          if (line.startsWith('##')) return <h2 key={i} className="font-bold text-lg mt-4 mb-2 text-slate-900 border-b border-slate-100 pb-1">{line.replace(/^##\s*/, '')}</h2>
-          
-          // Formata negritos **texto**
-          const parts = line.split(/(\*\*.*?\*\*)/g)
-          return (
-            <p key={i} className="leading-relaxed">
-              {parts.map((part, pi) => 
-                part.startsWith('**') && part.endsWith('**') 
-                  ? <strong key={pi} className="font-bold text-slate-900">{part.slice(2, -2)}</strong>
-                  : part
-              )}
-            </p>
-          )
+      <div className="space-y-2 text-sm text-slate-700">
+        {blocks.map((block, i) => {
+          switch (block.type) {
+            case 'h1':
+              return <h1 key={i} className="font-bold text-xl text-[#1a2332] mt-4 mb-2 border-b border-slate-100 pb-1">{renderTextWithFormatting(block.content || '')}</h1>
+            case 'h2':
+              return <h2 key={i} className="font-bold text-lg text-[#1a2332] mt-3 mb-2 border-b border-slate-100 pb-0.5">{renderTextWithFormatting(block.content || '')}</h2>
+            case 'h3':
+              return <h3 key={i} className="font-semibold text-base text-[#1a2332] mt-2 mb-1">{renderTextWithFormatting(block.content || '')}</h3>
+            case 'blockquote':
+              return <blockquote key={i} className="border-l-4 border-slate-200 pl-3.5 italic my-2.5 text-slate-500 bg-slate-50/50 p-2.5 rounded-r-xl">{renderTextWithFormatting(block.content || '')}</blockquote>
+            case 'bullet_list':
+              return (
+                <ul key={i} className="list-disc pl-5 space-y-1.5 my-2">
+                  {block.items?.map((item, idx) => (
+                    <li key={idx} className="leading-relaxed">{renderTextWithFormatting(item)}</li>
+                  ))}
+                </ul>
+              )
+            case 'numbered_list':
+              return (
+                <ol key={i} className="list-decimal pl-5 space-y-1.5 my-2">
+                  {block.items?.map((item, idx) => (
+                    <li key={idx} className="leading-relaxed">{renderTextWithFormatting(item)}</li>
+                  ))}
+                </ol>
+              )
+            case 'spacer':
+              return <div key={i} className="h-1.5" />
+            case 'paragraph':
+            default:
+              return <p key={i} className="leading-relaxed">{renderTextWithFormatting(block.content || '')}</p>
+          }
         })}
       </div>
     )

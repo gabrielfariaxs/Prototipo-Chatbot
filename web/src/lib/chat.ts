@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import processosJson from '../../../data/raw/processos_internos.json'
+import processosJson from './processos_internos.json'
 import { supabase } from './supabase'
 
 let isOutOfCreditsGlobal = false
@@ -19,43 +19,43 @@ const normalizeString = (str: string) => {
  * @param queryText O texto de pesquisa (pergunta do usuário).
  * @param apiKey A chave de API do OpenAI/OpenRouter para gerar o embedding.
  */
-export async function searchVectorSupabase(queryText: string, apiKey: string): Promise<string | null> {
+export async function searchVectorSupabase(queryText: string, apiKey: string, sector: string): Promise<string | null> {
   try {
     if (!supabase || supabase.auth.signInWithPassword.toString().includes('Supabase não configurado')) {
       console.warn('Supabase não está configurado ou está em modo simulador para busca vetorial.')
       return null
     }
 
-    // 1. Gerar o embedding da pergunta do usuário usando a API de embeddings da OpenRouter (modelo gratuito)
-    const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
+    // 1. Gerar o embedding da pergunta do usuário via Vercel AI Gateway
+    const response = await fetch('https://ai-gateway.vercel.sh/v1/embeddings', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'nvidia/llama-nemotron-embed-vl-1b-v2',
+        model: 'openai/text-embedding-3-small',
         input: queryText
       })
     })
 
     if (!response.ok) {
-      throw new Error(`Falha ao gerar embeddings via OpenRouter (Status: ${response.status})`)
+      throw new Error(`Falha ao gerar embeddings via Vercel AI Gateway (Status: ${response.status})`)
     }
 
     const resJson = await response.json()
     if (!resJson.data || !resJson.data[0] || !resJson.data[0].embedding) {
-      throw new Error(`Resposta inválida de embeddings do OpenRouter: ${JSON.stringify(resJson)}`)
+      throw new Error(`Resposta inválida de embeddings do Vercel AI Gateway: ${JSON.stringify(resJson)}`)
     }
     const queryEmbedding = resJson.data[0].embedding
-    return await queryRpcMatchDocuments(queryEmbedding)
+    return await queryRpcMatchDocuments(queryEmbedding, sector)
   } catch (err) {
     console.error('Erro na busca vetorial RAG do Supabase:', err)
     return null
   }
 }
 
-async function queryRpcMatchDocuments(queryEmbedding: number[]): Promise<string | null> {
+async function queryRpcMatchDocuments(queryEmbedding: number[], sector: string): Promise<string | null> {
   // Executa a função RPC 'match_documents' na base do Supabase
   const { data: documents, error } = await supabase.rpc('match_documents', {
     query_embedding: queryEmbedding,
@@ -66,7 +66,15 @@ async function queryRpcMatchDocuments(queryEmbedding: number[]): Promise<string 
   if (error) throw error
   if (!documents || documents.length === 0) return null
 
-  return documents.map((doc: any) => doc.content).join('\n\n')
+  const targetSectorUpper = (sector || '').toUpperCase()
+  const filteredDocs = documents.filter((doc: any) => {
+    const docSector = (doc.metadata?.setor || '').toUpperCase()
+    if (targetSectorUpper.includes('ARTHROMED') && docSector.includes('MEDIC')) return false
+    if (targetSectorUpper.includes('MEDIC') && docSector.includes('ARTHROMED')) return false
+    return true
+  })
+
+  return filteredDocs.map((doc: any) => doc.content).join('\n\n')
 }
 
 export const getContext = createServerFn({ method: 'GET' })
@@ -85,7 +93,7 @@ export const getContext = createServerFn({ method: 'GET' })
         const { getChatClient } = await import('./chat-server')
         const { apiKey } = await getChatClient()
         if (apiKey) {
-          vectorContextPromise = searchVectorSupabase(text, apiKey)
+          vectorContextPromise = searchVectorSupabase(text, apiKey, sector)
             .then(res => res || '')
             .catch(err => {
               console.warn('Erro ao tentar buscar no Supabase Vector DB:', err)
@@ -120,7 +128,14 @@ export const getContext = createServerFn({ method: 'GET' })
       
       const targetSectorUpper = (sector || '').toUpperCase()
 
-      const scoredDocs: ScoredDoc[] = processosJson.map((doc: any) => {
+      const filteredProcessos = processosJson.filter((doc: any) => {
+        const docSector = (doc.setor || '').toUpperCase()
+        if (targetSectorUpper.includes('ARTHROMED') && docSector.includes('MEDIC')) return false
+        if (targetSectorUpper.includes('MEDIC') && docSector.includes('ARTHROMED')) return false
+        return true
+      })
+
+      const scoredDocs: ScoredDoc[] = filteredProcessos.map((doc: any) => {
         const conteudo = normalizeString(doc.conteudo || '')
         const processo = normalizeString(doc.processo || '')
         const docSector = (doc.setor || '').toUpperCase()
@@ -235,15 +250,13 @@ export const generateResponse = createServerFn({ method: 'POST' })
 
       if (!apiKey) {
         return `⚠️ **MedIA: Chave de API Ausente**\n\n` +
-          `A variável de ambiente \`OPENROUTER_API_KEY\` não foi encontrada no servidor de produção da Cloudflare.\n\n` +
+          `A variável de ambiente \`AI_GATEWAY_API_KEY\` não foi encontrada no servidor de produção da Cloudflare.\n\n` +
           `### 💡 Como resolver isso rapidamente:\n\n` +
-          `👉 **Passo A**: Abra seu terminal na pasta \`web\` do seu projeto:\n` +
-          `cd web\n\n` +
-          `👉 **Passo B**: Execute o comando do Wrangler para registrar a sua chave de API de forma segura:\n` +
-          `npx wrangler secret put OPENROUTER_API_KEY\n\n` +
-          `👉 **Passo C**: Quando o terminal solicitar **"Enter the secret text you'd like to assign to OPENROUTER_API_KEY"**, cole a sua chave do OpenRouter:\n` +
-          `SUA_CHAVE_DO_OPENROUTER\n\n` +
-          `Após registrar a chave, ela estará ativa instantaneamente no servidor e o MedIA funcionará de forma 100% grátis! 🚀\n\n` +
+          `👉 **Passo A**: Gere uma chave no **Vercel Dashboard → AI → API Keys** (começa com \`gw_\`).\n\n` +
+          `👉 **Passo B**: Abra seu terminal na pasta \`web\` do seu projeto e registre a chave de forma segura:\n` +
+          `npx wrangler secret put AI_GATEWAY_API_KEY\n\n` +
+          `👉 **Passo C**: Quando o terminal solicitar **"Enter the secret text"**, cole a sua chave do Vercel AI Gateway.\n\n` +
+          `Após registrar a chave, ela estará ativa instantaneamente no servidor! 🚀\n\n` +
           `🔍 **Diagnósticos do Servidor:**\n` +
           `- **Tem Processo (Node)**: ${debugInfo.hasProcess ? 'Sim' : 'Não'}\n` +
           `- **Chaves em process.env**: ${debugInfo.processEnvKeys.join(', ') || 'Nenhuma'}\n` +
@@ -321,7 +334,14 @@ export const generateResponse = createServerFn({ method: 'POST' })
 Você é o MedIA, assistente virtual corporativo da Arthromed e Medic.
 Sua missão é ajudar os colaboradores com processos internos, orçamentos e análise de documentos.
 
-REGRAS DE OURO:
+REGRAS DE FORMATAÇÃO E ORGANIZAÇÃO (CRÍTICO):
+1. **Estrutura Visual**: Divida suas respostas em seções claras utilizando cabeçalhos (ex: \`### Título da Seção\`).
+2. **Listas**: Utilize listas com marcadores (\`- \`) para listar itens, materiais ou opções. Para instruções sequenciais ou tutoriais passo a passo, use obrigatoriamente listas numeradas (\`1. \`, \`2. \`).
+3. **Destaques**: Utilize negrito (\`**termo**\`) para ressaltar termos importantes, nomes de sistemas, botões, procedimentos ou ações que o colaborador deve realizar.
+4. **Emojis**: Adicione emojis de forma moderada no início de títulos e tópicos importantes para facilitar a leitura rápida (ex: 📋, ⚙️, 💡, ⚠️, 🔍, ✅, 🚀, 📄).
+5. **Parágrafos**: Mantenha parágrafos curtos, objetivos e vá direto ao ponto, evitando textos longos e cansativos.
+
+REGRAS DE CONTEÚDO:
 1. Analise documentos (PDF/Imagens) com EXTREMA PRECISÃO. Extraia nomes de pacientes, médicos, convênios, códigos de procedimentos e materiais orçados.
 2. Se o documento for um pedido médico ou orçamento, organize as informações em tópicos claros.
 3. Use sempre as informações do CONTEXTO abaixo para responder sobre processos da empresa.
@@ -408,15 +428,12 @@ REGRAS DE OURO:
       // o bloco `if (!apiKey)` acima já retorna antes de chegar neste ponto.
       if (!chatClient) throw new Error('chatClient não inicializado — chave de API ausente.')
 
-      // Para garantir máxima velocidade, confiabilidade e inteligência, priorizamos o gemini-2.0-flash-lite gratuito.
+      // Modelos roteados via Vercel AI Gateway (formato: provider/model)
       const MODELS = [
-        'google/gemini-2.0-flash-lite-preview-02-05:free', // Modelo mais rápido, com fila menor
-        'google/gemini-2.5-flash:free',
-        'qwen/qwen-2.5-72b-instruct:free',
-        'openai/gpt-4o-mini',
-        'google/gemini-2.5-flash',
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'openrouter/free',
+        'google/gemini-2.5-flash',         // Rápido, barato e muito capaz
+        'openai/gpt-4o-mini',              // Fallback rápido da OpenAI
+        'anthropic/claude-3-5-haiku',      // Fallback equilibrado da Anthropic
+        'openai/gpt-4o',                   // Fallback de alta qualidade
       ]
 
       let response: any = null
@@ -426,10 +443,9 @@ REGRAS DE OURO:
       for (let i = 0; i < MODELS.length; i++) {
         const model = MODELS[i]
         
-        // Se já sabemos que o usuário está sem créditos, pula os modelos pagos para não acumular erros
-        const isPaidModel = !model.endsWith(':free') && model !== 'openrouter/free'
-        if (isOutOfCredits && isPaidModel) {
-          console.log(`Pulando modelo pago ${model} por falta de créditos da conta.`)
+        // Se já sabemos que a conta está sem créditos, pula os modelos restantes
+        if (isOutOfCredits) {
+          console.log(`Pulando modelo ${model} por falta de créditos da conta.`)
           continue
         }
 

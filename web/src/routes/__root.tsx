@@ -1,6 +1,4 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
 
 import appCss from '../styles.css?url'
 

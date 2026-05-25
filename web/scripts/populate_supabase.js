@@ -31,7 +31,7 @@ loadEnv()
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_KEY
-const openrouterKey = process.env.OPENROUTER_API_KEY
+const openrouterKey = process.env.AI_GATEWAY_API_KEY
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Erro: SUPABASE_URL ou SUPABASE_KEY não configurado no seu arquivo .env!')
@@ -39,14 +39,14 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 if (!openrouterKey) {
-  console.error('❌ Erro: OPENROUTER_API_KEY não configurada no arquivo .env!')
+  console.error('❌ Erro: AI_GATEWAY_API_KEY não configurada no arquivo .env!')
   process.exit(1)
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Lê processos_internos.json
-const jsonPath = path.resolve('../data/raw/processos_internos.json')
+const jsonPath = path.resolve('src/lib/processos_internos.json')
 if (!fs.existsSync(jsonPath)) {
   console.error(`❌ Erro: Arquivo de processos não encontrado em: ${jsonPath}`)
   process.exit(1)
@@ -57,27 +57,27 @@ const processos = JSON.parse(fs.readFileSync(jsonPath, 'utf8'))
 console.log(`🚀 Iniciando indexação de ${processos.length} processos no Supabase...`)
 
 async function getEmbedding(text) {
-  // Chamada de embedding via OpenRouter usando o modelo gratuito nvidia/llama-nemotron-embed-vl-1b-v2
-  const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
+  // Chamada de embedding via Vercel AI Gateway
+  const response = await fetch('https://ai-gateway.vercel.sh/v1/embeddings', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${openrouterKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'nvidia/llama-nemotron-embed-vl-1b-v2',
+      model: 'openai/text-embedding-3-small',
       input: text
     })
   })
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => '')
-    throw new Error(`Falha no Embeddings API do OpenRouter: Status ${response.status} - ${errorBody}`)
+    throw new Error(`Falha no Embeddings API do Vercel AI Gateway: Status ${response.status} - ${errorBody}`)
   }
 
   const data = await response.json()
   if (!data.data || !data.data[0] || !data.data[0].embedding) {
-    throw new Error(`Resposta inválida do OpenRouter: ${JSON.stringify(data)}`)
+    throw new Error(`Resposta inválida do Vercel AI Gateway: ${JSON.stringify(data)}`)
   }
   return data.data[0].embedding
 }
