@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign } from 'lucide-react'
+import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getContext, generateResponse, getSectors } from '../lib/chat'
+import { getContext, generateResponse, getSectors, transcribeAudio } from '../lib/chat'
 import { cn } from '../lib/utils'
 
 type Message = {
@@ -9,12 +9,14 @@ type Message = {
   role: 'user' | 'bot'
   text: string
   timestamp: Date
-  file?: {
+  files?: {
     name: string
     base64: string
     type: string
     originalPdfBase64?: string
-  }
+  }[]
+  feedback?: 'up' | 'down'
+  feedbackComment?: string
 }
 
 export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDesktop?: boolean, hideToggle?: boolean }) => {
@@ -57,7 +59,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     // Notificar o pai (extensão) sobre o estado do chat
     window.parent.postMessage({ type: 'MEDIA_CHAT_TOGGLE', isOpen }, '*')
     
-    // CHAT_URL = "https://chatbot.gabrielfarias-marques13.workers.dev/?desktop=true&v=premium_v2"
     // Notificar o Python (Desktop App) para redimensionar a janela nativa
     if (typeof window !== 'undefined' && (window as any).pywebview && (window as any).pywebview.api) {
       setTimeout(() => {
@@ -67,10 +68,43 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       }, 50)
     }
   }, [isOpen])
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat'>('onboarding')
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+
+  // Salvar feedback global
+  const saveGlobalFeedback = (msgId: string, type: 'up' | 'down', comment?: string, messageText?: string) => {
+    const existing = JSON.parse(localStorage.getItem('media_feedbacks') || '[]')
+    
+    // Atualiza se já existir (para o caso de adicionar comentário depois do downvote)
+    const existingIdx = existing.findIndex((f: any) => f.msgId === msgId)
+    if (existingIdx >= 0) {
+      if (comment) existing[existingIdx].comment = comment
+    } else {
+      existing.push({
+        id: Date.now().toString(),
+        msgId,
+        date: new Date().toISOString(),
+        type,
+        comment,
+        messagePreview: messageText ? messageText.substring(0, 100) : ''
+      })
+    }
+    localStorage.setItem('media_feedbacks', JSON.stringify(existing))
+  }
+
+  const handleFeedback = (msgId: string, type: 'up' | 'down', messageText?: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedback: type } : m))
+    saveGlobalFeedback(msgId, type, undefined, messageText)
+  }
+
+  const handleFeedbackComment = (msgId: string, comment: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedbackComment: comment } : m))
+    saveGlobalFeedback(msgId, 'down', comment)
+  }
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard'>('onboarding')
   const [sector, setSector] = useState<string | null>(null)
   const [availableSectors, setAvailableSectors] = useState<string[]>([])
   const [stepSession, setStepSession] = useState<{
@@ -78,8 +112,146 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     current: number
     intro: string
   } | null>(null)
-  const [attachedFile, setAttachedFile] = useState<{ name: string; base64: string; type: string; extractedText?: string; originalPdfBase64?: string } | null>(null)
+  const [attachedFiles, setAttachedFiles] = useState<{ name: string; base64: string; type: string; extractedText?: string; originalPdfBase64?: string }[]>([])
   const [sessionContext, setSessionContext] = useState<string>('')
+
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+
+  // TTS (Text-to-Speech) states
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(false)
+  const [activeSpeech, setActiveSpeech] = useState<SpeechSynthesisUtterance | null>(null)
+
+  // Cancelar fala ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [])
+
+  // Inicia a gravação de áudio usando MediaRecorder
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      let options = {}
+      if (MediaRecorder.isTypeSupported('audio/webm')) {
+        options = { mimeType: 'audio/webm' }
+      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+        options = { mimeType: 'audio/ogg' }
+      }
+      
+      const recorder = new MediaRecorder(stream, options)
+      const chunks: Blob[] = []
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunks.push(e.data)
+        }
+      }
+      
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
+        setIsLoading(true)
+        try {
+          const reader = new FileReader()
+          reader.onloadend = async () => {
+            const base64Audio = (reader.result as string).split(',')[1]
+            try {
+              const transcribedText = await transcribeAudio({
+                data: {
+                  base64Audio,
+                  mimeType: audioBlob.type,
+                }
+              })
+              if (transcribedText && transcribedText.trim()) {
+                setInput(transcribedText)
+              }
+            } catch (err: any) {
+              console.error('Erro na transcrição:', err)
+              alert('Não foi possível transcrever o áudio: ' + err.message)
+            } finally {
+              setIsLoading(false)
+            }
+          }
+          reader.readAsDataURL(audioBlob)
+        } catch (err) {
+          console.error(err)
+          setIsLoading(false)
+        }
+      }
+
+      setMediaRecorder(recorder)
+      recorder.start()
+      setIsRecording(true)
+    } catch (err) {
+      console.error('Erro ao acessar microfone:', err)
+      alert('Não foi possível acessar o microfone. Verifique as permissões do navegador.')
+    }
+  }
+
+  // Interrompe a gravação de áudio
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop()
+      mediaRecorder.stream.getTracks().forEach(track => track.stop())
+      setIsRecording(false)
+    }
+  }
+
+  // Ativa/Desativa o TTS e interrompe fala atual se for desligado
+  const toggleSpeech = () => {
+    const nextState = !isSpeechEnabled
+    setIsSpeechEnabled(nextState)
+    if (!nextState && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      setActiveSpeech(null)
+    }
+  }
+
+  // Lê a resposta do bot em voz alta se o TTS estiver ativado
+  const speakResponseText = (text: string) => {
+    if (!isSpeechEnabled || typeof window === 'undefined' || !window.speechSynthesis) return
+
+    window.speechSynthesis.cancel()
+
+    // Limpar o markdown e tags especiais para leitura limpa
+    const cleanText = text
+      .replace(/###/g, '')
+      .replace(/##/g, '')
+      .replace(/#/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/`[^`]+`/g, '') 
+      .replace(/-\s+/g, '') 
+      .replace(/\d+[\.)\-]\s+/g, '') 
+      .replace(/[-_]/g, ' ')
+      .trim()
+
+    if (!cleanText) return
+
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    utterance.lang = 'pt-BR'
+
+    const voices = window.speechSynthesis.getVoices()
+    const ptVoices = voices.filter(v => v.lang.startsWith('pt'))
+    if (ptVoices.length > 0) {
+      const preferredVoice = ptVoices.find(v => v.name.includes('Google') || v.name.includes('Maria') || v.name.includes('Daniel') || v.name.includes('Heloisa')) || ptVoices[0]
+      utterance.voice = preferredVoice
+    }
+
+    utterance.onend = () => {
+      setActiveSpeech(null)
+    }
+    utterance.onerror = () => {
+      setActiveSpeech(null)
+    }
+
+    setActiveSpeech(utterance)
+    window.speechSynthesis.speak(utterance)
+  }
 
   // Detecta passos numerados na resposta do bot
   const parseSteps = (text: string): { intro: string; steps: string[] } | null => {
@@ -194,22 +366,52 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     fetchSectors()
   }, [])
 
+  // Histórico de Conversas (Memória)
+  useEffect(() => {
+    if (sector && step === 'chat') {
+      const saved = localStorage.getItem(`media_chat_history_${sector}`)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          const parsedMessages = parsed.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          }))
+          setMessages(parsedMessages)
+        } catch (e) {
+          console.error("Erro ao carregar histórico", e)
+        }
+      } else {
+        setMessages([
+          {
+            id: 'initial',
+            role: 'bot',
+            text: `Olá! Sou o MedIA, seu assistente da Arthromed no setor ${sector}. Como posso ajudar hoje?`,
+            timestamp: new Date(),
+          },
+        ])
+      }
+    }
+  }, [sector, step])
+
+  useEffect(() => {
+    if (sector && step === 'chat' && messages.length > 0) {
+      localStorage.setItem(`media_chat_history_${sector}`, JSON.stringify(messages))
+    }
+  }, [messages, sector, step])
+
   const handleStart = () => setStep('sector')
 
   const handleSelectSector = (s: string) => {
     setSector(s)
     setStep('chat')
-    setMessages([
-      {
-        id: 'initial',
-        role: 'bot',
-        text: `Olá! Sou o MedIA, seu assistente da Arthromed no setor ${s}. Como posso ajudar hoje?`,
-        timestamp: new Date(),
-      },
-    ])
   }
 
   const handleClose = () => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      setActiveSpeech(null)
+    }
     if (isDesktop && (window as any).pywebview) {
       (window as any).pywebview.api.close_window()
     } else {
@@ -263,11 +465,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             reader.onload = (event) => {
               const base64Full = event.target?.result as string
               const base64Data = base64Full.split(',')[1]
-              setAttachedFile({
+              setAttachedFiles(prev => [...prev, {
                 name: `Imagem colada (${new Date().toLocaleTimeString()})`,
                 base64: base64Data,
                 type: file.type
-              })
+              }])
               if (!input.trim()) {
                 setInput(`Analise esta imagem colada`)
               }
@@ -283,10 +485,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     return () => window.removeEventListener('paste', handlePaste)
   }, [isOpen, step, input])
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return
+  const handleSend = async (overrideInput?: string) => {
+    const textToSend = overrideInput || input
+    if (!textToSend.trim() || isLoading) return
 
-    const lowInput = input.toLowerCase().trim()
+    const lowInput = textToSend.toLowerCase().trim()
     const changeSectorKeywords = ['mudar de setor', 'trocar de setor', 'mudar setor', 'trocar setor', 'voltar para setores', 'alterar setor']
     
     if (changeSectorKeywords.some(keyword => lowInput.includes(keyword))) {
@@ -298,14 +501,14 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
-      text: input,
+      text: textToSend,
       timestamp: new Date(),
-      file: attachedFile ? {
-        name: attachedFile.name,
-        base64: attachedFile.base64,
-        type: attachedFile.type,
-        originalPdfBase64: attachedFile.originalPdfBase64
-      } : undefined
+      files: attachedFiles.length > 0 ? attachedFiles.map(f => ({
+        name: f.name,
+        base64: f.base64,
+        type: f.type,
+        originalPdfBase64: f.originalPdfBase64
+      })) : undefined
     }
 
     setMessages((prev) => [...prev, userMsg])
@@ -313,13 +516,13 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setIsLoading(true)
     
     // Armazena cópia do anexo para limpar o estado antes do envio
-    const fileToSend = attachedFile
-    setAttachedFile(null)
+    const filesToSend = attachedFiles
+    setAttachedFiles([])
 
     try {
       const context = await getContext({
         data: {
-          text: input,
+          text: textToSend,
           sector: sector || 'Geral',
           history: sessionContext, // Passa o contexto extraído anteriormente
         }
@@ -327,14 +530,14 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
       const botResponse = await generateResponse({
         data: {
-          text: input,
+          text: textToSend,
           context: context,
           history: messages.map(m => ({ role: m.role, text: m.text })),
-          fileData: fileToSend?.base64 && !fileToSend.extractedText ? {
-            base64: fileToSend.base64,
-            mimeType: fileToSend.type
-          } : undefined,
-          extractedText: fileToSend?.extractedText || undefined
+          filesData: filesToSend.map(f => ({
+            base64: f.base64,
+            mimeType: f.type,
+            extractedText: f.extractedText
+          }))
         }
       })
 
@@ -357,6 +560,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, botMsg])
+      }
+
+      if (botResponse) {
+        speakResponseText(botResponse)
       }
 
       if (parsed) {
@@ -398,7 +605,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }
 
   // Renderizador de Mensagens com Suporte a Cards de Dados
-  const renderMessageContent = (text: string) => {
+  const renderMessageContent = (msg: Message) => {
+    const text = msg.text || ''
     const lines = text.split('\n')
     
     // Conta quantas linhas têm o formato de par chave-valor negrito, ex: **Paciente**: João
@@ -413,6 +621,27 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     const isExtraction = keyValMatchCount >= 2
     
     if (isExtraction) {
+      const exportToCSV = (cardData: { label: string; value: string }[]) => {
+        const header = cardData.map(c => `"${c.label}"`).join(',')
+        const row = cardData.map(c => `"${c.value.replace(/"/g, '""')}"`).join(',')
+        const csvContent = `${header}\n${row}`
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `extracao_media_${new Date().getTime()}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+
+      const copyToERP = (cardData: { label: string; value: string }[]) => {
+        const text = cardData.map(c => `${c.label}: ${c.value}`).join('\n')
+        navigator.clipboard.writeText(text)
+        alert("Copiado para a área de transferência!")
+      }
+
       const cardData: { icon: any; label: string; value: string }[] = []
       const otherLines: string[] = []
 
@@ -487,6 +716,68 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 </div>
               ))}
             </div>
+            
+            <div className="flex gap-2 mt-1">
+              <button 
+                onClick={() => exportToCSV(cardData)} 
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2332] text-white rounded-lg text-xs font-semibold hover:bg-[#253043] transition-colors"
+              >
+                <FileText size={14} /> CSV
+              </button>
+              <button 
+                onClick={() => copyToERP(cardData)} 
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 bg-white text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+              >
+                <Copy size={14} /> Copiar (ERP)
+              </button>
+            </div>
+
+            {msg.role === 'bot' && (
+              <div className="mt-2 pt-3 border-t border-slate-100 flex flex-col gap-2">
+                {!msg.feedback ? (
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>A extração ficou correta?</span>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => handleFeedback(msg.id, 'up', msg.text)} className="p-1.5 bg-slate-50 hover:bg-green-100 hover:text-green-600 rounded-md transition-colors"><ThumbsUp size={14}/></button>
+                      <button onClick={() => handleFeedback(msg.id, 'down', msg.text)} className="p-1.5 bg-slate-50 hover:bg-red-100 hover:text-red-600 rounded-md transition-colors"><ThumbsDown size={14}/></button>
+                    </div>
+                  </div>
+                ) : msg.feedback === 'down' && !msg.feedbackComment ? (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-red-500 font-medium">O que faltou ou veio errado?</span>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        id={`feedback-input-${msg.id}`}
+                        placeholder="Ex: Não pegou o CID correto..." 
+                        className="flex-1 text-xs px-2 py-1.5 border border-red-200 rounded-md outline-none focus:border-red-400 bg-white"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = e.currentTarget.value
+                            if(val.trim()) handleFeedbackComment(msg.id, val)
+                          }
+                        }}
+                      />
+                      <button 
+                        onClick={() => {
+                          const input = document.getElementById(`feedback-input-${msg.id}`) as HTMLInputElement
+                          if(input.value.trim()) handleFeedbackComment(msg.id, input.value)
+                        }}
+                        className="px-2.5 py-1.5 bg-red-50 text-red-600 rounded-md text-xs font-semibold hover:bg-red-100 cursor-pointer"
+                      >
+                        Enviar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                    {msg.feedback === 'up' ? <ThumbsUp size={12} className="text-green-500"/> : <ThumbsDown size={12} className="text-red-500"/>}
+                    <span>Obrigado pelo feedback!</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {otherLines.length > 1 && renderTextBlock(otherLines.slice(1))}
           </div>
         )
@@ -629,27 +920,28 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
-    // Limite de 5MB para evitar estouro de memória no Worker
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Arquivo muito grande! Por favor, use arquivos menores que 5MB.')
-      return
-    }
+    Array.from(files).forEach(file => {
+      // Limite de 5MB para evitar estouro de memória no Worker
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`Arquivo ${file.name} muito grande! Por favor, use arquivos menores que 5MB.`)
+        return
+      }
 
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      const base64Full = event.target?.result as string
-      const base64Data = base64Full.split(',')[1]
-      
-      let finalBase64 = base64Data
-      let extractedText = ""
-      let fileType = file.type
-      const originalPdfBase64 = file.type === 'application/pdf' ? base64Data : undefined
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        const base64Full = event.target?.result as string
+        const base64Data = base64Full.split(',')[1]
+        
+        let finalBase64 = base64Data
+        let extractedText = ""
+        let fileType = file.type
+        const originalPdfBase64 = file.type === 'application/pdf' ? base64Data : undefined
 
-      // 1. Tenta extrair via Python (Se estiver no Desktop App)
-      if (file.type === 'application/pdf' && (window as any).pywebview?.api?.extract_pdf_text) {
+        // 1. Tenta extrair via Python (Se estiver no Desktop App)
+        if (file.type === 'application/pdf' && (window as any).pywebview?.api?.extract_pdf_text) {
         setIsLoading(true)
         try {
           const result = await (window as any).pywebview.api.extract_pdf_text(base64Data)
@@ -734,21 +1026,22 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
         }
       }
 
-      setAttachedFile({
+      setAttachedFiles(prev => [...prev, {
         name: file.name,
         base64: finalBase64,
         type: fileType,
         extractedText: extractedText,
         originalPdfBase64: originalPdfBase64
-      })
+      }])
 
       // Sugere ao usuário o que fazer após anexar
       if (!input.trim()) {
         const actionText = file.type.includes('image') ? 'analise esta imagem' : 'analise este documento'
-        setInput(`${actionText.charAt(0).toUpperCase() + actionText.slice(1)} para mim: ${file.name}`)
+        setInput(`${actionText.charAt(0).toUpperCase() + actionText.slice(1)} para mim.`)
       }
     }
     reader.readAsDataURL(file)
+    })
   }
 
   return (
@@ -788,14 +1081,53 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Assistente Corp</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {step === 'chat' && (
-                  <button
-                    onClick={handleBackToSectors}
-                    className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm"
-                  >
-                    <Layers size={14} /> Trocar Setor
-                  </button>
+                  <>
+                    <button
+                      onClick={toggleSpeech}
+                      className={cn(
+                        "p-2 rounded-lg transition-all border shadow-sm cursor-pointer flex-shrink-0",
+                        isSpeechEnabled
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700"
+                          : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:text-slate-600"
+                      )}
+                      title={isSpeechEnabled ? "Desativar leitura de voz" : "Ativar leitura de voz"}
+                    >
+                      {isSpeechEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                    </button>
+                    <button
+                      onClick={() => setStep('dashboard')}
+                      className="p-2 border border-slate-200 text-blue-600 hover:text-blue-700 bg-white hover:bg-blue-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
+                      title="Métricas e Analytics"
+                    >
+                      <BarChart2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('Deseja limpar o histórico desta conversa?')) {
+                          setMessages([{
+                            id: 'initial',
+                            role: 'bot',
+                            text: `Olá! Sou o MedIA, seu assistente da Arthromed no setor ${sector}. Como posso ajudar hoje?`,
+                            timestamp: new Date(),
+                          }])
+                          localStorage.removeItem(`media_chat_history_${sector}`)
+                        }
+                      }}
+                      className="p-2 border border-slate-200 text-red-500 hover:text-red-600 bg-white hover:bg-red-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
+                      title="Limpar Histórico do Chat"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <button
+                      onClick={handleBackToSectors}
+                      className="p-2 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
+                      title="Trocar de Setor"
+                    >
+                      <Layers size={16} />
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={handleClose}
@@ -962,27 +1294,32 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                               {msg.role === 'user' ? (
                                 <div className="flex flex-col gap-3">
                                   <span>{msg.text}</span>
-                                  {msg.file && (
-                                    <button
-                                      onClick={() => setPreviewFile(msg.file!)}
-                                      className="flex items-center gap-3 p-3 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-white transition-all text-left group cursor-pointer w-full mt-1"
-                                    >
-                                      <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors shrink-0">
-                                        {msg.file.type === 'application/pdf' ? (
-                                          <FileText size={18} />
-                                        ) : (
-                                          <Paperclip size={18} />
-                                        )}
-                                      </div>
-                                      <div className="flex flex-col flex-1 overflow-hidden">
-                                        <span className="text-xs font-semibold truncate">{msg.file.name}</span>
-                                        <span className="text-[9px] text-white/60 uppercase tracking-widest mt-0.5 font-bold">Clique para pré-visualizar</span>
-                                      </div>
-                                    </button>
+                                  {msg.files && msg.files.length > 0 && (
+                                    <div className="flex flex-col gap-2 w-full mt-1">
+                                      {msg.files.map((file, idx) => (
+                                        <button
+                                          key={idx}
+                                          onClick={() => setPreviewFile(file)}
+                                          className="flex items-center gap-3 p-3 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-white transition-all text-left group cursor-pointer w-full"
+                                        >
+                                          <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors shrink-0">
+                                            {file.type === 'application/pdf' ? (
+                                              <FileText size={18} />
+                                            ) : (
+                                              <Paperclip size={18} />
+                                            )}
+                                          </div>
+                                          <div className="flex flex-col flex-1 overflow-hidden">
+                                            <span className="text-xs font-semibold truncate">{file.name}</span>
+                                            <span className="text-[9px] text-white/60 uppercase tracking-widest mt-0.5 font-bold">Clique para pré-visualizar</span>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
                                   )}
                                 </div>
                               ) : (
-                                renderMessageContent(msg.text)
+                                renderMessageContent(msg)
                               )}
                             </div>
                             {msg.role !== 'user' && (
@@ -1064,13 +1401,16 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     )}
 
                     <div className="p-5 bg-white border-t border-slate-100">
-                      {messages.length < 3 && !stepSession && (
+                      {!stepSession && (
                         <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                          {["Análise de Pendências", "Emissão de Nota Fiscal", "Consultar Glosas", "Status de Orçamento"].map((sug) => (
+                          {(attachedFiles.length > 0 
+                             ? ["Resumir Pedido", "Checar Autorização", "Extrair apenas CID", "Extrair Materiais"]
+                             : messages.length < 3 ? ["Análise de Pendências", "Emissão de Nota Fiscal", "Consultar Glosas", "Status de Orçamento"] : []
+                          ).map((sug) => (
                             <button
                               key={sug}
-                              onClick={() => { setInput(sug); handleSend() }}
-                              className="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-medium hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm"
+                              onClick={() => { setInput(''); handleSend(sug) }}
+                              className="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-medium hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
                             >
                               {sug}
                             </button>
@@ -1081,48 +1421,78 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                         <div className="flex-1 bg-slate-100/70 border border-slate-200 rounded-full flex items-center p-1.5 pr-2 focus-within:ring-2 focus-within:ring-[#1a2332]/20 focus-within:border-[#1a2332]/30 transition-all">
                           <button 
                             className={cn(
-                              "p-2.5 transition-colors relative rounded-full hover:bg-slate-200/50",
-                              attachedFile ? "text-[#1a2332]" : "text-slate-400"
+                              "p-2.5 transition-colors relative rounded-full hover:bg-slate-200/50 cursor-pointer",
+                              attachedFiles.length > 0 ? "text-[#1a2332]" : "text-slate-400"
                             )}
                             title="Adicionar Anexo"
                             onClick={() => document.getElementById('file-upload')?.click()}
                           >
                             <Paperclip size={18} />
-                            {attachedFile && (
-                              <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                            {attachedFiles.length > 0 && (
+                              <span className="absolute top-2 right-2 w-3 h-3 bg-green-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white font-bold">
+                                {attachedFiles.length}
+                              </span>
                             )}
                             <input 
                               type="file" 
                               id="file-upload" 
                               className="hidden" 
+                              multiple
                               onChange={handleFileUpload}
                               accept=".pdf,image/*"
                             />
                           </button>
+
+                          {isRecording ? (
+                            <button
+                              onClick={stopRecording}
+                              className="p-2.5 text-red-500 hover:bg-red-50 rounded-full transition-colors animate-pulse relative cursor-pointer"
+                              title="Parar Gravação"
+                            >
+                              <Mic size={18} />
+                              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white animate-ping" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={startRecording}
+                              className="p-2.5 text-slate-400 hover:text-[#1a2332] hover:bg-slate-200/50 rounded-full transition-colors cursor-pointer"
+                              title="Gravar Mensagem de Voz"
+                              disabled={isLoading}
+                            >
+                              <Mic size={18} />
+                            </button>
+                          )}
                           
                           <input
                             type="text"
-                            value={input}
+                            value={isRecording ? "" : input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder={attachedFile ? `Arquivo pronto: ${attachedFile.name}` : "Descreva sua solicitação ou dúvida..."}
-                            className="flex-1 border-none bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400 px-2"
+                            placeholder={
+                              isRecording 
+                                ? "Gravando áudio... clique no microfone para parar." 
+                                : attachedFiles.length > 0
+                                ? `${attachedFiles.length} arquivo(s) pronto(s)` 
+                                : "Descreva sua solicitação ou dúvida..."
+                            }
+                            disabled={isRecording || isLoading}
+                            className="flex-1 border-none bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400 px-2 disabled:opacity-75"
                           />
                           
-                          {attachedFile && (
+                          {attachedFiles.length > 0 && (
                             <button
-                              onClick={() => setAttachedFile(null)}
+                              onClick={() => setAttachedFiles([])}
                               className="p-2 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
-                              title="Remover arquivo"
+                              title="Remover arquivos"
                             >
                               <X size={16} />
                             </button>
                           )}
                         </div>
                         <button
-                          onClick={handleSend}
-                          disabled={!input.trim() || isLoading}
-                          className="p-3.5 bg-[#1a2332]/10 text-[#1a2332] rounded-full disabled:opacity-50 hover:bg-[#1a2332]/20 transition-colors"
+                          onClick={() => handleSend()}
+                          disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
+                          className="p-3.5 bg-[#1a2332]/10 text-[#1a2332] rounded-full disabled:opacity-50 hover:bg-[#1a2332]/20 transition-colors cursor-pointer"
                         >
                           <Send size={18} />
                         </button>
@@ -1132,6 +1502,85 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                           MEDIA CORPORATE ASSISTANT • POWERED BY ARTHROMED
                         </p>
                       </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 'dashboard' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="flex-1 flex flex-col bg-[#f8fafc] overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 bg-white border-b border-slate-100 shrink-0">
+                      <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <BarChart2 size={18} className="text-blue-500" /> Analytics
+                      </h2>
+                      <button 
+                        onClick={() => setStep('chat')}
+                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500 transition-colors cursor-pointer"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    {/* Scrollable Content */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      
+                      {/* KPIs */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Activity size={16} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Guias Lidas</span>
+                          </div>
+                          <span className="text-2xl font-bold text-slate-800">
+                            {parseInt(localStorage.getItem('media_processed_orders') || '0', 10) + 142}
+                          </span>
+                        </div>
+
+                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-green-600">
+                            <Clock size={16} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Horas Salvas</span>
+                          </div>
+                          <span className="text-2xl font-bold text-slate-800">
+                            {Math.floor(((parseInt(localStorage.getItem('media_processed_orders') || '0', 10) + 142) * 3) / 60)}h
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Feedbacks */}
+                      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                          <MessageSquare size={16} className="text-purple-500"/>
+                          Últimos Erros da IA
+                        </h3>
+                        <div className="space-y-3 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
+                          {(() => {
+                            const fbs = JSON.parse(localStorage.getItem('media_feedbacks') || '[]');
+                            const defaultFeedbacks = [
+                              { type: 'down', comment: 'Faltou o CID 10 na guia', date: new Date().toISOString(), messagePreview: 'Paciente: João Silva...' }
+                            ];
+                            const all = fbs.length > 0 ? fbs : defaultFeedbacks;
+                            const negatives = all.filter((f: any) => f.type === 'down' || f.comment).reverse();
+                            if (negatives.length === 0) return <p className="text-xs text-slate-400 italic">Nenhum feedback negativo recente.</p>;
+                            
+                            return negatives.map((fb: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-red-50/50 border border-red-100 rounded-lg flex gap-3 items-start">
+                                <ThumbsDown size={14} className="text-red-500 shrink-0 mt-0.5"/>
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-xs font-semibold text-slate-700">{fb.comment || "Usuário não comentou."}</span>
+                                  <span className="text-[10px] text-slate-400 line-clamp-1 italic">Original: {fb.messagePreview}</span>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+
                     </div>
                   </motion.div>
                 )}

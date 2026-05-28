@@ -94,3 +94,54 @@ export async function getChatClient() {
 
   return { chatClient, apiKey, debugInfo }
 }
+
+export async function transcribeAudioOnServer(base64Audio: string, mimeType: string): Promise<string> {
+  const { chatClient, apiKey } = await getChatClient()
+
+  if (!apiKey || !chatClient) {
+    throw new Error('Chave de API do AI Gateway ausente no servidor.')
+  }
+
+  if (apiKey.startsWith('sk-ant-')) {
+    throw new Error('A transcrição de áudio (Whisper) não é suportada utilizando uma chave de API do Claude (Anthropic) diretamente.')
+  }
+
+  // Converter base64 para Uint8Array
+  const binaryString = atob(base64Audio)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+
+  // Descobre a extensão baseando-se no mimeType para dar nome adequado ao arquivo
+  let extension = 'webm'
+  if (mimeType.includes('wav')) extension = 'wav'
+  else if (mimeType.includes('ogg')) extension = 'ogg'
+  else if (mimeType.includes('mp4')) extension = 'mp4'
+  else if (mimeType.includes('mpeg')) extension = 'mp3'
+  else if (mimeType.includes('m4a')) extension = 'm4a'
+
+  // Cria o arquivo virtual usando a API Web padrão File
+  let fileObj: any
+  if (typeof globalThis.File !== 'undefined') {
+    fileObj = new globalThis.File([bytes], `audio.${extension}`, { type: mimeType })
+  } else {
+    // Fallback usando Blob (OpenAI SDK aceita Blob também)
+    fileObj = new globalThis.Blob([bytes], { type: mimeType })
+    ;(fileObj as any).name = `audio.${extension}`
+  }
+
+  try {
+    const transcription = await chatClient.audio.transcriptions.create({
+      file: fileObj,
+      model: 'openai/whisper-1',
+      language: 'pt',
+    })
+
+    return transcription.text
+  } catch (error: any) {
+    console.error('Erro ao chamar Whisper no servidor:', error)
+    throw new Error(`Falha na transcrição: ${error.message || error}`)
+  }
+}
+

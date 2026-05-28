@@ -24,6 +24,19 @@ def run_as_window():
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pywebview"])
         import webview
 
+    def is_dark_mode():
+        try:
+            import winreg
+            registry = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+            key = winreg.OpenKey(registry, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
+            value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+            return value == 0
+        except Exception:
+            return False
+
+    theme_param = "&theme=dark" if is_dark_mode() else "&theme=light"
+    final_url = CHAT_URL + theme_param
+
     if not CHAT_URL:
         print("URL do chat não configurada.")
         return
@@ -35,6 +48,15 @@ def run_as_window():
     class JSApi:
         def close_window(self):
             window.destroy()
+            
+        def resize_window(self, is_open):
+            try:
+                if is_open:
+                    window.resize(400, 540)
+                else:
+                    window.resize(120, 120)
+            except Exception as e:
+                print("Erro ao redimensionar:", e)
             
         def extract_pdf_text(self, base64_data):
             """Lê o texto de um PDF em base64. Se for imagem, renderiza para o MedIA ver."""
@@ -82,6 +104,27 @@ def run_as_window():
                         page = doc[0]
                         pix = page.get_pixmap(matrix=fitz.Matrix(2, 2)) # Alta qualidade
                         img_data = pix.tobytes("png")
+                        
+                        # Melhoria de Imagem com Pillow
+                        try:
+                            from PIL import Image, ImageEnhance
+                            import io
+                            img = Image.open(io.BytesIO(img_data))
+                            
+                            # Aumenta o contraste
+                            enhancer = ImageEnhance.Contrast(img)
+                            img = enhancer.enhance(1.5)
+                            
+                            # Aumenta a nitidez
+                            sharpness = ImageEnhance.Sharpness(img)
+                            img = sharpness.enhance(2.0)
+                            
+                            output = io.BytesIO()
+                            img.save(output, format="PNG")
+                            img_data = output.getvalue()
+                        except Exception as e:
+                            print("Aviso: Falha ao aplicar melhorias Pillow:", e)
+                            
                         img_b64 = base64.b64encode(img_data).decode('utf-8')
                         doc.close()
                         return {"success": True, "text": "", "image": img_b64, "mimeType": "image/png"}
@@ -95,7 +138,7 @@ def run_as_window():
     try:
         window = webview.create_window(
             'MedIA - Assistente Virtual', 
-            CHAT_URL,
+            final_url,
             width=400,
             height=540,
             resizable=True,
@@ -232,6 +275,29 @@ def create_floating_widget():
         menu.post(event.x_root, event.y_root)
 
     lbl.bind("<Button-3>", show_menu)
+    
+    # Notificações proativas (piscar widget)
+    def blink():
+        def _fade_out(alpha):
+            if alpha > 0.5:
+                root.attributes("-alpha", alpha)
+                root.after(50, _fade_out, alpha - 0.1)
+            else:
+                root.after(50, _fade_in, alpha)
+        
+        def _fade_in(alpha):
+            if alpha < 1.0:
+                root.attributes("-alpha", alpha)
+                root.after(50, _fade_in, alpha + 0.1)
+            else:
+                root.attributes("-alpha", 1.0)
+        
+        _fade_out(1.0)
+        # Piscar a cada 10 minutos
+        root.after(600000, blink)
+
+    # Iniciar primeira piscada após 10 segundos para testar
+    root.after(10000, blink)
     
     print("Widget MedIA iniciado!")
     root.mainloop()

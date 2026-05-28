@@ -225,6 +225,120 @@ export const getContext = createServerFn({ method: 'GET' })
     }
   })
 
+async function callClaudeApi(apiKey: string, messages: any[]): Promise<string> {
+  const models = [
+    'claude-3-5-sonnet-20241022',
+    'claude-3-5-haiku-20241022'
+  ]
+
+  let system = ''
+  const anthropicMessages: any[] = []
+
+  for (const msg of messages) {
+    if (msg.role === 'system') {
+      system += (system ? '\n\n' : '') + msg.content
+      continue
+    }
+
+    const role = msg.role === 'assistant' ? 'assistant' : 'user'
+    let content: any = ''
+
+    if (typeof msg.content === 'string') {
+      content = msg.content
+    } else if (Array.isArray(msg.content)) {
+      content = msg.content.map((item: any) => {
+        if (item.type === 'text') {
+          return { type: 'text', text: item.text }
+        } else if (item.type === 'image_url') {
+          const url = item.image_url?.url || ''
+          const match = url.match(/^data:([^;]+);base64,(.+)$/)
+          if (match) {
+            return {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: match[1],
+                data: match[2]
+              }
+            }
+          }
+        }
+        return null
+      }).filter(Boolean)
+    }
+
+    anthropicMessages.push({ role, content })
+  }
+
+  // Limpa e valida o array de mensagens para a API do Anthropic
+  const cleanMessages: any[] = []
+  for (const msg of anthropicMessages) {
+    if (!msg.content || (Array.isArray(msg.content) && msg.content.length === 0)) {
+      continue
+    }
+    if (cleanMessages.length > 0 && cleanMessages[cleanMessages.length - 1].role === msg.role) {
+      const prev = cleanMessages[cleanMessages.length - 1]
+      if (typeof prev.content === 'string' && typeof msg.content === 'string') {
+        prev.content += '\n\n' + msg.content
+      } else {
+        const prevArray = typeof prev.content === 'string' ? [{ type: 'text', text: prev.content }] : prev.content
+        const msgArray = typeof msg.content === 'string' ? [{ type: 'text', text: msg.content }] : msg.content
+        prev.content = [...prevArray, ...msgArray]
+      }
+    } else {
+      cleanMessages.push(msg)
+    }
+  }
+
+  if (cleanMessages.length > 0 && cleanMessages[0].role === 'assistant') {
+    cleanMessages.unshift({ role: 'user', content: 'Olá' })
+  }
+
+  let lastError: any = null
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i]
+    try {
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1200,
+          system,
+          messages: cleanMessages,
+          temperature: 0.3
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Anthropic API error (${response.status}): ${errorText}`)
+      }
+
+      const data = await response.json()
+      const textResponse = data.content?.[0]?.text
+      if (!textResponse) {
+        throw new Error('Claude retornou resposta vazia')
+      }
+
+      return textResponse
+    } catch (err: any) {
+      console.warn(`Erro no modelo Claude ${model}:`, err.message || err)
+      lastError = err
+    }
+  }
+
+  throw lastError || new Error('Todos os modelos Claude falharam')
+}
 
 export const generateResponse = createServerFn({ method: 'POST' })
   .inputValidator(z.object({
@@ -234,14 +348,14 @@ export const generateResponse = createServerFn({ method: 'POST' })
       role: z.enum(['user', 'bot']),
       text: z.string(),
     })).optional(),
-    fileData: z.object({
+    filesData: z.array(z.object({
       base64: z.string(),
       mimeType: z.string(),
-    }).optional(),
-    extractedText: z.string().optional(),
+      extractedText: z.string().optional(),
+    })).optional(),
   }))
   .handler(async ({ data }) => {
-    const { text, context, history = [], fileData, extractedText } = data
+    const { text, context, history = [], filesData } = data
 
     try {
       // Importa dinamicamente o arquivo servidor-only que nunca é enviado para o cliente
@@ -266,7 +380,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
           `- **Erro no Evento**: ${debugInfo.error || 'Nenhum'}\n`
       }
       
-      let finalDocText = extractedText || ''
+      let finalDocText = filesData?.map((f, index) => f.extractedText ? `[DOCUMENTO ${index + 1}]:\n${f.extractedText}` : '').filter(Boolean).join('\n\n') || ''
 
       // Se o documento for longo (> 8000 caracteres) e a pergunta for específica, fazemos um RAG local
       if (finalDocText && finalDocText.length > 8000) {
@@ -349,7 +463,7 @@ REGRAS DE CONTEÚDO:
 5. Se não encontrar uma informação no documento ou no contexto, diga claramente que não foi especificado.
 `
       const isDocumentExtraction = text.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]') || !!finalDocText
-      const hasAttachment = !!fileData || isDocumentExtraction
+      const hasAttachment = (filesData && filesData.length > 0) || isDocumentExtraction
 
       if (hasAttachment) {
         systemPrompt += `
@@ -412,17 +526,25 @@ REGRAS DE CONTEÚDO:
 
       const userContent: any[] = [{ type: 'text', text: promptText + formattingInstruction }]
       
-      if (fileData && fileData.mimeType.startsWith('image/')) {
-        userContent.push({
-          type: 'image_url',
-          image_url: {
-            url: `data:${fileData.mimeType};base64,${fileData.base64}`
+      if (filesData) {
+        filesData.forEach(file => {
+          if (file.mimeType.startsWith('image/')) {
+            userContent.push({
+              type: 'image_url',
+              image_url: {
+                url: `data:${file.mimeType};base64,${file.base64}`
+              }
+            })
           }
         })
       }
 
       // Adiciona a mensagem atual
       messages.push({ role: 'user', content: userContent })
+
+      if (apiKey.startsWith('sk-ant-')) {
+        return await callClaudeApi(apiKey, messages)
+      }
 
       // Guarda de segurança para o TypeScript — chatClient nunca é null aqui porque
       // o bloco `if (!apiKey)` acima já retorna antes de chegar neste ponto.
@@ -529,3 +651,20 @@ export const getSectors = createServerFn({ method: 'GET' })
       return ['Geral', 'Financeiro', 'Comercial'] // Fallback
     }
   })
+
+export const transcribeAudio = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({
+    base64Audio: z.string(),
+    mimeType: z.string(),
+  }))
+  .handler(async ({ data }) => {
+    const { base64Audio, mimeType } = data
+    try {
+      const { transcribeAudioOnServer } = await import('./chat-server')
+      return await transcribeAudioOnServer(base64Audio, mimeType)
+    } catch (e: any) {
+      console.error('Erro ao chamar transcribeAudioOnServer:', e)
+      throw new Error(e.message || 'Erro ao processar áudio no servidor')
+    }
+  })
+
