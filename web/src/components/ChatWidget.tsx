@@ -1147,9 +1147,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex-1 flex flex-col items-center justify-center p-8 bg-white"
+                    className="flex-1 flex flex-col items-center p-6 sm:p-8 bg-white overflow-y-auto w-full"
                   >
-                    <div className="mb-8 flex justify-center w-full">
+                    <div className="w-full max-w-[380px] flex flex-col items-center justify-center min-h-full my-auto py-4">
+                      <div className="mb-8 flex justify-center w-full">
                       <div className="w-24 h-24 bg-[#1a2332] rounded-2xl flex items-center justify-center text-white shadow-lg">
                         <Bot size={48} strokeWidth={1.5} />
                       </div>
@@ -1184,10 +1185,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
                     <button
                       onClick={handleStart}
-                      className="w-full max-w-[380px] bg-[#1a2332] hover:bg-[#253043] text-white py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md"
+                      className="w-full max-w-[380px] bg-[#1a2332] hover:bg-[#253043] text-white py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md shrink-0"
                     >
                       Iniciar Atendimento <ArrowRight size={16} />
                     </button>
+                    </div>
                   </motion.div>
                 )}
 
