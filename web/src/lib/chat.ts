@@ -481,7 +481,9 @@ REGRAS DE CONTEÚDO:
       const isDocumentExtraction = text.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]') || !!finalDocText
       const hasAttachment = (filesData && filesData.length > 0) || isDocumentExtraction
 
-      if (hasAttachment) {
+      const isAuditRequest = text.toLowerCase().match(/(confer|compar|audit|bater|gasto|nota fiscal|diferença|divergência)/)
+
+      if (hasAttachment && !isAuditRequest) {
         systemPrompt += `
         O USUÁRIO FORNECEU UM DOCUMENTO OU IMAGEM MÉDICA (Pedido Médico, Autorização de Guia, Orçamento ou Comanda).
         Sua tarefa é analisar o documento e gerar OBRIGATORIAMENTE um RESUMO ESTRUTURADO em formato de lista chave-valor, sem nenhuma conversa prévia!
@@ -496,6 +498,16 @@ REGRAS DE CONTEÚDO:
         - **Data**: [Data de emissão ou agendamento no formato DD/MM/AAAA. Se não houver, escreva "Não especificado"]
 
         CRÍTICO: Não escreva parágrafos de introdução! Comece sua resposta diretamente com a lista acima para que a nossa interface possa desenhar os cards interativos para o usuário.
+        `;
+      } else if (hasAttachment && isAuditRequest) {
+        systemPrompt += `
+        O USUÁRIO FORNECEU DOCUMENTOS PARA CONFERÊNCIA/AUDITORIA PÓS-CIRÚRGICA.
+        Sua tarefa é analisar os documentos enviados (por exemplo, Guia Autorizada vs Nota Fiscal ou Folha de Sala/Gasto) e gerar um relatório apontando o que foi autorizado versus o que foi gasto.
+        
+        Você deve gerar a resposta OBRIGATORIAMENTE em formato de Tabela Markdown clara e objetiva com as seguintes colunas:
+        | Material / Item | Qtd. Autorizada | Qtd. Gasta | Diferença | Status (Sobrou / Excedeu / OK) |
+        
+        Após a tabela, adicione um breve parágrafo resumindo se houve divergências críticas. Não invente dados! Se a informação não estiver nos documentos, coloque "N/A".
         `;
       }
 
@@ -522,18 +534,23 @@ REGRAS DE CONTEÚDO:
         })
       })
 
-      const formattingInstruction = hasAttachment ? `\n\n` +
-        `⚠️ **INSTRUÇÃO IMPORTANTE DE FORMATAÇÃO DO SISTEMA** ⚠️\n` +
-        `Você deve analisar o documento acima e responder OBRIGATORIAMENTE seguindo este formato exato de lista chave-valor, sem nenhuma conversa prévia:\n` +
-        `- **Paciente**: [Nome completo do paciente. Evite abreviações]\n` +
-        `- **Médico**: [Nome completo e CRM do MÉDICO SOLICITANTE/CIRURGIÃO. Nunca coloque o médico auditor ou perito da guia]\n` +
-        `- **Hospital**: [Nome do hospital ou prestador onde ocorrerá a cirurgia/exame]\n` +
-        `- **Convênio**: [Nome da operadora do plano de saúde]\n` +
-        `- **Procedimento**: [Nome e códigos TUSS dos procedimentos solicitados]\n` +
-        `- **Materiais**: [Lista detalhada de OPME/materiais especiais solicitados. Se não houver, escreva "Não especificado"]\n` +
-        `- **Data**: [Data de emissão ou agendamento no formato DD/MM/AAAA. Se não houver, escreva "Não especificado"]\n\n` +
-        `CRÍTICO: Não comece com "O documento é..." ou introduções similares! Comece sua resposta diretamente com "- **Paciente**:" para que a interface desenhe os cards interativos.`
-        : ''
+      let formattingInstruction = ''
+      if (hasAttachment && !isAuditRequest) {
+        formattingInstruction = `\n\n` +
+          `⚠️ **INSTRUÇÃO IMPORTANTE DE FORMATAÇÃO DO SISTEMA** ⚠️\n` +
+          `Você deve analisar o documento acima e responder OBRIGATORIAMENTE seguindo este formato exato de lista chave-valor, sem nenhuma conversa prévia:\n` +
+          `- **Paciente**: [Nome completo do paciente. Evite abreviações]\n` +
+          `- **Médico**: [Nome completo e CRM do MÉDICO SOLICITANTE/CIRURGIÃO. Nunca coloque o médico auditor ou perito da guia]\n` +
+          `- **Hospital**: [Nome do hospital ou prestador onde ocorrerá a cirurgia/exame]\n` +
+          `- **Convênio**: [Nome da operadora do plano de saúde]\n` +
+          `- **Procedimento**: [Nome e códigos TUSS dos procedimentos solicitados]\n` +
+          `- **Materiais**: [Lista detalhada de OPME/materiais especiais solicitados. Se não houver, escreva "Não especificado"]\n` +
+          `- **Data**: [Data de emissão ou agendamento no formato DD/MM/AAAA. Se não houver, escreva "Não especificado"]\n\n` +
+          `CRÍTICO: Não comece com "O documento é..." ou introduções similares! Comece sua resposta diretamente com "- **Paciente**:" para que a interface desenhe os cards interativos.`
+      } else if (hasAttachment && isAuditRequest) {
+        formattingInstruction = `\n\n⚠️ **INSTRUÇÃO IMPORTANTE DE FORMATAÇÃO DO SISTEMA** ⚠️\n` +
+          `Sua tarefa principal agora é a CONFERÊNCIA. Analise as quantidades nos documentos e responda OBRIGATORIAMENTE com a Tabela Markdown de auditoria e um breve resumo. Não gere o card de paciente.`
+      }
 
       let promptText = text
       if (finalDocText) {

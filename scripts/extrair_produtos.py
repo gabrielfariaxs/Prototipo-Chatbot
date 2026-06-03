@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import re
 
-excel_path = "Produtos nomenclaturas do pedido vs sistema - REALIZADA POR LAHYS EM 29 05 26.xlsx"
+excel_path = "../data/Produtos nomenclaturas do pedido vs sistema - REALIZADA POR LAHYS EM 29 05 26.xlsx"
 
 try:
     print(f"Lendo o arquivo: {excel_path}...")
@@ -41,7 +41,7 @@ for index, row in df.iterrows():
             "observacao": obs.strip()
         })
 
-output_file = "web/src/lib/produtos_emultec.json"
+output_file = "../web/src/lib/produtos_emultec.json"
 try:
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(products, f, ensure_ascii=False, indent=2)
