@@ -35,7 +35,7 @@ const openrouterKey = process.env.AI_GATEWAY_API_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 async function getEmbedding(text) {
-  const response = await fetch('https://ai-gateway.vercel.sh/v1/embeddings', {
+  const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${openrouterKey}`,

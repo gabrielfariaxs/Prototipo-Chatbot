@@ -30,7 +30,7 @@ loadEnv()
 
 const gatewayKey = process.env.AI_GATEWAY_API_KEY
 const client = new OpenAI({
-  baseURL: 'https://ai-gateway.vercel.sh/v1',
+  baseURL: 'https://openrouter.ai/api/v1',
   apiKey: gatewayKey,
 })
 

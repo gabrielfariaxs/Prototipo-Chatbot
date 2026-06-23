@@ -27,8 +27,8 @@ export async function searchVectorSupabase(queryText: string, apiKey: string, se
       return null
     }
 
-    // 1. Gerar o embedding da pergunta do usuário via Vercel AI Gateway
-    const response = await fetch('https://ai-gateway.vercel.sh/v1/embeddings', {
+    // 1. Gerar o embedding da pergunta do usuário via OpenRouter
+    const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -41,12 +41,12 @@ export async function searchVectorSupabase(queryText: string, apiKey: string, se
     })
 
     if (!response.ok) {
-      throw new Error(`Falha ao gerar embeddings via Vercel AI Gateway (Status: ${response.status})`)
+      throw new Error(`Falha ao gerar embeddings via OpenRouter (Status: ${response.status})`)
     }
 
     const resJson = await response.json()
     if (!resJson.data || !resJson.data[0] || !resJson.data[0].embedding) {
-      throw new Error(`Resposta inválida de embeddings do Vercel AI Gateway: ${JSON.stringify(resJson)}`)
+      throw new Error(`Resposta inválida de embeddings do OpenRouter: ${JSON.stringify(resJson)}`)
     }
     const queryEmbedding = resJson.data[0].embedding
     return await queryRpcMatchDocuments(queryEmbedding, sector)

@@ -543,24 +543,13 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
       const parsed = parseSteps(botResponse || '')
       
-      const blocks = splitIntoBlocks(botResponse || '')
-      if (blocks.length > 0) {
-        const newMsgs: Message[] = blocks.map((block, idx) => ({
-          id: (Date.now() + 1 + idx).toString(),
-          role: 'bot',
-          text: block,
-          timestamp: new Date(),
-        }))
-        setMessages((prev) => [...prev, ...newMsgs])
-      } else {
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'bot',
-          text: botResponse || 'Desculpe, não consegui processar sua solicitação.',
-          timestamp: new Date(),
-        }
-        setMessages((prev) => [...prev, botMsg])
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'bot',
+        text: botResponse || 'Desculpe, não consegui processar sua solicitação.',
+        timestamp: new Date(),
       }
+      setMessages((prev) => [...prev, botMsg])
 
       if (botResponse) {
         speakResponseText(botResponse)

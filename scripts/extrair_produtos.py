@@ -6,12 +6,30 @@ excel_path = "../data/Produtos nomenclaturas do pedido vs sistema - REALIZADA PO
 
 try:
     print(f"Lendo o arquivo: {excel_path}...")
-    df = pd.read_excel(excel_path, sheet_name="retificados por LAHYS")
+    xls = pd.ExcelFile(excel_path)
+    print("Abas encontradas no arquivo:", xls.sheet_names)
+    
+    # Tenta encontrar uma aba que contenha "retificados" ou "lahys"
+    sheet_to_use = None
+    for name in xls.sheet_names:
+        name_lower = name.lower()
+        if "retificados" in name_lower or "lahys" in name_lower:
+            sheet_to_use = name
+            break
+            
+    # Se não encontrar, usa a primeira aba disponível
+    if not sheet_to_use:
+        sheet_to_use = xls.sheet_names[0]
+        
+    print(f"Lendo aba: '{sheet_to_use}'")
+    df = pd.read_excel(excel_path, sheet_name=sheet_to_use)
 except Exception as e:
     print(f"Erro ao ler o Excel: {e}")
     exit(1)
 
 df = df.fillna("")
+
+print("Colunas encontradas no Excel:", list(df.columns))
 
 def normalize_col(name):
     return re.sub(r'[^a-z0-9]', '', str(name).lower().strip())
@@ -19,12 +37,27 @@ def normalize_col(name):
 col_map = {}
 for col in df.columns:
     norm = normalize_col(col)
-    if "descri" in norm: col_map['desc'] = col
-    elif "semelhante" in norm: col_map['emultec'] = col
-    elif "refer" in norm: col_map['ref'] = col
-    elif "observa" in norm: col_map['obs'] = col
+    if "descri" in norm or "solicitado" in norm or "pedido" in norm or "nomenclatura" in norm or "nome" in norm:
+        # Se contiver "semelhante" ou "emultec", é o correspondente, não a descrição original
+        if "semelhante" not in norm and "emultec" not in norm:
+            col_map['desc'] = col
+            continue
+            
+    if "semelhante" in norm or "emultec" in norm:
+        col_map['emultec'] = col
+    elif "refer" in norm or "ref" in norm:
+        col_map['ref'] = col
+    elif "observa" in norm or "obs" in norm:
+        col_map['obs'] = col
 
-print(f"Colunas mapeadas: {col_map}")
+# Fallback: Se não encontrou a descrição original do pedido, pega a primeira coluna disponível que não foi mapeada
+if 'desc' not in col_map:
+    for col in df.columns:
+        if col not in col_map.values():
+            col_map['desc'] = col
+            break
+
+print(f"Colunas mapeadas final: {col_map}")
 
 products = []
 for index, row in df.iterrows():

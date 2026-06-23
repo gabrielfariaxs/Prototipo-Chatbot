@@ -57,8 +57,8 @@ const processos = JSON.parse(fs.readFileSync(jsonPath, 'utf8'))
 console.log(`🚀 Iniciando indexação de ${processos.length} processos no Supabase...`)
 
 async function getEmbedding(text) {
-  // Chamada de embedding via Vercel AI Gateway
-  const response = await fetch('https://ai-gateway.vercel.sh/v1/embeddings', {
+  // Chamada de embedding via OpenRouter
+  const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${openrouterKey}`,
@@ -72,12 +72,12 @@ async function getEmbedding(text) {
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => '')
-    throw new Error(`Falha no Embeddings API do Vercel AI Gateway: Status ${response.status} - ${errorBody}`)
+    throw new Error(`Falha no Embeddings API do OpenRouter: Status ${response.status} - ${errorBody}`)
   }
 
   const data = await response.json()
   if (!data.data || !data.data[0] || !data.data[0].embedding) {
-    throw new Error(`Resposta inválida do Vercel AI Gateway: ${JSON.stringify(data)}`)
+    throw new Error(`Resposta inválida do OpenRouter: ${JSON.stringify(data)}`)
   }
   return data.data[0].embedding
 }

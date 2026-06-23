@@ -86,9 +86,9 @@ export async function getChatClient() {
       ''
   }
 
-  // Vercel AI Gateway — compatível com OpenAI SDK, roteia para qualquer provedor
+  // Conecta diretamente ao OpenRouter (compatível com OpenAI SDK)
   const chatClient = apiKey ? new OpenAI({
-    baseURL: 'https://ai-gateway.vercel.sh/v1',
+    baseURL: 'https://openrouter.ai/api/v1',
     apiKey: apiKey,
   }) : null
 
