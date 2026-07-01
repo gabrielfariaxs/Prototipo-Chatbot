@@ -23,8 +23,24 @@ export const Route = createFileRoute('/')({
 
 function App() {
   const { desktop, extension } = Route.useSearch()
-  const isDesktop = desktop || (typeof window !== 'undefined' && window.location.search.includes('desktop=true'))
-  const isExtension = extension || (typeof window !== 'undefined' && window.location.search.includes('extension=true'))
+  
+  // Persiste a flag no localStorage para evitar que se perca quando o router limpa a URL após o login
+  if (typeof window !== 'undefined') {
+    if (desktop || window.location.search.includes('desktop=true')) {
+      localStorage.setItem('media_is_desktop', 'true')
+    }
+    if (extension || window.location.search.includes('extension=true')) {
+      localStorage.setItem('media_is_extension', 'true')
+    }
+  }
+
+  const isDesktop = desktop || 
+    (typeof window !== 'undefined' && window.location.search.includes('desktop=true')) ||
+    (typeof window !== 'undefined' && localStorage.getItem('media_is_desktop') === 'true')
+    
+  const isExtension = extension || 
+    (typeof window !== 'undefined' && window.location.search.includes('extension=true')) ||
+    (typeof window !== 'undefined' && localStorage.getItem('media_is_extension') === 'true')
 
   const [session, setSession] = useState<Session | null>(null)
   const [sessionChecked, setSessionChecked] = useState(false)

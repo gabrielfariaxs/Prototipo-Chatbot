@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2, Truck } from 'lucide-react'
+import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2, Truck, FileSpreadsheet } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors, transcribeAudio } from '../lib/chat'
 import { cn } from '../lib/utils'
+import { FatureIA } from './FatureIA'
 
 type Message = {
   id: string
@@ -72,7 +73,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  // const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   // Salvar feedback global
   const saveGlobalFeedback = (msgId: string, type: 'up' | 'down', comment?: string, messageText?: string) => {
@@ -104,7 +105,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedbackComment: comment } : m))
     saveGlobalFeedback(msgId, 'down', comment)
   }
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard'>('onboarding')
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia'>('onboarding')
   const [sector, setSector] = useState<string | null>(null)
   const [availableSectors, setAvailableSectors] = useState<string[]>([])
   const [stepSession, setStepSession] = useState<{
@@ -121,7 +122,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
   // TTS (Text-to-Speech) states
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(false)
-  const [activeSpeech, setActiveSpeech] = useState<SpeechSynthesisUtterance | null>(null)
+  const [, setActiveSpeech] = useState<SpeechSynthesisUtterance | null>(null)
 
   // Cancelar fala ao desmontar o componente
   useEffect(() => {
@@ -268,74 +269,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     return steps.length >= 2 ? { intro: introLines.join(' '), steps } : null
   }
 
-  // Divide a resposta em blocos (mensagens separadas) por etapas do processo
-  const splitIntoBlocks = (text: string): string[] => {
-    const trimmed = (text || '').trim()
-    if (!trimmed) return []
 
-    const lines = trimmed.split('\n')
-    
-    // Verifica se há pelo menos um passo numerado no texto
-    const hasSteps = lines.some(line => /^\s*\d+[\.)\-]\s+/.test(line))
-    if (!hasSteps) {
-      return [trimmed]
-    }
-
-    const blocks: string[] = []
-    let currentBlock: string[] = []
-
-    for (const line of lines) {
-      const trimmed = line.trim()
-      
-      if (!trimmed) {
-        // Para evitar quebras excessivas fora de etapas,
-        // só fechamos o bloco ao encontrar linha em branco se o bloco atual for uma etapa
-        const isCurrentBlockStep = currentBlock.some(l => /^\s*\d+[\.)\-]\s+/.test(l))
-        if (isCurrentBlockStep && currentBlock.length > 0) {
-          blocks.push(currentBlock.join('\n'))
-          currentBlock = []
-        } else {
-          // Se for texto normal/intro, mantemos a linha em branco para manter parágrafo agrupado
-          currentBlock.push(line)
-        }
-        continue
-      }
-
-      // Se a linha começa com um passo numerado (ex: "1.", "2.")
-      if (/^\d+[\.)\-]\s+/.test(trimmed)) {
-        if (currentBlock.length > 0) {
-          blocks.push(currentBlock.join('\n'))
-        }
-        currentBlock = [line]
-      }
-      // Se a linha começa com um sub-bullet (ex: "- ", "* ")
-      else if (/^[\-\*]\s+/.test(trimmed)) {
-        if (currentBlock.length > 0) {
-          currentBlock.push(line)
-        } else {
-          currentBlock = [line]
-        }
-      }
-      // Linha de texto normal ou cabeçalho
-      else {
-        const lastLine = currentBlock[currentBlock.length - 1]?.trim() || ''
-        const isLastLineStep = /^\d+[\.)\-]\s+/.test(lastLine) || /^[\-\*]\s+/.test(lastLine)
-        
-        if (isLastLineStep) {
-          blocks.push(currentBlock.join('\n'))
-          currentBlock = [line]
-        } else {
-          currentBlock.push(line)
-        }
-      }
-    }
-
-    if (currentBlock.length > 0) {
-      blocks.push(currentBlock.join('\n'))
-    }
-
-    return blocks.map(b => b.trim()).filter(Boolean)
-  }
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -345,7 +279,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }, [messages])
 
   useEffect(() => {
-    const handleExternalOpen = (e: any) => {
+    const handleExternalOpen = () => {
       setIsOpen(true)
       setStep('sector')
     }
@@ -1045,7 +979,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className={cn(
-              isDesktop ? "w-full h-full border-none rounded-none mb-0" : "w-[380px] h-[520px] rounded-[2rem] border border-slate-200 mb-4 shadow-2xl",
+              isDesktop 
+                ? "w-full h-full border-none rounded-none mb-0" 
+                : step === 'fature_ia'
+                ? "w-[760px] h-[600px] rounded-[2rem] border border-slate-200 mb-4 shadow-2xl transition-all duration-300"
+                : "w-[380px] h-[520px] rounded-[2rem] border border-slate-200 mb-4 shadow-2xl transition-all duration-300",
               "bg-white flex flex-col overflow-hidden"
             )}
           >
@@ -1091,6 +1029,13 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       title="Métricas e Analytics"
                     >
                       <BarChart2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => setStep('fature_ia')}
+                      className="p-2 border border-slate-200 text-emerald-600 hover:text-emerald-700 bg-white hover:bg-emerald-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
+                      title="FatureIA Automação"
+                    >
+                      <FileSpreadsheet size={16} />
                     </button>
                     <button
                       onClick={() => {
@@ -1577,6 +1522,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
                     </div>
                   </motion.div>
+                )}
+
+                {step === 'fature_ia' && (
+                  <FatureIA onBack={() => setStep('chat')} />
                 )}
               </AnimatePresence>
             </div>

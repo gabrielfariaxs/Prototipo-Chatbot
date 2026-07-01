@@ -6,7 +6,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "node scripts/dev.js",
     "build": "node scripts/build.js",
     "preview": "vite preview",
     "test": "vitest run",
@@ -24,6 +24,7 @@
     "@tanstack/router-plugin": "^1.167.35",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
     "openai": "^6.36.0",

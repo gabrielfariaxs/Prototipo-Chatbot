@@ -1,5 +1,11 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 
+// Polyfill process.umask for edge/unenv runtimes (e.g. Cloudflare Workers)
+if (typeof process !== 'undefined' && typeof process.umask !== 'function') {
+  process.umask = () => 0o022
+}
+
+
 import appCss from '../styles.css?url'
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
@@ -26,6 +32,17 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: () => {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center font-sans">
+        <h1 className="text-4xl font-extrabold text-[#1a2332] mb-4">Página Não Encontrada</h1>
+        <p className="text-slate-500 mb-6 max-w-sm">A página que você está tentando acessar não existe ou foi movida.</p>
+        <a href="/" className="bg-[#1a2332] text-white px-6 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:bg-[#253043] transition-all">
+          Voltar ao Início
+        </a>
+      </div>
+    )
+  }
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
