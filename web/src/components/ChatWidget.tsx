@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2 } from 'lucide-react'
+import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2, Truck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors, transcribeAudio } from '../lib/chat'
 import { cn } from '../lib/utils'
@@ -360,7 +360,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       if (sectors && sectors.length > 0) {
         setAvailableSectors(sectors)
       } else {
-        setAvailableSectors(['Comercial', 'Faturamento', 'Financeiro', 'Orçamento - Arthromed', 'Orçamento - Medic'])
+        setAvailableSectors(['Comercial', 'Estoque/Logística', 'Faturamento', 'Financeiro', 'Orçamento - Arthromed', 'Orçamento - Medic'])
       }
     }
     fetchSectors()
@@ -1218,6 +1218,9 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                           } else if (s.toLowerCase().includes('orçamento - medic')) {
                             Icon = Activity;
                             desc = "Planejamento e controle de custos Medic.";
+                          } else if (s.toLowerCase().includes('estoque') || s.toLowerCase().includes('logística') || s.toLowerCase().includes('logistica')) {
+                            Icon = Truck;
+                            desc = "Processos de transporte e análise de compras.";
                           }
 
                           return (

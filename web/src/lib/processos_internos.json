@@ -166,5 +166,17 @@
         "setor": "Geral",
         "sistema": "Vários",
         "conteudo": "Médico: Dr. FABIO GONDIM NEPOMUCENO. MATERIAIS PADRÃO/ORÇADOS: 1x EQUIPO PARA BOMBA DE IRRIGACAO TIPO L - LINVATEC; 2x CANULA DE MICRODEBRIDACAO RAZEK - AMC 2.4/4.5F; 1x PONTEIRA DESCARTAVEL RAZEK - SHELL 90O; 1x ENDOBOTON 12.5X4.5X1MM COM FIO 15MM; 2x PF INTERFERENCIA SINFIX PLDL 08X25; 3x FIO GUIA QUATRO FUROS PONTA BROCA 2.4 X 400MM."
+    },
+    {
+        "processo": "Processo de transporte",
+        "setor": "Estoque/Logística",
+        "sistema": "Sysweb (Emultec)",
+        "conteudo": "1. Abrir o emultec (Sysweb).\n2. Ir em Cirurgias sincronizadas > Cirurgias Agendadas.\n3. Filtrar por data.\n4. Imprimir a solicitação do vendedor (Detalhes > Imprimir Urgência).\n5. Separar o material e tirar o vale do sistema que estará na solicitação do vendedor como ID.\n6. Entrar no emultec > cirurgias agendadas > Id de cirurgia > Conjuntos ou Caixas.\n7. Motorista deve entrar no Sysweb para validar a entrega."
+    },
+    {
+        "processo": "Análise de Compras",
+        "setor": "Estoque/Logística",
+        "sistema": "Sysweb (Emultec)",
+        "conteudo": "1. Fazer a análise das cirurgias do mês (Detalhes > Imprimir Urgência).\n2. Informar para Genilson (atualmente responsável por fazer o processo de compras)."
     }
 ]
