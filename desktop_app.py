@@ -10,7 +10,8 @@ import sys
 LOCK_FILE = os.path.join(os.environ.get('TEMP', '.'), "media_chat.lock")
 
 # Configurações
-CHAT_URL = "https://chatbot.gabrielfarias-marques13.workers.dev/?desktop=true&v=premium_v4"
+CHAT_URL = "https://chatbot.media-arthromed.workers.dev/?desktop=true&v=premium_v4"
+
 
 def run_as_window():
     """Função que roda apenas a janela do chat (pywebview)"""

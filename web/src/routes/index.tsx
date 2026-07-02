@@ -34,13 +34,13 @@ function App() {
     }
   }
 
-  const isDesktop = desktop || 
-    (typeof window !== 'undefined' && window.location.search.includes('desktop=true')) ||
-    (typeof window !== 'undefined' && localStorage.getItem('media_is_desktop') === 'true')
-    
   const isExtension = extension || 
     (typeof window !== 'undefined' && window.location.search.includes('extension=true')) ||
     (typeof window !== 'undefined' && localStorage.getItem('media_is_extension') === 'true')
+
+  // O modo Desktop (Widget/Tela Cheia) é agora o padrão para todos os acessos
+  const isDesktop = !isExtension
+
 
   const [session, setSession] = useState<Session | null>(null)
   const [sessionChecked, setSessionChecked] = useState(false)
