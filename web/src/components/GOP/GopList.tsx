@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Search, ChevronDown, ChevronRight, LayoutGrid, List, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { GopCreateModal } from './GopCreateModal'
 
 export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void, userRole: string }) => {
   const [gargalos, setGargalos] = useState<any[]>([])
@@ -11,6 +12,8 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
   const [filterSetor, setFilterSetor] = useState('Todos')
   const [filterUrgencia, setFilterUrgencia] = useState('Todas')
   const [filterStatus, setFilterStatus] = useState('Todos')
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   useEffect(() => {
     fetchGargalos()
@@ -52,10 +55,10 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
     return matchesSearch && matchesSetor && matchesUrgencia && matchesStatus
   })
 
-  // Calculate COO Stats
   const aguardandoTratativa = gargalos.filter(g => g.status === 'Não Iniciado' || g.status === 'Em Andamento').length
   const altaUrgencia = gargalos.filter(g => g.urgencia === 'Alta').length
   const bloqueados = gargalos.filter(g => g.status === 'Bloqueado').length
+  const naoIniciados = gargalos.filter(g => g.status === 'Não Iniciado').length
   const resolvidos = gargalos.filter(g => g.status === 'Resolvido').length
 
   // Calculate Sector distribution
@@ -85,7 +88,10 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
           )}
         </div>
         {userRole === 'lider' && (
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer shrink-0">
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer shrink-0"
+          >
             <Plus size={18} strokeWidth={2.5} />
             Reportar Novo Gargalo
           </button>
@@ -153,7 +159,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
             { label: 'Total reportado', value: gargalos.length, color: 'bg-slate-400' },
             { label: 'Em andamento', value: gargalos.filter(g => g.status === 'Em Andamento').length, color: 'bg-blue-500' },
             { label: 'Bloqueado', value: gargalos.filter(g => g.status === 'Bloqueado').length, color: 'bg-red-500' },
-            { label: 'Resolvido', value: gargalos.filter(g => g.status === 'Resolvido').length, color: 'bg-green-500' },
+            { label: 'Resolvido', value: resolvidos, color: 'bg-green-500' },
           ].map((stat, i) => (
             <div key={i} className="bg-white rounded-[1.25rem] p-6 border border-slate-100 shadow-sm flex flex-col">
               <div className="flex items-center gap-2 mb-3">
@@ -170,10 +176,16 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-4">
         <div className="flex flex-wrap items-center gap-4 flex-1">
           <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1 shrink-0">
-            <button className="px-4 py-2 bg-[#1a2332] text-white rounded-lg text-sm font-bold flex items-center gap-2 cursor-pointer shadow-sm">
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+            >
               <List size={16} /> {userRole === 'coo' ? 'Cards' : 'Tabela'}
             </button>
-            <button className="px-4 py-2 text-slate-500 rounded-lg text-sm font-bold hover:bg-slate-50 hover:text-slate-700 flex items-center gap-2 cursor-pointer transition-colors">
+            <button 
+              onClick={() => setViewMode('kanban')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors ${viewMode === 'kanban' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+            >
               <LayoutGrid size={16} /> {userRole === 'coo' ? 'Lista' : 'Kanban'}
             </button>
           </div>
@@ -256,11 +268,13 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
                 </span>
                 <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
                   ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
+                    item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
                     item.status === 'Bloqueado' ? 'bg-red-50 text-red-600' : 
                     item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
                     'bg-slate-100 text-slate-500'}`}>
                   <div className={`w-1.5 h-1.5 rounded-full ${
                     item.status === 'Em Andamento' ? 'bg-blue-500' : 
+                    item.status === 'Não Iniciado' ? 'bg-slate-400' : 
                     item.status === 'Bloqueado' ? 'bg-red-500' : 
                     item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
                   }`}></div>
@@ -285,6 +299,58 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
               </div>
             </div>
           ))}
+        </div>
+      ) : viewMode === 'kanban' ? (
+        /* Kanban View */
+        <div className="flex gap-4 mt-2 overflow-x-auto pb-4 custom-scrollbar">
+          {statusOptions.filter(s => s !== 'Todos').map(statusCol => {
+            const colItems = filteredGargalos.filter(g => g.status === statusCol)
+            const colorClass = statusCol === 'Não Iniciado' ? 'bg-slate-400' : statusCol === 'Em Andamento' ? 'bg-blue-500' : statusCol === 'Bloqueado' ? 'bg-red-500' : 'bg-green-500'
+            const textColorClass = statusCol === 'Não Iniciado' ? 'text-slate-600' : statusCol === 'Em Andamento' ? 'text-blue-700' : statusCol === 'Bloqueado' ? 'text-red-700' : 'text-green-700'
+            
+            return (
+              <div key={statusCol} className="flex-1 min-w-[260px] bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col h-[500px]">
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${colorClass}`}></div>
+                    <span className="text-[13px] font-extrabold text-[#1a2332]">{statusCol}</span>
+                  </div>
+                  <span className="w-5 h-5 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-500 flex items-center justify-center shadow-sm">
+                    {colItems.length}
+                  </span>
+                </div>
+                
+                <div className="flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar flex-1">
+                  {colItems.length === 0 ? (
+                    <div className="w-full py-8 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-xs font-bold text-slate-400">
+                      Vazio
+                    </div>
+                  ) : (
+                    colItems.map(item => (
+                      <div 
+                        key={item.id} 
+                        onClick={() => onSelect(item.id)}
+                        className={`bg-white rounded-xl p-5 border-l-2 shadow-sm cursor-pointer hover:shadow-md transition-all flex flex-col gap-3
+                          ${item.status === 'Não Iniciado' ? 'border-l-amber-500' : item.status === 'Em Andamento' ? 'border-l-red-500' : item.status === 'Bloqueado' ? 'border-l-slate-200' : 'border-l-green-500'}
+                        `}
+                        // Note: Using border colors from the screenshot: Não iniciado=orange border, Em andamento=red border, Bloqueado=dashed border (empty), Resolvido=green border
+                      >
+                        <h4 className="font-bold text-[#1a2332] text-[13px] leading-snug group-hover:text-indigo-600 transition-colors">{item.titulo}</h4>
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold
+                            ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}
+                          `}>
+                            {item.urgencia}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400 truncate">{item.setor}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       ) : (
         /* Lider Table View */
@@ -319,16 +385,18 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
                   </span>
                 </div>
                 <div>
-                  <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[13px] font-bold
-                    ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
-                      item.status === 'Bloqueado' ? 'bg-red-50 text-red-600' : 
-                      item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
-                      'bg-slate-100 text-slate-500'}`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      item.status === 'Em Andamento' ? 'bg-blue-500' : 
-                      item.status === 'Bloqueado' ? 'bg-red-500' : 
-                      item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
-                    }`}></div>
+                      <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
+                        ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
+                          item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
+                          item.status === 'Bloqueado' ? 'bg-red-50 text-red-600' : 
+                          item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
+                          'bg-slate-100 text-slate-500'}`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          item.status === 'Em Andamento' ? 'bg-blue-500' : 
+                          item.status === 'Não Iniciado' ? 'bg-slate-400' : 
+                          item.status === 'Bloqueado' ? 'bg-red-500' : 
+                          item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
+                        }`}></div>
                     {item.status}
                   </span>
                 </div>
@@ -339,6 +407,11 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
             ))}
           </div>
         </div>
+      )}
+      
+      {/* Create Modal */}
+      {isCreateModalOpen && (
+        <GopCreateModal onClose={() => setIsCreateModalOpen(false)} />
       )}
     </div>
   )

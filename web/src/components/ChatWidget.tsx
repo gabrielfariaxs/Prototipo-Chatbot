@@ -1053,7 +1053,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 )}
 
                 {step === 'gop' && (
-                  <GopPanel />
+                  <GopPanel onPreviewFile={setPreviewFile} />
                 )}
 
                 {step === 'sector' && (

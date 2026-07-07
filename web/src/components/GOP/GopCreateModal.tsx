@@ -1,0 +1,316 @@
+import React, { useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { X, Upload, AlertTriangle, Send } from 'lucide-react'
+
+interface GopCreateModalProps {
+  onClose: () => void;
+}
+
+export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose }) => {
+  const [setor, setSetor] = useState('')
+  const [responsavel, setResponsavel] = useState('')
+  const [dataOcorrencia, setDataOcorrencia] = useState('')
+  const [dataRegistro, setDataRegistro] = useState(new Date().toISOString().split('T')[0])
+  const [nome, setNome] = useState('')
+  const [descricao, setDescricao] = useState('')
+  const [frequencia, setFrequencia] = useState('')
+  const [impactos, setImpactos] = useState<string[]>([])
+  const [consequencias, setConsequencias] = useState('')
+  const [causa, setCausa] = useState('')
+  const [urgencia, setUrgencia] = useState('')
+  const [sugestao, setSugestao] = useState('')
+  const [arquivos, setArquivos] = useState<File[]>([])
+  
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImpactoToggle = (val: string) => {
+    setImpactos(prev => prev.includes(val) ? prev.filter(i => i !== val) : [...prev, val])
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setArquivos(prev => [...prev, ...Array.from(e.target.files!)])
+    }
+  }
+
+  const handleSubmit = () => {
+    if (!setor || !responsavel || !nome || !descricao) {
+      alert("Por favor, preencha os campos básicos do relato (Setor, Responsável, Nome do Gargalo e Descrição) antes de enviar.")
+      return
+    }
+    // Mock submit
+    alert('Gargalo reportado com sucesso!')
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0b0f19]/60 backdrop-blur-sm flex justify-center items-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        className="bg-white w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 bg-white shrink-0">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Novo Relato</span>
+            <h2 className="text-2xl font-extrabold text-[#1a2332]">Registro de Gargalo Operacional</h2>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          <div className="max-w-3xl mx-auto space-y-10">
+            
+            {/* 1. Informações Gerais */}
+            <section>
+              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">1</span>
+                Informações Gerais
+              </h3>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Setor</label>
+                  <select 
+                    value={setor} 
+                    onChange={e => setSetor(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700 bg-white"
+                  >
+                    <option value="" disabled>Selecione o setor...</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Estoque/Logística">Estoque/Logística</option>
+                    <option value="Faturamento">Faturamento</option>
+                    <option value="Financeiro">Financeiro</option>
+                    <option value="Compras">Compras</option>
+                    <option value="Operações">Operações</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Responsável</label>
+                  <input 
+                    type="text" 
+                    value={responsavel} 
+                    onChange={e => setResponsavel(e.target.value)}
+                    placeholder="Nome do responsável"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Data de Ocorrência</label>
+                  <input 
+                    type="date" 
+                    value={dataOcorrencia} 
+                    onChange={e => setDataOcorrencia(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Data de Registro</label>
+                  <input 
+                    type="date" 
+                    value={dataRegistro} 
+                    onChange={e => setDataRegistro(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <hr className="border-slate-100" />
+
+            {/* 2. O Problema */}
+            <section>
+              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">2</span>
+                O Problema
+              </h3>
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Nome do Gargalo</label>
+                  <input 
+                    type="text" 
+                    value={nome} 
+                    onChange={e => setNome(e.target.value)}
+                    placeholder="Ex.: Atraso na aprovação de pedidos de compra"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Descrição do Problema</label>
+                  <textarea 
+                    value={descricao} 
+                    onChange={e => setDescricao(e.target.value)}
+                    placeholder="Descreva o que acontece, onde e quem é afetado..."
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px] resize-none text-slate-700"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <hr className="border-slate-100" />
+
+            {/* 3. Evidências */}
+            <section>
+              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">3</span>
+                Evidências <span className="text-red-500">*</span>
+              </h3>
+              <div className="bg-red-50/50 border border-red-200 text-red-600 px-4 py-4 rounded-xl text-sm font-medium flex items-center gap-2 mb-4">
+                <AlertTriangle size={18} />
+                Sem evidências, o problema não será priorizado.
+              </div>
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 hover:border-blue-300 transition-colors p-10 flex flex-col items-center justify-center text-center cursor-pointer group"
+              >
+                <input 
+                  type="file" 
+                  multiple 
+                  className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                />
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Upload size={28} />
+                </div>
+                {arquivos.length > 0 ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <p className="text-green-600 font-bold text-base mb-1">
+                      {arquivos.length} {arquivos.length === 1 ? 'arquivo anexado' : 'arquivos anexados'} com sucesso!
+                    </p>
+                    <p className="text-slate-500 text-sm font-medium line-clamp-2 px-4">
+                      {arquivos.map(f => f.name).join(', ')}
+                    </p>
+                    <p className="text-blue-600 text-xs mt-2 font-bold hover:underline">Clique para adicionar mais</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-[#1a2332] font-bold text-base mb-1.5">Arraste arquivos aqui ou <span className="text-blue-600">clique para selecionar</span></p>
+                    <p className="text-slate-400 text-sm font-medium">PNG, JPG, PDF - prints, planilhas e documentos</p>
+                  </>
+                )}
+              </div>
+            </section>
+
+            <hr className="border-slate-100" />
+
+            {/* 4. Classificação */}
+            <section>
+              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">4</span>
+                Classificação
+              </h3>
+              <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm font-bold text-[#1a2332]">Frequência</label>
+                  <div className="flex flex-wrap gap-4">
+                    {['Única', 'Semanal', 'Diária', 'Várias vezes ao dia'].map(f => (
+                      <label key={f} className={`px-5 py-3 border rounded-xl text-[15px] font-semibold cursor-pointer transition-colors flex items-center gap-2.5 ${frequencia === f ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                        <input type="radio" name="freq" value={f} checked={frequencia === f} onChange={() => setFrequencia(f)} className="hidden" />
+                        <div className={`w-4 h-4 rounded-full border ${frequencia === f ? 'border-blue-500 bg-blue-500' : 'border-slate-300 bg-white'}`}></div>
+                        {f}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm font-bold text-[#1a2332]">Impacto <span className="font-normal text-slate-400 ml-1">(selecione todos aplicáveis)</span></label>
+                  <div className="flex flex-wrap gap-4">
+                    {['Financeiro', 'Operacional', 'Cliente', 'Estoque', 'Compras', 'Comercial'].map(i => (
+                      <label key={i} className={`px-5 py-3 border rounded-xl text-[15px] font-semibold cursor-pointer transition-colors flex items-center gap-2.5 ${impactos.includes(i) ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                        <input type="checkbox" checked={impactos.includes(i)} onChange={() => handleImpactoToggle(i)} className="hidden" />
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${impactos.includes(i) ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-300 bg-white'}`}>
+                          {impactos.includes(i) && <span className="text-[12px]">✓</span>}
+                        </div>
+                        {i}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <hr className="border-slate-100" />
+
+            {/* 5. Análise */}
+            <section>
+              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">5</span>
+                Análise
+              </h3>
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Consequências</label>
+                  <textarea 
+                    value={consequencias} 
+                    onChange={e => setConsequencias(e.target.value)}
+                    placeholder="O que acontece de negativo por causa desse gargalo?"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none text-slate-700"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332]">Causa Provável</label>
+                  <textarea 
+                    value={causa} 
+                    onChange={e => setCausa(e.target.value)}
+                    placeholder="Qual a raiz mais provável do problema?"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none text-slate-700"
+                  />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm font-bold text-[#1a2332]">Urgência</label>
+                  <div className="flex gap-4">
+                    {['Alta', 'Média', 'Baixa'].map(u => (
+                      <label key={u} className={`flex-1 text-center py-3 border rounded-xl text-[15px] font-bold cursor-pointer transition-colors ${urgencia === u ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                        <input type="radio" name="urgencia" value={u} checked={urgencia === u} onChange={() => setUrgencia(u)} className="hidden" />
+                        {u}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <hr className="border-slate-100" />
+
+            {/* 6. Ação */}
+            <section>
+              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">6</span>
+                Ação
+              </h3>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-bold text-[#1a2332]">Sugestão do Líder</label>
+                <textarea 
+                  value={sugestao} 
+                  onChange={e => setSugestao(e.target.value)}
+                  placeholder="Qual solução você propõe?"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px] resize-none text-slate-700"
+                />
+              </div>
+            </section>
+
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-4 shrink-0">
+          <button onClick={onClose} className="px-6 py-3 text-[15px] font-bold text-slate-600 hover:bg-slate-200 bg-white border border-slate-200 rounded-xl transition-colors">
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSubmit}
+            className="px-8 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl flex items-center gap-2.5 transition-colors shadow-lg shadow-blue-600/20"
+          >
+            <Send size={18} />
+            Enviar Relato
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}

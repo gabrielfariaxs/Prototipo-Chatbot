@@ -23,11 +23,23 @@ export const Route = createRootRoute({
       {
         title: 'MedIA - Arthromed',
       },
+      {
+        name: 'theme-color',
+        content: '#1a2332',
+      },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/logo192.png',
       },
     ],
   }),
@@ -55,6 +67,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         {children}
         <Scripts />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch(error => {
+                    console.log('ServiceWorker registration failed: ', error);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )

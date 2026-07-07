@@ -4,7 +4,7 @@ import { GopList } from './GopList'
 import { GopDetail } from './GopDetail'
 import { supabase } from '../../lib/supabase'
 
-export const GopPanel = () => {
+export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => void }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [userName, setUserName] = useState<string>('Usuário')
   const [userInitials, setUserInitials] = useState<string>('US')
@@ -66,7 +66,7 @@ export const GopPanel = () => {
       {/* Content */}
       <div className="w-full flex-1">
         {selectedId ? (
-          <GopDetail id={selectedId} onBack={() => setSelectedId(null)} userRole={role} />
+          <GopDetail id={selectedId} onBack={() => setSelectedId(null)} userRole={role} onPreviewFile={onPreviewFile} />
         ) : (
           <GopList onSelect={setSelectedId} userRole={role} />
         )}
