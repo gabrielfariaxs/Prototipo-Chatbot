@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { X, Upload, AlertTriangle, Send } from 'lucide-react'
+import { X, Upload, AlertTriangle, Send, Loader2 } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 interface GopCreateModalProps {
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose }) => {
+export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSuccess }) => {
   const [setor, setSetor] = useState('')
   const [responsavel, setResponsavel] = useState('')
   const [dataOcorrencia, setDataOcorrencia] = useState('')
@@ -20,6 +22,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose }) => {
   const [urgencia, setUrgencia] = useState('')
   const [sugestao, setSugestao] = useState('')
   const [arquivos, setArquivos] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -33,14 +36,67 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose }) => {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!setor || !responsavel || !nome || !descricao) {
       alert("Por favor, preencha os campos básicos do relato (Setor, Responsável, Nome do Gargalo e Descrição) antes de enviar.")
       return
     }
-    // Mock submit
-    alert('Gargalo reportado com sucesso!')
-    onClose()
+
+    setIsSubmitting(true)
+
+    // 1. Upload dos arquivos para o Bucket 'evidencias'
+    const evidenciasUrls = []
+    if (arquivos.length > 0) {
+      for (const file of arquivos) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('evidencias')
+          .upload(fileName, file)
+          
+        if (uploadError) {
+          console.error("Erro no upload do arquivo:", file.name, uploadError)
+        } else if (uploadData) {
+          const { data: publicUrlData } = supabase.storage
+            .from('evidencias')
+            .getPublicUrl(fileName)
+            
+          evidenciasUrls.push({
+            name: file.name,
+            type: file.type,
+            url: publicUrlData.publicUrl
+          })
+        }
+      }
+    }
+
+    // 2. Inserir no banco de dados com a nova coluna de evidências
+    const { error } = await supabase.from('gargalos').insert({
+      setor,
+      autor_nome: responsavel,
+      data_ocorrencia: dataOcorrencia || null,
+      data_registro: dataRegistro,
+      titulo: nome,
+      descricao,
+      frequencia,
+      impacto: impactos,
+      consequencias,
+      causa_provavel: causa,
+      urgencia,
+      sugestao_lider: sugestao,
+      status: 'Não Iniciado',
+      evidencias: evidenciasUrls
+    })
+    setIsSubmitting(false)
+
+    if (error) {
+      alert('Ocorreu um erro ao registrar o gargalo.')
+      console.error(error)
+    } else {
+      alert('Gargalo reportado com sucesso!')
+      onSuccess()
+    }
   }
 
   return (
@@ -304,10 +360,15 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose }) => {
           </button>
           <button 
             onClick={handleSubmit}
-            className="px-8 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl flex items-center gap-2.5 transition-colors shadow-lg shadow-blue-600/20"
+            disabled={isSubmitting}
+            className="px-8 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-xl flex items-center gap-2.5 transition-colors shadow-lg shadow-blue-600/20"
           >
-            <Send size={18} />
-            Enviar Relato
+            {isSubmitting ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Send size={18} />
+            )}
+            {isSubmitting ? 'Enviando...' : 'Enviar Relato'}
           </button>
         </div>
       </motion.div>

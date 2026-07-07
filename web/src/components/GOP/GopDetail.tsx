@@ -175,35 +175,33 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
           <div className="flex flex-col gap-2 mt-2">
             <h3 className="font-bold text-[#1a2332] text-[15px]">Evidências Anexadas</h3>
             <div className="grid grid-cols-3 gap-4 mt-1">
-              <div 
-                onClick={() => onPreviewFile && onPreviewFile({
-                  name: 'print_fila_aprovacao.png',
-                  type: 'image/png',
-                  base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
-                })}
-                className="bg-blue-600 text-white rounded-xl flex flex-col items-center justify-center p-6 gap-3 cursor-pointer hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                <ImageIcon size={24} strokeWidth={2} />
-                <span className="text-[11px] font-bold truncate w-full text-center">print_fila_aprovacao.png</span>
-              </div>
-              <div 
-                onClick={() => alert("Visualizador de planilhas ainda não integrado. Baixando arquivo...")}
-                className="bg-green-600 text-white rounded-xl flex flex-col items-center justify-center p-6 gap-3 cursor-pointer hover:bg-green-700 transition-colors shadow-sm"
-              >
-                <FileText size={24} strokeWidth={2} />
-                <span className="text-[11px] font-bold truncate w-full text-center">planilha_rupturas.xlsx</span>
-              </div>
-              <div 
-                onClick={() => onPreviewFile && onPreviewFile({
-                  name: 'email_atraso.pdf',
-                  type: 'application/pdf',
-                  originalPdfBase64: 'JVBERi0xLjMKJcTl8uXrp/Og0MTGCjQgMCBvYmoKPDwgL0xlbmd0aCA1IDAgUiAvRmlsdGVyIC9GbGF0ZURlY29kZSA+PgpzdHJlYW0KeAErVAhUKMxNTE8NUUhJTc5PSU1RVAAAP0UFNwplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKMzIKZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAzIDAgUiAvUmVzb3VyY2VzIDYgMCBSIC9Db250ZW50cyA0IDAgUiAvTWVkaWFCb3ggWzAgMCAyNTAgNTBdCj4+CmVuZG9iago2IDAgb2JqCjw8IC9Gb250IDw8IC9GMSA3IDAgUiA+PiA+PgplbmRvYmoKNyAwIG9iago8PCAvVHlwZSAvRm9udCAvU3VidHlwZSAvVHlwZTEgL0Jhc2VGb250IC9IZWx2ZXRpY2EgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9NZWRpYUJveCBbMCAwIDU5NSA4NDJdIC9Db3VudCAxIC9LaWRzIFsgMiAwIFIgXSA+PgplbmRvYmoKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMyAwIFIgPj4KZW5kb2JqCnhyZWYKMCA4CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDQxNiAwMDAwMCBuIAowMDAwMDAwMTIzIDAwMDAwIG4gCjAwMDAwMDAzMzAgMDAwMDAgbiAKMDAwMDAwMDAxNSAwMDAwMCBuIAowMDAwMDAwMTA0IDAwMDAwIG4gCjAwMDAwMDAyMzIgMDAwMDAgbiAKMDAwMDAwMDI3NSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDggL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQ2NQolJUVPRgo='
-                })}
-                className="bg-red-600 text-white rounded-xl flex flex-col items-center justify-center p-6 gap-3 cursor-pointer hover:bg-red-700 transition-colors shadow-sm"
-              >
-                <File size={24} strokeWidth={2} />
-                <span className="text-[11px] font-bold truncate w-full text-center">email_atraso.pdf</span>
-              </div>
+              {gargalo.evidencias && gargalo.evidencias.length > 0 ? (
+                gargalo.evidencias.map((ev: any, idx: number) => (
+                  <div 
+                    key={idx}
+                    onClick={() => {
+                      if (onPreviewFile) {
+                        onPreviewFile({
+                          name: ev.name,
+                          type: ev.type,
+                          url: ev.url,
+                          base64: '' // Not needed if we have url, but kept for type compat
+                        })
+                      }
+                    }}
+                    className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl flex flex-col items-center justify-center p-6 gap-3 cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition-colors shadow-sm"
+                  >
+                    {ev.type.includes('image') ? (
+                      <ImageIcon size={24} className="text-blue-500" strokeWidth={2} />
+                    ) : (
+                      <FileText size={24} className="text-red-500" strokeWidth={2} />
+                    )}
+                    <span className="text-[11px] font-bold truncate w-full text-center">{ev.name}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 font-medium italic col-span-3">Nenhuma evidência anexada.</p>
+              )}
             </div>
           </div>
         </div>

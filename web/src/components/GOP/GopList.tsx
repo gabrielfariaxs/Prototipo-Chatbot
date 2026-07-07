@@ -411,7 +411,13 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
       
       {/* Create Modal */}
       {isCreateModalOpen && (
-        <GopCreateModal onClose={() => setIsCreateModalOpen(false)} />
+        <GopCreateModal 
+          onClose={() => setIsCreateModalOpen(false)} 
+          onSuccess={() => {
+            setIsCreateModalOpen(false)
+            fetchGargalos()
+          }}
+        />
       )}
     </div>
   )

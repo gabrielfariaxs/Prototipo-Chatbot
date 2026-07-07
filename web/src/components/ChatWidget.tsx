@@ -39,6 +39,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     }
 
     try {
+      if ((previewFile as any).url) {
+        setPreviewUrl((previewFile as any).url)
+        return
+      }
+
       // Se houver um PDF original, gera o Blob a partir dele (assim renderiza o visualizador nativo completo)
       const base64ToUse = previewFile.originalPdfBase64 || previewFile.base64
       const typeToUse = previewFile.originalPdfBase64 ? 'application/pdf' : previewFile.type
@@ -53,7 +58,9 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       setPreviewUrl(url)
 
       return () => {
-        URL.revokeObjectURL(url)
+        if (!(previewFile as any).url) {
+          URL.revokeObjectURL(url)
+        }
       }
     } catch (e) {
       console.error('Erro ao gerar blob URL:', e)
