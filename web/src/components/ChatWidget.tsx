@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2, Truck, FileSpreadsheet } from 'lucide-react'
+import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2, Truck, FileSpreadsheet, Bell } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors, transcribeAudio } from '../lib/chat'
 import { cn } from '../lib/utils'
 import { FatureIA } from './FatureIA'
+import { GopPanel } from './GOP/GopPanel'
+import { ChatOnboarding } from './Chat/ChatOnboarding'
+import { ChatSectorSelect } from './Chat/ChatSectorSelect'
+import { ChatDashboard } from './Chat/ChatDashboard'
+import { FilePreviewModal } from './Chat/FilePreviewModal'
 
 type Message = {
   id: string
@@ -105,7 +110,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedbackComment: comment } : m))
     saveGlobalFeedback(msgId, 'down', comment)
   }
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia'>('onboarding')
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop'>('onboarding')
   const [sector, setSector] = useState<string | null>(null)
   const [availableSectors, setAvailableSectors] = useState<string[]>([])
   const [stepSession, setStepSession] = useState<{
@@ -116,9 +121,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; base64: string; type: string; extractedText?: string; originalPdfBase64?: string }[]>([])
   const [sessionContext, setSessionContext] = useState<string>('')
 
-  // Voice recording states
-  const [isRecording, setIsRecording] = useState(false)
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+
 
   // TTS (Text-to-Speech) states
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(false)
@@ -133,74 +136,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     }
   }, [])
 
-  // Inicia a gravação de áudio usando MediaRecorder
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      let options = {}
-      if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = { mimeType: 'audio/webm' }
-      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-        options = { mimeType: 'audio/ogg' }
-      }
-      
-      const recorder = new MediaRecorder(stream, options)
-      const chunks: Blob[] = []
-      
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          chunks.push(e.data)
-        }
-      }
-      
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
-        setIsLoading(true)
-        try {
-          const reader = new FileReader()
-          reader.onloadend = async () => {
-            const base64Audio = (reader.result as string).split(',')[1]
-            try {
-              const transcribedText = await transcribeAudio({
-                data: {
-                  base64Audio,
-                  mimeType: audioBlob.type,
-                }
-              })
-              if (transcribedText && transcribedText.trim()) {
-                setInput(transcribedText)
-              }
-            } catch (err: any) {
-              console.error('Erro na transcrição:', err)
-              alert('Não foi possível transcrever o áudio: ' + err.message)
-            } finally {
-              setIsLoading(false)
-            }
-          }
-          reader.readAsDataURL(audioBlob)
-        } catch (err) {
-          console.error(err)
-          setIsLoading(false)
-        }
-      }
 
-      setMediaRecorder(recorder)
-      recorder.start()
-      setIsRecording(true)
-    } catch (err) {
-      console.error('Erro ao acessar microfone:', err)
-      alert('Não foi possível acessar o microfone. Verifique as permissões do navegador.')
-    }
-  }
-
-  // Interrompe a gravação de áudio
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop()
-      mediaRecorder.stream.getTracks().forEach(track => track.stop())
-      setIsRecording(false)
-    }
-  }
 
   // Ativa/Desativa o TTS e interrompe fala atual se for desligado
   const toggleSpeech = () => {
@@ -348,8 +284,13 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     }
     if (isDesktop && (window as any).pywebview) {
       (window as any).pywebview.api.close_window()
-    } else {
+    } else if (!isDesktop) {
       setIsOpen(false)
+    } else {
+      try {
+        window.close()
+      } catch (e) {}
+      handleBackToSectors()
     }
   }
 
@@ -990,23 +931,61 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             {/* Unified Corporate Header */}
             <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10 shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-[#1a2332] rounded-xl flex items-center justify-center text-white">
-                  <Bot size={22} strokeWidth={1.5} />
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-3">
-                    <h1 className="font-bold text-[#1a2332] text-lg leading-tight">MedIA</h1>
-                    {step === 'chat' && sector && (
-                      <div className="flex flex-col ml-2">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Departamento</span>
-                        <div className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[11px] font-semibold flex items-center border border-slate-200">
-                          {sector}
-                        </div>
-                      </div>
-                    )}
+                {step === 'chat' && (
+                  <button 
+                    onClick={handleBackToSectors}
+                    className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors cursor-pointer"
+                    title="Voltar aos setores"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                )}
+                {/* MedIA Button */}
+                <button 
+                  onClick={() => setStep('onboarding')}
+                  className={cn(
+                    "flex items-center gap-3 p-2 -ml-2 rounded-xl transition-all cursor-pointer",
+                    step !== 'gop' ? "bg-slate-50 shadow-sm border border-slate-100" : "hover:bg-slate-50 opacity-60 hover:opacity-100 border border-transparent"
+                  )}
+                >
+                  <div className="w-10 h-10 bg-[#1a2332] rounded-xl flex items-center justify-center text-white shrink-0">
+                    <Bot size={22} strokeWidth={1.5} />
                   </div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Assistente Corp</p>
-                </div>
+                  <div className="flex flex-col text-left">
+                    <div className="flex items-center gap-3">
+                      <h1 className="font-bold text-[#1a2332] text-lg leading-tight">MedIA</h1>
+                      {step === 'chat' && sector && (
+                        <div className="flex flex-col ml-2">
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Departamento</span>
+                          <div className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[11px] font-semibold flex items-center border border-slate-200">
+                            {sector}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Assistente Corp</p>
+                  </div>
+                </button>
+
+                {/* Divider */}
+                <div className="hidden sm:block h-8 w-px bg-slate-200 mx-1"></div>
+
+                {/* GOP Button */}
+                <button 
+                  onClick={() => setStep('gop')}
+                  className={cn(
+                    "flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer",
+                    step === 'gop' ? "bg-slate-50 shadow-sm border border-slate-100" : "hover:bg-slate-50 opacity-60 hover:opacity-100 border border-transparent"
+                  )}
+                >
+                  <div className="w-10 h-10 bg-[#1a2332] rounded-xl flex items-center justify-center text-white shrink-0">
+                    <Layers size={22} strokeWidth={1.5} />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <h1 className="font-bold text-[#1a2332] text-lg leading-tight">GOP</h1>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Governança Operacional</p>
+                  </div>
+                </button>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {step === 'chat' && (
@@ -1054,13 +1033,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     >
                       <Trash2 size={16} />
                     </button>
-                    <button
-                      onClick={handleBackToSectors}
-                      className="p-2 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
-                      title="Trocar de Setor"
-                    >
-                      <Layers size={16} />
-                    </button>
+
                   </>
                 )}
                 <button
@@ -1076,125 +1049,15 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             <div className="flex-1 flex flex-col overflow-hidden relative">
               <AnimatePresence mode="wait">
                 {step === 'onboarding' && (
-                  <motion.div
-                    key="onboarding"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex-1 flex flex-col items-center p-6 sm:p-8 bg-white overflow-y-auto w-full"
-                  >
-                    <div className="w-full max-w-[380px] flex flex-col items-center justify-center min-h-full my-auto py-4">
-                      <div className="mb-8 flex justify-center w-full">
-                      <div className="w-24 h-24 bg-[#1a2332] rounded-2xl flex items-center justify-center text-white shadow-lg">
-                        <Bot size={48} strokeWidth={1.5} />
-                      </div>
-                    </div>
+                  <ChatOnboarding onStart={handleStart} />
+                )}
 
-                    <div className="text-center mb-10">
-                      <h2 className="text-[28px] font-bold text-[#1a2332] mb-2 tracking-tight">
-                        Bem-vindo ao MedIA
-                      </h2>
-                      <p className="text-[13px] font-semibold text-slate-400 uppercase tracking-widest mb-6">
-                        Assistente Virtual Corporativo
-                      </p>
-                      <p className="text-sm text-slate-500 leading-relaxed max-w-[340px] mx-auto">
-                        Plataforma inteligente especializada em processos internos, gestão de materiais e suporte técnico para as equipes Arthromed e Medic.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-8 w-full mb-12 max-w-[380px]">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="bg-slate-50 text-slate-600 p-3.5 rounded-full border border-slate-100"><Zap size={20} strokeWidth={1.5} /></div>
-                        <span className="text-[11px] font-semibold text-slate-600 text-center leading-tight">Respostas<br/>Rápidas</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="bg-slate-50 text-slate-600 p-3.5 rounded-full border border-slate-100"><Shield size={20} strokeWidth={1.5} /></div>
-                        <span className="text-[11px] font-semibold text-slate-600 text-center leading-tight">Seguro e<br/>Confiável</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="bg-slate-50 text-slate-600 p-3.5 rounded-full border border-slate-100"><Clock size={20} strokeWidth={1.5} /></div>
-                        <span className="text-[11px] font-semibold text-slate-600 text-center leading-tight">24/7<br/>Disponível</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleStart}
-                      className="w-full max-w-[380px] bg-[#1a2332] hover:bg-[#253043] text-white py-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md shrink-0"
-                    >
-                      Iniciar Atendimento <ArrowRight size={16} />
-                    </button>
-                    </div>
-                  </motion.div>
+                {step === 'gop' && (
+                  <GopPanel />
                 )}
 
                 {step === 'sector' && (
-                  <motion.div
-                    key="sector"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex-1 flex flex-col p-8 overflow-y-auto bg-slate-50/50"
-                  >
-                    <div className="mb-10 text-center flex flex-col items-center">
-                      <div className="w-14 h-14 bg-[#1a2332] rounded-full flex items-center justify-center text-white mb-6 shadow-md">
-                        <Layers size={24} />
-                      </div>
-                      <h2 className="text-2xl font-bold text-[#1a2332] mb-3 tracking-tight">Seleção de Departamento</h2>
-                      <p className="text-slate-500 text-sm max-w-[400px] mx-auto leading-relaxed">Por favor, selecione sua área de atuação para personalizarmos o seu atendimento e fornecermos as informações corretas.</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 max-w-[800px] mx-auto w-full">
-                      {availableSectors.length > 0 ? (
-                        availableSectors.map((s, index) => {
-                          let Icon = Layers;
-                          let desc = "Gestão de processos e suporte.";
-                          if (s.toLowerCase().includes('comercial')) {
-                            Icon = Briefcase;
-                            desc = "Vendas, contratos e relacionamento corporativo.";
-                          } else if (s.toLowerCase().includes('faturamento')) {
-                            Icon = DollarSign;
-                            desc = "Emissão de notas, cobranças e conciliações.";
-                          } else if (s.toLowerCase().includes('financeiro')) {
-                            Icon = Landmark;
-                            desc = "Contas a pagar, receber e tesouraria geral.";
-                          } else if (s.toLowerCase().includes('orçamento - arthromed')) {
-                            Icon = Calculator;
-                            desc = "Planejamento e controle de custos Arthromed.";
-                          } else if (s.toLowerCase().includes('orçamento - medic')) {
-                            Icon = Activity;
-                            desc = "Planejamento e controle de custos Medic.";
-                          } else if (s.toLowerCase().includes('estoque') || s.toLowerCase().includes('logística') || s.toLowerCase().includes('logistica')) {
-                            Icon = Truck;
-                            desc = "Processos de transporte e análise de compras.";
-                          }
-
-                          return (
-                            <motion.button
-                              key={s}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: index * 0.05 }}
-                              onClick={() => handleSelectSector(s)}
-                              className="text-left w-full flex flex-col p-5 bg-white border border-slate-200 rounded-2xl hover:border-slate-300 hover:shadow-md transition-all group relative"
-                            >
-                              <div className="bg-slate-100 text-slate-500 p-2 rounded-lg w-fit mb-4">
-                                <Icon size={18} strokeWidth={1.5} />
-                              </div>
-                              <h3 className="font-bold text-slate-800 text-base mb-1">{s}</h3>
-                              <p className="text-xs text-slate-500 leading-relaxed pr-6">{desc}</p>
-                              <ArrowRight className="text-slate-300 absolute top-5 right-5 group-hover:text-slate-500 transition-colors" size={16} />
-                            </motion.button>
-                          )
-                        })
-                      ) : (
-                        <div className="col-span-2 text-center py-10 opacity-50">Carregando departamentos...</div>
-                      )}
-                    </div>
-
-                    <p className="mt-auto pt-8 text-center text-xs text-slate-400">
-                      Caso não encontre seu departamento, entre em contato com o suporte de TI.
-                    </p>
-                  </motion.div>
+                  <ChatSectorSelect availableSectors={availableSectors} onSelectSector={handleSelectSector} />
                 )}
 
                 {step === 'chat' && (
@@ -1382,39 +1245,19 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                             />
                           </button>
 
-                          {isRecording ? (
-                            <button
-                              onClick={stopRecording}
-                              className="p-2.5 text-red-500 hover:bg-red-50 rounded-full transition-colors animate-pulse relative cursor-pointer"
-                              title="Parar Gravação"
-                            >
-                              <Mic size={18} />
-                              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white animate-ping" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={startRecording}
-                              className="p-2.5 text-slate-400 hover:text-[#1a2332] hover:bg-slate-200/50 rounded-full transition-colors cursor-pointer"
-                              title="Gravar Mensagem de Voz"
-                              disabled={isLoading}
-                            >
-                              <Mic size={18} />
-                            </button>
-                          )}
+
                           
                           <input
                             type="text"
-                            value={isRecording ? "" : input}
+                            value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                             placeholder={
-                              isRecording 
-                                ? "Gravando áudio... clique no microfone para parar." 
-                                : attachedFiles.length > 0
+                              attachedFiles.length > 0
                                 ? `${attachedFiles.length} arquivo(s) pronto(s)` 
                                 : "Descreva sua solicitação ou dúvida..."
                             }
-                            disabled={isRecording || isLoading}
+                            disabled={isLoading}
                             className="flex-1 border-none bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400 px-2 disabled:opacity-75"
                           />
                           
@@ -1446,82 +1289,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 )}
 
                 {step === 'dashboard' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="flex-1 flex flex-col bg-[#f8fafc] overflow-hidden"
-                  >
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-4 bg-white border-b border-slate-100 shrink-0">
-                      <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                        <BarChart2 size={18} className="text-blue-500" /> Analytics
-                      </h2>
-                      <button 
-                        onClick={() => setStep('chat')}
-                        className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500 transition-colors cursor-pointer"
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      
-                      {/* KPIs */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2">
-                          <div className="flex items-center gap-2 text-blue-600">
-                            <Activity size={16} />
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Guias Lidas</span>
-                          </div>
-                          <span className="text-2xl font-bold text-slate-800">
-                            {parseInt(localStorage.getItem('media_processed_orders') || '0', 10) + 142}
-                          </span>
-                        </div>
-
-                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2">
-                          <div className="flex items-center gap-2 text-green-600">
-                            <Clock size={16} />
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Horas Salvas</span>
-                          </div>
-                          <span className="text-2xl font-bold text-slate-800">
-                            {Math.floor(((parseInt(localStorage.getItem('media_processed_orders') || '0', 10) + 142) * 3) / 60)}h
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Feedbacks */}
-                      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                        <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                          <MessageSquare size={16} className="text-purple-500"/>
-                          Últimos Erros da IA
-                        </h3>
-                        <div className="space-y-3 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
-                          {(() => {
-                            const fbs = JSON.parse(localStorage.getItem('media_feedbacks') || '[]');
-                            const defaultFeedbacks = [
-                              { type: 'down', comment: 'Faltou o CID 10 na guia', date: new Date().toISOString(), messagePreview: 'Paciente: João Silva...' }
-                            ];
-                            const all = fbs.length > 0 ? fbs : defaultFeedbacks;
-                            const negatives = all.filter((f: any) => f.type === 'down' || f.comment).reverse();
-                            if (negatives.length === 0) return <p className="text-xs text-slate-400 italic">Nenhum feedback negativo recente.</p>;
-                            
-                            return negatives.map((fb: any, idx: number) => (
-                              <div key={idx} className="p-3 bg-red-50/50 border border-red-100 rounded-lg flex gap-3 items-start">
-                                <ThumbsDown size={14} className="text-red-500 shrink-0 mt-0.5"/>
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-xs font-semibold text-slate-700">{fb.comment || "Usuário não comentou."}</span>
-                                  <span className="text-[10px] text-slate-400 line-clamp-1 italic">Original: {fb.messagePreview}</span>
-                                </div>
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-
-                    </div>
-                  </motion.div>
+                  <ChatDashboard onClose={() => setStep('chat')} />
                 )}
 
                 {step === 'fature_ia' && (
@@ -1534,139 +1302,13 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       </AnimatePresence>
 
       {/* Modal de Pré-visualização Premium */}
-      <AnimatePresence>
-        {previewFile && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-[#0b0f19]/80 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
-            onClick={() => setPreviewFile(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 15 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-100"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header do Modal */}
-              <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white border border-slate-200 text-[#1a2332] rounded-xl shadow-sm">
-                    {previewFile.type === 'application/pdf' ? <FileText size={20} /> : <Paperclip size={20} />}
-                  </div>
-                  <div className="flex flex-col">
-                    <h3 className="font-bold text-slate-800 text-sm md:text-base leading-tight truncate max-w-[200px] md:max-w-[450px]">
-                      {previewFile.name}
-                    </h3>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                      Pré-visualização do Anexo
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {previewUrl && (
-                    <a
-                      href={previewUrl}
-                      download={previewFile.name}
-                      className="flex items-center gap-2 border border-slate-200 bg-white text-slate-600 px-4 py-2 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
-                    >
-                      Baixar Arquivo
-                    </a>
-                  )}
-                  <button
-                    onClick={() => setPreviewFile(null)}
-                    className="bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 p-2.5 rounded-full transition-all border border-slate-200/50 shadow-sm cursor-pointer"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Corpo do Modal - Conteúdo do Arquivo */}
-              <div className="flex-1 bg-slate-100/50 p-4 md:p-6 flex items-center justify-center overflow-hidden">
-                {previewFile.originalPdfBase64 || previewFile.type === 'application/pdf' ? (
-                  previewUrl ? (
-                    <iframe
-                      src={previewUrl}
-                      title={previewFile.name}
-                      className="w-full h-full border border-slate-200 rounded-2xl shadow-inner bg-white"
-                    />
-                  ) : (
-                    <div className="text-slate-400 text-sm font-semibold">Carregando visualizador de PDF...</div>
-                  )
-                ) : previewFile.type.startsWith('image/') ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden">
-                    {/* Zoom Controls */}
-                    <div className="absolute top-4 right-4 z-50 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm border border-slate-200/60 p-1.5 rounded-2xl shadow-md select-none">
-                      <button
-                        onClick={() => setImgZoom(prev => Math.max(0.5, prev - 0.25))}
-                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-all cursor-pointer font-bold text-xs"
-                        title="Diminuir Zoom"
-                      >
-                        A-
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500 px-2 min-w-[36px] text-center">
-                        {Math.round(imgZoom * 100)}%
-                      </span>
-                      <button
-                        onClick={() => setImgZoom(prev => Math.min(3.0, prev + 0.25))}
-                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-all cursor-pointer font-bold text-xs"
-                        title="Aumentar Zoom"
-                      >
-                        A+
-                      </button>
-                      <button
-                        onClick={() => setImgZoom(1)}
-                        className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer text-[10px] font-bold uppercase tracking-wider px-2"
-                        title="Resetar Zoom"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                    {/* Zoomable Image Container */}
-                    <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
-                      <img
-                        src={`data:${previewFile.type};base64,${previewFile.base64}`}
-                        alt={previewFile.name}
-                        style={{
-                          transform: `scale(${imgZoom})`,
-                          transformOrigin: 'center center',
-                          transition: 'transform 0.15s ease-out'
-                        }}
-                        className="max-w-full max-h-full object-contain rounded-2xl shadow-lg border border-white"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-4 text-center p-8 bg-white border border-slate-200 rounded-3xl shadow-md max-w-sm">
-                    <div className="p-4 bg-slate-50 text-slate-400 rounded-full border border-slate-100">
-                      <FileText size={40} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-700 text-base mb-1">Visualização Indisponível</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        Não conseguimos exibir este tipo de arquivo diretamente. Faça o download para visualizá-lo.
-                      </p>
-                    </div>
-                    {previewUrl && (
-                      <a
-                        href={previewUrl}
-                        download={previewFile.name}
-                        className="bg-[#1a2332] text-white px-5 py-2.5 rounded-xl text-xs font-semibold hover:bg-[#253043] transition-colors shadow-md"
-                      >
-                        Baixar Arquivo
-                      </a>
-                    )}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <FilePreviewModal 
+        previewFile={previewFile}
+        previewUrl={previewUrl}
+        imgZoom={imgZoom}
+        setImgZoom={setImgZoom}
+        onClose={() => setPreviewFile(null)}
+      />
 
       {/* Toggle Button */}
       {!isDesktop && (!hideToggle || isOpen) && (

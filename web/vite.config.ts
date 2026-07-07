@@ -8,13 +8,14 @@ import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
 
 const isVercel = !!process.env.VERCEL
+const isDev = process.argv.includes('dev') || process.env.NODE_ENV === 'development'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   envPrefix: ['VITE_', 'SUPABASE_', 'AI_GATEWAY_'],
   plugins: [
     devtools(),
-    !isVercel && cloudflare({ viteEnvironment: { name: 'ssr' } }),
+    !isVercel && !isDev && cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),

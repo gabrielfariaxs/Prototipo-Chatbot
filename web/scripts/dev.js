@@ -20,7 +20,7 @@ try {
   if (!fs.existsSync('dist/server')) {
     fs.mkdirSync('dist/server', { recursive: true })
   }
-  fs.writeFileSync('dist/server/server.js', 'console.log("placeholder server for wrangler validation");')
+  fs.writeFileSync('dist/server/server.js', 'export default { fetch() { return new Response("Placeholder"); } }')
   console.log('📝 Criado arquivo placeholder em dist/server/server.js para o Wrangler.')
 } catch (e) {
   console.error('Erro ao criar placeholder de validação:', e.message)
