@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ChevronLeft, File, FileText, Image as ImageIcon, Calendar, Loader2 } from 'lucide-react'
+import { ChevronLeft, File, FileText, Image as ImageIcon, Calendar, Loader2, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string, onBack: () => void, userRole: string, onPreviewFile?: (file: any) => void }) => {
@@ -66,6 +66,21 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
     }
   }
 
+  const handleDelete = async () => {
+    if (window.confirm('Tem certeza que deseja excluir este gargalo? Esta ação não pode ser desfeita.')) {
+      setLoading(true)
+      const { error } = await supabase.from('gargalos').delete().eq('id', id)
+      if (error) {
+        alert('Erro ao excluir gargalo.')
+        console.error(error)
+        setLoading(false)
+      } else {
+        alert('Gargalo excluído com sucesso!')
+        onBack()
+      }
+    }
+  }
+
   if (loading || !gargalo) {
     return (
       <div className="w-full flex flex-col items-center justify-center p-20 text-slate-400">
@@ -82,12 +97,21 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
 
   return (
     <div className="w-full max-w-[1200px] mx-auto p-8 flex flex-col gap-6">
-      <button 
-        onClick={onBack}
-        className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors self-start cursor-pointer mb-2"
-      >
-        <ChevronLeft size={16} strokeWidth={3} /> Voltar para a fila
-      </button>
+      <div className="flex items-center justify-between mb-2">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors cursor-pointer"
+        >
+          <ChevronLeft size={16} strokeWidth={3} /> Voltar para a fila
+        </button>
+
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+        >
+          <Trash2 size={16} strokeWidth={2.5} /> Excluir Gargalo
+        </button>
+      </div>
 
       <div className="grid grid-cols-[1fr_450px] gap-8 items-start">
         {/* Left Column: Details */}

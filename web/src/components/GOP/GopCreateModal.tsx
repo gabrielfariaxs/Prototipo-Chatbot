@@ -57,6 +57,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
           
         if (uploadError) {
           console.error("Erro no upload do arquivo:", file.name, uploadError)
+          alert(`Erro ao fazer upload da evidência: ${uploadError.message}. Verifique se o Bucket 'evidencias' existe no Supabase Storage.`)
         } else if (uploadData) {
           const { data: publicUrlData } = supabase.storage
             .from('evidencias')
@@ -91,7 +92,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
     setIsSubmitting(false)
 
     if (error) {
-      alert('Ocorreu um erro ao registrar o gargalo.')
+      alert(`Ocorreu um erro ao registrar o gargalo: ${error.message || JSON.stringify(error)}`)
       console.error(error)
     } else {
       alert('Gargalo reportado com sucesso!')

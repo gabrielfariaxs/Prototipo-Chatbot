@@ -114,7 +114,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 {/* Zoomable Image Container */}
                 <div className="w-full h-full overflow-auto flex items-center justify-center p-4">
                   <img
-                    src={`data:${previewFile.type};base64,${previewFile.base64}`}
+                    src={previewFile.base64 ? `data:${previewFile.type};base64,${previewFile.base64}` : previewUrl || (previewFile as any).url || ''}
                     alt={previewFile.name}
                     style={{
                       transform: `scale(${imgZoom})`,
