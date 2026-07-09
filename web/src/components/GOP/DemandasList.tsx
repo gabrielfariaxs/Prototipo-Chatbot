@@ -1,47 +1,80 @@
-import React, { useState } from 'react'
-import { Plus, Search, Calendar, User, Clock, CheckCircle2, Circle } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Plus, Search, Calendar, User, Clock, CheckCircle2, Circle, X } from 'lucide-react'
 import { DemandasCreateModal } from './DemandasCreateModal'
+import { DemandasDetailModal } from './DemandasDetailModal'
 
-export const DemandasList = () => {
+interface DemandasListProps {
+  userSector?: string
+  userRole?: string
+}
+
+export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', userRole = 'lider' }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [selectedDemanda, setSelectedDemanda] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   
-  // Mock data for prototype
+  // Mock data for prototype - added sector
   const [demandas, setDemandas] = useState<any[]>([
     {
       id: '1',
       data_criacao: new Date().toISOString(),
       prazo: '2026-07-20',
       funcionario: 'Carlos Silva',
+      setor: 'Financeiro',
       descricao: 'Revisar os processos de faturamento do mês anterior e enviar o relatório de inconformidades.',
-      status: 'Pendente'
+      status: 'Pendente',
+      anexo: undefined
     },
     {
       id: '2',
-      data_criacao: new Date(Date.now() - 86400000).toISOString(), // Ontem
-      prazo: '2026-07-15',
+      data_criacao: new Date(Date.now() - 86400000).toISOString(),
+      prazo: '2026-07-05', // Past date to test expiration
       funcionario: 'Ana Souza',
+      setor: 'T.I',
       descricao: 'Atualizar a planilha de controle de equipamentos do setor de TI.',
-      status: 'Concluído'
+      status: 'Pendente',
+      anexo: undefined
     }
   ])
 
-  const filteredDemandas = demandas.filter(d => 
-    d.descricao.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    d.funcionario.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const handleAddDemanda = (novaDemanda: any) => {
-    setDemandas([{ ...novaDemanda, id: Date.now().toString(), status: 'Pendente', data_criacao: new Date().toISOString() }, ...demandas])
-  }
-
-  const toggleStatus = (id: string) => {
-    setDemandas(demandas.map(d => {
-      if (d.id === id) {
-        return { ...d, status: d.status === 'Pendente' ? 'Concluído' : 'Pendente' }
+  // Lock expired items
+  useEffect(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    setDemandas(prev => prev.map(d => {
+      if (d.status !== 'Feito' && new Date(d.prazo) < today && d.status !== 'Não concluído') {
+        return { ...d, status: 'Não concluído' }
       }
       return d
     }))
+  }, [])
+
+  const isExpired = (prazo: string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return new Date(prazo) < today
+  }
+
+  const filteredDemandas = demandas.filter(d => {
+    const matchesSearch = d.descricao.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          d.funcionario.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSector = userRole === 'coo' || d.setor === userSector
+    return matchesSearch && matchesSector
+  })
+
+  const handleAddDemanda = (novaDemanda: any) => {
+    setDemandas([{ ...novaDemanda, id: Date.now().toString(), status: 'Pendente', data_criacao: new Date().toISOString(), setor: userSector }, ...demandas])
+  }
+
+  const handleSaveDemanda = (id: string, novoStatus: string, anexo?: string) => {
+    setDemandas(demandas.map(d => {
+      if (d.id === id) {
+        return { ...d, status: novoStatus, anexo }
+      }
+      return d
+    }))
+    setSelectedDemanda(null)
   }
 
   return (
@@ -88,46 +121,51 @@ export const DemandasList = () => {
 
         <div className="flex flex-col">
           {filteredDemandas.length > 0 ? (
-            filteredDemandas.map((demanda, i) => (
-              <div 
-                key={demanda.id}
-                className={`grid grid-cols-[auto_1.5fr_1fr_1fr_2fr] gap-4 px-6 py-5 items-center hover:bg-slate-50 transition-colors ${i !== filteredDemandas.length - 1 ? 'border-b border-slate-100' : ''}`}
-              >
-                <button 
-                  onClick={() => toggleStatus(demanda.id)}
-                  className="w-8 flex justify-center text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                  title={demanda.status === 'Pendente' ? 'Marcar como concluído' : 'Reabrir demanda'}
+            filteredDemandas.map((demanda, i) => {
+              const expired = isExpired(demanda.prazo) && demanda.status !== 'Feito'
+              return (
+                <div 
+                  key={demanda.id}
+                  onClick={() => setSelectedDemanda(demanda)}
+                  className={`grid grid-cols-[auto_1.5fr_1fr_1fr_2fr] gap-4 px-6 py-5 items-center hover:bg-slate-50 transition-colors cursor-pointer ${i !== filteredDemandas.length - 1 ? 'border-b border-slate-100' : ''}`}
                 >
-                  {demanda.status === 'Concluído' ? (
-                    <CheckCircle2 size={20} className="text-green-500" />
-                  ) : (
-                    <Circle size={20} />
-                  )}
-                </button>
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">
-                    <User size={12} />
+                  <div className="w-8 flex justify-center transition-colors">
+                    {demanda.status === 'Feito' ? (
+                      <CheckCircle2 size={20} className="text-green-500" />
+                    ) : demanda.status === 'Não concluído' ? (
+                      <X size={20} className="text-red-500" />
+                    ) : (
+                      <Circle size={20} className="text-amber-500" />
+                    )}
                   </div>
-                  <span className="text-sm font-bold text-[#1a2332] truncate">{demanda.funcionario}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0">
+                      <User size={12} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-[#1a2332] truncate">{demanda.funcionario}</span>
+                      {userRole === 'coo' && <span className="text-[10px] font-semibold text-slate-400">{demanda.setor}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+                    <Calendar size={14} className="text-slate-400" />
+                    {new Date(demanda.data_criacao).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+                    <Clock size={14} className={expired ? 'text-red-500' : 'text-slate-400'} />
+                    <span className={expired ? 'text-red-600' : ''}>
+                      {new Date(demanda.prazo).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="text-sm text-slate-600 line-clamp-2" title={demanda.descricao}>
+                    {demanda.descricao}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
-                  <Calendar size={14} className="text-slate-400" />
-                  {new Date(demanda.data_criacao).toLocaleDateString()}
-                </div>
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
-                  <Clock size={14} className={new Date(demanda.prazo) < new Date() && demanda.status !== 'Concluído' ? 'text-red-500' : 'text-slate-400'} />
-                  <span className={new Date(demanda.prazo) < new Date() && demanda.status !== 'Concluído' ? 'text-red-600' : ''}>
-                    {new Date(demanda.prazo).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="text-sm text-slate-600 line-clamp-2" title={demanda.descricao}>
-                  {demanda.descricao}
-                </div>
-              </div>
-            ))
+              )
+            })
           ) : (
             <div className="p-8 text-center text-slate-500 text-sm font-medium">
-              Nenhuma demanda encontrada.
+              Nenhuma demanda encontrada para este setor.
             </div>
           )}
         </div>
@@ -140,6 +178,15 @@ export const DemandasList = () => {
             handleAddDemanda(demanda)
             setIsCreateModalOpen(false)
           }}
+        />
+      )}
+
+      {selectedDemanda && (
+        <DemandasDetailModal
+          demanda={selectedDemanda}
+          isLocked={isExpired(selectedDemanda.prazo)}
+          onClose={() => setSelectedDemanda(null)}
+          onSave={handleSaveDemanda}
         />
       )}
     </div>
