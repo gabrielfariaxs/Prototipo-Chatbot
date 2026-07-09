@@ -1,14 +1,15 @@
 import React, { useState } from 'react'
-import { X, Calendar, User, Clock, CheckCircle2, Circle, Upload, Paperclip, AlertTriangle } from 'lucide-react'
+import { X, Calendar, User, Clock, CheckCircle2, Circle, Upload, Paperclip, AlertTriangle, Trash2 } from 'lucide-react'
 
 interface DemandasDetailModalProps {
   demanda: any
   onClose: () => void
   onSave: (id: string, novoStatus: string, anexo?: string) => void
+  onDelete?: (id: string) => void
   isLocked: boolean
 }
 
-export const DemandasDetailModal: React.FC<DemandasDetailModalProps> = ({ demanda, onClose, onSave, isLocked }) => {
+export const DemandasDetailModal: React.FC<DemandasDetailModalProps> = ({ demanda, onClose, onSave, onDelete, isLocked }) => {
   const [status, setStatus] = useState(demanda.status)
   const [anexoUrl, setAnexoUrl] = useState<string | undefined>(demanda.anexo)
 
@@ -153,21 +154,38 @@ export const DemandasDetailModal: React.FC<DemandasDetailModalProps> = ({ demand
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-5 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50">
-          <button 
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
-          >
-            {isLocked ? 'Fechar' : 'Cancelar'}
-          </button>
-          {!isLocked && (
+        <div className="px-6 py-5 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+          <div>
+            {onDelete && (
+              <button 
+                onClick={() => {
+                  if (window.confirm('Tem certeza que deseja excluir esta demanda?')) {
+                    onDelete(demanda.id)
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                Excluir
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
             <button 
-              onClick={handleSaveClick}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#1a2332] hover:bg-blue-600 transition-colors shadow-lg cursor-pointer"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
             >
-              Salvar Alterações
+              {isLocked ? 'Fechar' : 'Cancelar'}
             </button>
-          )}
+            {!isLocked && (
+              <button 
+                onClick={handleSaveClick}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#1a2332] hover:bg-blue-600 transition-colors shadow-lg cursor-pointer"
+              >
+                Salvar Alterações
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

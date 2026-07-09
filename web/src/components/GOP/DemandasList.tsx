@@ -77,6 +77,11 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
     setSelectedDemanda(null)
   }
 
+  const handleDeleteDemanda = (id: string) => {
+    setDemandas(demandas.filter(d => d.id !== id))
+    setSelectedDemanda(null)
+  }
+
   return (
     <div className="w-full max-w-[1100px] mx-auto p-8 flex flex-col gap-6">
       {/* Header Area */}
@@ -187,6 +192,7 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
           isLocked={isExpired(selectedDemanda.prazo)}
           onClose={() => setSelectedDemanda(null)}
           onSave={handleSaveDemanda}
+          onDelete={handleDeleteDemanda}
         />
       )}
     </div>
