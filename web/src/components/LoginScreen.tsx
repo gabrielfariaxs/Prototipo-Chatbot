@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Mail, Lock, ArrowRight, ShieldAlert, X, Eye, EyeOff, Loader2, ArrowLeft, Send } from 'lucide-react'
+import { Mail, Lock, ArrowRight, ShieldAlert, X, Eye, EyeOff, Loader2, ArrowLeft, Send, User } from 'lucide-react'
 
 interface LoginScreenProps {
   onSuccess?: () => void
@@ -8,10 +8,28 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onSuccess }: LoginScreenProps) {
   const [view, setView] = useState<'login' | 'forgot_password'>('login')
-  const [email, setEmail] = useState('')
+  const [sector, setSector] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [resetEmail, setResetEmail] = useState('')
+  const [resetSector, setResetSector] = useState('')
+
+  const SETORES = [
+    'Comercial externo', 'Comercial interno', 'Instrumentação', 'T.I',
+    'Qualidade / RT', 'Qualidade', 'Gente Gestão', 'Financeiro', 'Estoque e logistica',
+    'Supply Chain', 'Compras', 'Operações'
+  ]
+
+  const getEmailFromSector = (sec: string) => {
+    // Normaliza para remover acentos, depois substitui não-alfanuméricos por _
+    const slug = sec
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '') // Remove _ no começo ou fim
+    return `${slug}@medic.com.br`
+  }
   const [resetSuccess, setResetSuccess] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,25 +39,17 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
     setError('')
     setLoading(true)
 
-    const emailTrimmed = email.trim()
-
-    if (!emailTrimmed || !password) {
-      setError('Por favor, preencha todos os campos.')
+    if (!sector || !password) {
+      setError('Por favor, selecione seu setor e digite a senha.')
       setLoading(false)
       return
     }
 
-    // Validação rígida de domínios corporativos
-    const isDomainValid = emailTrimmed.endsWith('@arthromed.com.br') || emailTrimmed.endsWith('@medic.com.br')
-    if (!isDomainValid) {
-      setError('Acesso restrito. Utilize um e-mail corporativo válido (@arthromed.com.br ou @medic.com.br).')
-      setLoading(false)
-      return
-    }
+    const mappedEmail = getEmailFromSector(sector)
 
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({
-        email: emailTrimmed,
+        email: mappedEmail,
         password: password,
       })
 
@@ -54,6 +64,7 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
       }
 
       // Sucesso!
+      localStorage.setItem('userSector', sector)
       if (onSuccess) onSuccess()
     } catch (err: any) {
       setError('Ocorreu um erro ao conectar ao servidor. Tente novamente.')
@@ -66,24 +77,16 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
     setError('')
     setLoading(true)
 
-    const emailTrimmed = resetEmail.trim()
-
-    if (!emailTrimmed) {
-      setError('Por favor, insira seu e-mail corporativo.')
+    if (!resetSector) {
+      setError('Por favor, selecione seu setor.')
       setLoading(false)
       return
     }
 
-    // Validação rígida de domínios corporativos
-    const isDomainValid = emailTrimmed.endsWith('@arthromed.com.br') || emailTrimmed.endsWith('@medic.com.br')
-    if (!isDomainValid) {
-      setError('Acesso restrito. Utilize um e-mail corporativo válido (@arthromed.com.br ou @medic.com.br).')
-      setLoading(false)
-      return
-    }
+    const mappedEmail = getEmailFromSector(resetSector)
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(emailTrimmed, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(mappedEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       })
 
@@ -154,21 +157,24 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
               {/* Form */}
               <form onSubmit={handleLogin} className="space-y-5">
                 
-                {/* Email Field */}
+                {/* Sector Field */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-wider text-[#64748b] uppercase">
-                    E-mail Corporativo
+                    Setor
                   </label>
                   <div className="relative flex items-center">
-                    <Mail className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
-                    <input 
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="nome@arthromed.com.br"
-                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] placeholder-[#94a3b8] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all"
+                    <User className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
+                    <select
+                      value={sector}
+                      onChange={(e) => setSector(e.target.value)}
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all appearance-none cursor-pointer"
                       disabled={loading}
-                    />
+                    >
+                      <option value="" disabled>Selecione seu setor...</option>
+                      {SETORES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -289,21 +295,24 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
               {/* Form */}
               <form onSubmit={handleResetPassword} className="space-y-5">
                 
-                {/* Reset Email Field */}
+                {/* Reset Sector Field */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-wider text-[#64748b] uppercase">
-                    E-mail Corporativo
+                    Seu Setor
                   </label>
                   <div className="relative flex items-center">
-                    <Mail className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
-                    <input 
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="nome@arthromed.com.br"
-                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] placeholder-[#94a3b8] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all"
-                      disabled={loading || resetSuccess}
-                    />
+                    <User className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
+                    <select
+                      value={resetSector}
+                      onChange={(e) => setResetSector(e.target.value)}
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all appearance-none cursor-pointer"
+                      disabled={loading}
+                    >
+                      <option value="" disabled>Selecione seu setor...</option>
+                      {SETORES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

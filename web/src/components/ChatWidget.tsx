@@ -936,7 +936,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             )}
           >
             {/* Unified Corporate Header */}
-            <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10 shrink-0">
+            <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between z-10 shrink-0">
               <div className="flex items-center gap-4">
                 {step === 'chat' && (
                   <button 
@@ -989,8 +989,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     <Layers size={22} strokeWidth={1.5} />
                   </div>
                   <div className="flex flex-col text-left">
-                    <h1 className="font-bold text-[#1a2332] text-lg leading-tight">GOP</h1>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Governança Operacional</p>
+                    <h1 className="font-bold text-[#1a2332] text-lg leading-tight">NCO</h1>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Não Conformidades Operacionais</p>
                   </div>
                 </button>
               </div>
@@ -1076,7 +1076,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   >
                     <div
                       ref={scrollRef}
-                      className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30"
+                      className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f8fafc]"
                     >
                       {messages.map((msg) => (
                         <div
@@ -1209,7 +1209,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       </motion.div>
                     )}
 
-                    <div className="p-5 bg-white border-t border-slate-100">
+                    <div className="p-5 bg-white border-t border-slate-200">
                       {!stepSession && (
                         <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                           {(attachedFiles.length > 0 
@@ -1281,7 +1281,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                         <button
                           onClick={() => handleSend()}
                           disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-                          className="p-3.5 bg-[#1a2332]/10 text-[#1a2332] rounded-full disabled:opacity-50 hover:bg-[#1a2332]/20 transition-colors cursor-pointer"
+                          className="p-3.5 bg-blue-600 text-white rounded-full disabled:opacity-50 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all cursor-pointer"
                         >
                           <Send size={18} />
                         </button>
@@ -1325,8 +1325,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             className={cn(
               'p-5 rounded-full transition-all duration-300 flex items-center justify-center transform hover:scale-110 active:scale-95',
               isOpen
-                ? 'bg-white text-[var(--color-primary)] rotate-90 shadow-xl'
-                : 'media-gradient media-glow text-white border-2 border-white/20'
+                ? 'bg-white text-[#1a2332] rotate-90 shadow-xl'
+                : 'bg-[#1a2332] hover:bg-[#0f172a] text-white border-2 border-white/20 shadow-lg shadow-[#1a2332]/20'
             )}
           >
             {isOpen ? <X size={32} /> : <MessageCircle size={32} />}

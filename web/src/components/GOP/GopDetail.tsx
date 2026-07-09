@@ -67,15 +67,15 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
   }
 
   const handleDelete = async () => {
-    if (window.confirm('Tem certeza que deseja excluir este gargalo? Esta ação não pode ser desfeita.')) {
+    if (window.confirm('Tem certeza que deseja excluir esta não conformidade? Esta ação não pode ser desfeita.')) {
       setLoading(true)
       const { error } = await supabase.from('gargalos').delete().eq('id', id)
       if (error) {
-        alert('Erro ao excluir gargalo.')
+        alert('Erro ao excluir não conformidade.')
         console.error(error)
         setLoading(false)
       } else {
-        alert('Gargalo excluído com sucesso!')
+        alert('Não conformidade excluída com sucesso!')
         onBack()
       }
     }
@@ -85,7 +85,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
     return (
       <div className="w-full flex flex-col items-center justify-center p-20 text-slate-400">
         <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-500" />
-        <span className="text-sm font-bold">Carregando detalhes do gargalo...</span>
+        <span className="text-sm font-bold">Carregando detalhes da não conformidade...</span>
       </div>
     )
   }
@@ -109,7 +109,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
           onClick={handleDelete}
           className="flex items-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
         >
-          <Trash2 size={16} strokeWidth={2.5} /> Excluir Gargalo
+          <Trash2 size={16} strokeWidth={2.5} /> Excluir Não Conformidade
         </button>
       </div>
 
@@ -258,7 +258,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-bold text-slate-700">Responsável pela Ação</label>
+                <label className="text-[13px] font-bold text-slate-700">Responsável pela Ação <span className="text-slate-400 font-normal">(Opcional)</span></label>
                 <input 
                   type="text" 
                   value={responsavel}
@@ -285,17 +285,6 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-bold text-slate-700">Indicador de Melhoria</label>
-                <input 
-                  type="text" 
-                  value={indicador}
-                  onChange={(e) => setIndicador(e.target.value)}
-                  disabled={userRole !== 'coo'}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 placeholder:text-slate-400 font-medium text-slate-700 disabled:bg-slate-50 disabled:text-slate-500"
-                  placeholder="Ex.: -30% no tempo de resposta"
-                />
-              </div>
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-bold text-slate-700">Data de Revisão</label>
                 <div className="relative">

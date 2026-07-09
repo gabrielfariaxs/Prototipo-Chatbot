@@ -6,10 +6,11 @@ import { supabase } from '../../lib/supabase'
 interface GopCreateModalProps {
   onClose: () => void;
   onSuccess: () => void;
+  userSector?: string;
 }
 
-export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSuccess }) => {
-  const [setor, setSetor] = useState('')
+export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSuccess, userSector }) => {
+  const [setor, setSetor] = useState(userSector || '')
   const [responsavel, setResponsavel] = useState('')
   const [dataOcorrencia, setDataOcorrencia] = useState('')
   const [dataRegistro, setDataRegistro] = useState(new Date().toISOString().split('T')[0])
@@ -38,7 +39,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
 
   const handleSubmit = async () => {
     if (!setor || !responsavel || !nome || !descricao) {
-      alert("Por favor, preencha os campos básicos do relato (Setor, Responsável, Nome do Gargalo e Descrição) antes de enviar.")
+      alert("Por favor, preencha os campos básicos do relato (Setor, Responsável, Nome da Não Conformidade e Descrição) antes de enviar.")
       return
     }
 
@@ -92,10 +93,10 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
     setIsSubmitting(false)
 
     if (error) {
-      alert(`Ocorreu um erro ao registrar o gargalo: ${error.message || JSON.stringify(error)}`)
+      alert(`Ocorreu um erro ao registrar a não conformidade: ${error.message || JSON.stringify(error)}`)
       console.error(error)
     } else {
-      alert('Gargalo reportado com sucesso!')
+      alert('Não conformidade reportada com sucesso!')
       onSuccess()
     }
   }
@@ -112,7 +113,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
         <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 bg-white shrink-0">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Novo Relato</span>
-            <h2 className="text-2xl font-extrabold text-[#1a2332]">Registro de Gargalo Operacional</h2>
+            <h2 className="text-2xl font-extrabold text-[#1a2332]">Registro de Não Conformidade Operacional</h2>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors">
             <X size={24} />
@@ -131,20 +132,15 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
               </h3>
               <div className="grid grid-cols-2 gap-6">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Setor</label>
-                  <select 
+                  <label className="text-sm font-bold text-[#1a2332]">Setor *</label>
+                  <input 
+                    type="text" 
                     value={setor} 
-                    onChange={e => setSetor(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700 bg-white"
-                  >
-                    <option value="" disabled>Selecione o setor...</option>
-                    <option value="Comercial">Comercial</option>
-                    <option value="Estoque/Logística">Estoque/Logística</option>
-                    <option value="Faturamento">Faturamento</option>
-                    <option value="Financeiro">Financeiro</option>
-                    <option value="Compras">Compras</option>
-                    <option value="Operações">Operações</option>
-                  </select>
+                    readOnly={!!userSector}
+                    onChange={e => !userSector && setSetor(e.target.value)}
+                    placeholder="Ex: Comercial, T.I..."
+                    className={`w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none text-slate-700 ${userSector ? 'bg-slate-100 cursor-not-allowed' : 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-bold text-[#1a2332]">Responsável</label>
@@ -187,7 +183,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
               </h3>
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Nome do Gargalo</label>
+                  <label className="text-sm font-bold text-[#1a2332]">Nome da Não Conformidade</label>
                   <input 
                     type="text" 
                     value={nome} 
@@ -305,7 +301,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                   <textarea 
                     value={consequencias} 
                     onChange={e => setConsequencias(e.target.value)}
-                    placeholder="O que acontece de negativo por causa desse gargalo?"
+                    placeholder="O que acontece de negativo por causa dessa não conformidade?"
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none text-slate-700"
                   />
                 </div>

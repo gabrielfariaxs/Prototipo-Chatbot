@@ -3,7 +3,13 @@ import { Plus, Search, ChevronDown, ChevronRight, LayoutGrid, List, Loader2 } fr
 import { supabase } from '../../lib/supabase'
 import { GopCreateModal } from './GopCreateModal'
 
-export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void, userRole: string }) => {
+interface GopListProps {
+  onSelect: (id: string) => void
+  userRole: 'lider' | 'coo' | 'demandas'
+  userSector?: string
+}
+
+export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector }) => {
   const [gargalos, setGargalos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -21,10 +27,16 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
 
   const fetchGargalos = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('gargalos')
       .select('*')
       .order('data_registro', { ascending: false })
+
+    if (userRole === 'lider' && userSector) {
+      query = query.eq('setor', userSector)
+    }
+
+    const { data, error } = await query
     
     if (data) {
       setGargalos(data)
@@ -42,7 +54,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
   // Derive filter options from data
   const setores = ['Todos', ...Array.from(new Set(gargalos.map(g => g.setor)))]
   const urgencias = ['Todas', 'Alta', 'Média', 'Baixa']
-  const statusOptions = ['Todos', 'Não Iniciado', 'Em Andamento', 'Bloqueado', 'Resolvido']
+  const statusOptions = ['Todos', 'Não Iniciado', 'Em Andamento', 'Em pausa', 'Resolvido']
 
   // Filter the list
   const filteredGargalos = gargalos.filter(g => {
@@ -57,7 +69,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
 
   const aguardandoTratativa = gargalos.filter(g => g.status === 'Não Iniciado' || g.status === 'Em Andamento').length
   const altaUrgencia = gargalos.filter(g => g.urgencia === 'Alta').length
-  const bloqueados = gargalos.filter(g => g.status === 'Bloqueado').length
+  const bloqueados = gargalos.filter(g => g.status === 'Em pausa').length
   const naoIniciados = gargalos.filter(g => g.status === 'Não Iniciado').length
   const resolvidos = gargalos.filter(g => g.status === 'Resolvido').length
 
@@ -76,14 +88,14 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
           {userRole === 'coo' ? (
             <>
               <p className="text-indigo-600 font-bold text-xs uppercase tracking-widest mb-1">Fila de Revisão - COO</p>
-              <h1 className="text-3xl font-extrabold text-[#1a2332] tracking-tight">Gargalos aguardando tratativa</h1>
+              <h1 className="text-3xl font-extrabold text-[#1a2332] tracking-tight">Não Conformidades aguardando tratativa</h1>
               <p className="text-slate-500 text-sm mt-1.5 font-medium">Selecione um gargalo para revisar as evidências e registrar a decisão da reunião.</p>
             </>
           ) : (
             <>
-              <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mb-1">Meus Gargalos</p>
-              <h1 className="text-3xl font-extrabold text-[#1a2332] tracking-tight">Painel de Gargalos Operacionais</h1>
-              <p className="text-slate-500 text-sm mt-1.5 font-medium">Gargalos reportados por você e seu status de tratativa junto ao COO.</p>
+              <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mb-1">Minhas Não Conformidades</p>
+              <h1 className="text-3xl font-extrabold text-[#1a2332] tracking-tight">Painel de Não Conformidades Operacionais</h1>
+              <p className="text-slate-500 text-sm mt-1.5 font-medium">Não conformidades reportadas por você e seu status de tratativa junto ao COO.</p>
             </>
           )}
         </div>
@@ -93,7 +105,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer shrink-0"
           >
             <Plus size={18} strokeWidth={2.5} />
-            Reportar Novo Gargalo
+            Reportar Nova Não Conformidade
           </button>
         )}
       </div>
@@ -124,7 +136,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
               <div className="w-6 h-6 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center">
                 <div className="w-3 h-3 rounded-full border-2 border-amber-500 flex items-center justify-center"><div className="w-4 h-0.5 bg-amber-500 rotate-45"></div></div>
               </div>
-              Bloqueados
+              Em pausa
             </div>
             <span className="text-3xl font-extrabold text-[#1a2332]">{bloqueados}</span>
           </div>
@@ -139,7 +151,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
           </div>
           
           <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col h-[120px] overflow-hidden">
-            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-3">Gargalos por setor</span>
+            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-3">Não Conformidades por setor</span>
             <div className="flex flex-col gap-2 overflow-y-auto pr-1 custom-scrollbar">
               {Object.entries(setorCounts).map(([setor, count]: [string, any]) => (
                 <div key={setor} className="flex items-center gap-3">
@@ -158,7 +170,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
           {[
             { label: 'Total reportado', value: gargalos.length, color: 'bg-slate-400' },
             { label: 'Em andamento', value: gargalos.filter(g => g.status === 'Em Andamento').length, color: 'bg-blue-500' },
-            { label: 'Bloqueado', value: gargalos.filter(g => g.status === 'Bloqueado').length, color: 'bg-red-500' },
+            { label: 'Em pausa', value: gargalos.filter(g => g.status === 'Em pausa').length, color: 'bg-red-500' },
             { label: 'Resolvido', value: resolvidos, color: 'bg-green-500' },
           ].map((stat, i) => (
             <div key={i} className="bg-white rounded-[1.25rem] p-6 border border-slate-100 shadow-sm flex flex-col">
@@ -194,7 +206,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input 
               type="text" 
-              placeholder="Buscar gargalo..." 
+              placeholder="Buscar não conformidade..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
@@ -243,11 +255,11 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
       {loading ? (
         <div className="flex flex-col items-center justify-center p-12 text-slate-400 bg-white rounded-2xl shadow-sm border border-slate-100 mt-2">
           <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-500" />
-          <span className="text-sm font-bold">Carregando gargalos...</span>
+          <span className="text-sm font-bold">Carregando não conformidades...</span>
         </div>
       ) : filteredGargalos.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-slate-400 bg-white rounded-2xl shadow-sm border border-slate-100 mt-2">
-          <span className="text-sm font-bold">Nenhum gargalo encontrado para os filtros selecionados.</span>
+          <span className="text-sm font-bold">Nenhuma não conformidade encontrada para os filtros selecionados.</span>
         </div>
       ) : userRole === 'coo' ? (
         /* COO Card Grid View */
@@ -269,13 +281,13 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
                 <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
                   ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
                     item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
-                    item.status === 'Bloqueado' ? 'bg-red-50 text-red-600' : 
+                    item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 
                     item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
                     'bg-slate-100 text-slate-500'}`}>
                   <div className={`w-1.5 h-1.5 rounded-full ${
                     item.status === 'Em Andamento' ? 'bg-blue-500' : 
                     item.status === 'Não Iniciado' ? 'bg-slate-400' : 
-                    item.status === 'Bloqueado' ? 'bg-red-500' : 
+                    item.status === 'Em pausa' ? 'bg-red-500' : 
                     item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
                   }`}></div>
                   {item.status}
@@ -305,8 +317,8 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
         <div className="flex gap-4 mt-2 overflow-x-auto pb-4 custom-scrollbar">
           {statusOptions.filter(s => s !== 'Todos').map(statusCol => {
             const colItems = filteredGargalos.filter(g => g.status === statusCol)
-            const colorClass = statusCol === 'Não Iniciado' ? 'bg-slate-400' : statusCol === 'Em Andamento' ? 'bg-blue-500' : statusCol === 'Bloqueado' ? 'bg-red-500' : 'bg-green-500'
-            const textColorClass = statusCol === 'Não Iniciado' ? 'text-slate-600' : statusCol === 'Em Andamento' ? 'text-blue-700' : statusCol === 'Bloqueado' ? 'text-red-700' : 'text-green-700'
+            const colorClass = statusCol === 'Não Iniciado' ? 'bg-slate-400' : statusCol === 'Em Andamento' ? 'bg-blue-500' : statusCol === 'Em pausa' ? 'bg-red-500' : 'bg-green-500'
+            const textColorClass = statusCol === 'Não Iniciado' ? 'text-slate-600' : statusCol === 'Em Andamento' ? 'text-blue-700' : statusCol === 'Em pausa' ? 'text-red-700' : 'text-green-700'
             
             return (
               <div key={statusCol} className="flex-1 min-w-[260px] bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col h-[500px]">
@@ -331,11 +343,16 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
                         key={item.id} 
                         onClick={() => onSelect(item.id)}
                         className={`bg-white rounded-xl p-5 border-l-2 shadow-sm cursor-pointer hover:shadow-md transition-all flex flex-col gap-3
-                          ${item.status === 'Não Iniciado' ? 'border-l-amber-500' : item.status === 'Em Andamento' ? 'border-l-red-500' : item.status === 'Bloqueado' ? 'border-l-slate-200' : 'border-l-green-500'}
+                          ${item.status === 'Não Iniciado' ? 'border-l-amber-500' : item.status === 'Em Andamento' ? 'border-l-red-500' : item.status === 'Em pausa' ? 'border-l-slate-200' : 'border-l-green-500'}
                         `}
-                        // Note: Using border colors from the screenshot: Não iniciado=orange border, Em andamento=red border, Bloqueado=dashed border (empty), Resolvido=green border
                       >
                         <h4 className="font-bold text-[#1a2332] text-[13px] leading-snug group-hover:text-indigo-600 transition-colors">{item.titulo}</h4>
+                        {item.tratativa_decisao && (
+                          <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-md w-fit flex items-center gap-1.5 shadow-sm">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Respondido pelo COO
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
                           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold
                             ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}
@@ -356,7 +373,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
         /* Lider Table View */
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mt-2">
           <div className="grid grid-cols-[2fr_1.5fr_1.2fr_1fr_1.2fr_auto] gap-4 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Nome do Gargalo</div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Nome da Não Conformidade</div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Setor</div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Data de Registro</div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Urgência</div>
@@ -372,7 +389,15 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
               >
                 <div className="flex flex-col pr-4">
                   <span className="font-bold text-[#1a2332] text-[15px] leading-tight mb-1">{item.titulo}</span>
-                  <span className="text-[12px] font-semibold text-slate-400">{item.autor_nome}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[12px] font-semibold text-slate-400">{item.autor_nome}</span>
+                    {item.tratativa_decisao && (
+                      <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Respondido pelo COO
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-[14px] font-semibold text-slate-600">{item.setor}</div>
                 <div className="text-[14px] font-semibold text-slate-600">{formatDate(item.data_registro)}</div>
@@ -385,18 +410,18 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
                   </span>
                 </div>
                 <div>
-                      <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
-                        ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
-                          item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
-                          item.status === 'Bloqueado' ? 'bg-red-50 text-red-600' : 
-                          item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
-                          'bg-slate-100 text-slate-500'}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          item.status === 'Em Andamento' ? 'bg-blue-500' : 
-                          item.status === 'Não Iniciado' ? 'bg-slate-400' : 
-                          item.status === 'Bloqueado' ? 'bg-red-500' : 
-                          item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
-                        }`}></div>
+                  <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
+                    ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
+                      item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
+                      item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 
+                      item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
+                      'bg-slate-100 text-slate-500'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      item.status === 'Em Andamento' ? 'bg-blue-500' : 
+                      item.status === 'Não Iniciado' ? 'bg-slate-400' : 
+                      item.status === 'Em pausa' ? 'bg-red-500' : 
+                      item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
+                    }`}></div>
                     {item.status}
                   </span>
                 </div>
@@ -412,6 +437,7 @@ export const GopList = ({ onSelect, userRole }: { onSelect: (id: string) => void
       {/* Create Modal */}
       {isCreateModalOpen && (
         <GopCreateModal 
+          userSector={userSector}
           onClose={() => setIsCreateModalOpen(false)} 
           onSuccess={() => {
             setIsCreateModalOpen(false)
