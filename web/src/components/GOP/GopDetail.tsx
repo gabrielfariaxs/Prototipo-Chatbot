@@ -96,8 +96,8 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
   }
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto p-8 flex flex-col gap-6">
-      <div className="flex items-center justify-between mb-2">
+    <div className="w-full max-w-[1200px] mx-auto p-4 md:p-8 flex flex-col gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 gap-4">
         <button 
           onClick={onBack}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors cursor-pointer"
@@ -113,9 +113,9 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
         </button>
       </div>
 
-      <div className="grid grid-cols-[1fr_450px] gap-8 items-start">
+      <div className="flex flex-col xl:grid xl:grid-cols-[1fr_450px] gap-8 items-start">
         {/* Left Column: Details */}
-        <div className="bg-white rounded-[1.5rem] p-8 border border-slate-100 shadow-sm flex flex-col gap-6">
+        <div className="bg-white rounded-[1.5rem] p-5 md:p-8 border border-slate-100 shadow-sm flex flex-col gap-6">
           <div className="flex flex-col gap-4 mb-2">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Relato do Líder</span>
@@ -141,7 +141,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
               </span>
             </div>
             <h1 className="text-2xl font-extrabold text-[#1a2332] tracking-tight leading-tight mt-1">{gargalo.titulo}</h1>
-            <div className="flex items-center gap-8 mt-2">
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 mt-2">
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Setor</span>
                 <span className="text-sm font-bold text-[#1a2332]">{gargalo.setor}</span>
@@ -161,10 +161,10 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
 
           <div className="flex flex-col gap-2">
             <h3 className="font-bold text-[#1a2332] text-[15px]">Descrição do Problema</h3>
-            <p className="text-slate-600 text-[15px] leading-relaxed">{gargalo.descricao}</p>
+            <p className="text-slate-600 text-[15px] leading-relaxed break-words">{gargalo.descricao}</p>
           </div>
 
-          <div className="grid grid-cols-[1fr_2fr] gap-6">
+          <div className="flex flex-col md:grid md:grid-cols-[1fr_2fr] gap-6">
             <div className="flex flex-col gap-2">
               <h3 className="font-bold text-[#1a2332] text-[15px]">Frequência</h3>
               <div className="inline-flex px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-slate-50 w-fit">{gargalo.frequencia}</div>
@@ -198,7 +198,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
 
           <div className="flex flex-col gap-2 mt-2">
             <h3 className="font-bold text-[#1a2332] text-[15px]">Evidências Anexadas</h3>
-            <div className="grid grid-cols-3 gap-4 mt-1">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-1">
               {gargalo.evidencias && gargalo.evidencias.length > 0 ? (
                 gargalo.evidencias.map((ev: any, idx: number) => (
                   <div 
@@ -231,7 +231,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
         </div>
 
         {/* Right Column: COO Form */}
-        <div className="bg-white rounded-[1.5rem] p-6 border border-indigo-100 shadow-xl shadow-indigo-500/5 flex flex-col relative overflow-hidden">
+        <div className="bg-white rounded-[1.5rem] p-5 md:p-6 border border-indigo-100 shadow-xl shadow-indigo-500/5 flex flex-col relative overflow-hidden w-full">
           <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
           
           <div className="flex items-center gap-3 mb-6 bg-indigo-50/50 -mx-6 -mt-6 p-6 border-b border-indigo-50">

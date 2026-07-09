@@ -911,28 +911,28 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
         setInput(`${actionText.charAt(0).toUpperCase() + actionText.slice(1)} para mim.`)
       }
     }
+    }
     reader.readAsDataURL(file)
     })
   }
 
   return (
     <div className={cn(
-      isDesktop ? "w-full h-full" : "fixed bottom-6 right-6 z-50",
+      isDesktop ? "w-full h-full" : "fixed inset-0 z-50 pointer-events-none",
       "font-sans"
     )}>
       <AnimatePresence>
-        {isOpen && (
+        {(isOpen || isDesktop) && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={isDesktop ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className={cn(
+              'bg-white flex flex-col shadow-[0_10px_40px_rgba(26,35,50,0.15)] overflow-hidden pointer-events-auto',
               isDesktop 
-                ? "w-full h-full border-none rounded-none mb-0" 
-                : step === 'fature_ia'
-                ? "w-[760px] h-[600px] rounded-[2rem] border border-slate-200 mb-4 shadow-2xl transition-all duration-300"
-                : "w-[380px] h-[520px] rounded-[2rem] border border-slate-200 mb-4 shadow-2xl transition-all duration-300",
-              "bg-white flex flex-col overflow-hidden"
+                ? 'w-full h-full' 
+                : 'fixed inset-0 z-50 md:bottom-24 md:right-8 md:w-[420px] md:h-[680px] md:inset-auto md:rounded-[1.5rem] md:border md:border-slate-200/60'
             )}
           >
             {/* Unified Corporate Header */}
@@ -1319,13 +1319,13 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
       {/* Toggle Button */}
       {!isDesktop && (!hideToggle || isOpen) && (
-        <div className="flex justify-end">
+        <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 pointer-events-auto">
           <button
             onClick={() => setIsOpen(!isOpen)}
             className={cn(
-              'p-5 rounded-full transition-all duration-300 flex items-center justify-center transform hover:scale-110 active:scale-95',
+              'p-4 md:p-5 rounded-full transition-all duration-300 flex items-center justify-center transform hover:scale-110 active:scale-95',
               isOpen
-                ? 'bg-white text-[#1a2332] rotate-90 shadow-xl'
+                ? 'bg-white text-[#1a2332] rotate-90 shadow-xl hidden md:flex' // Hide toggle on mobile when open since it's full screen
                 : 'bg-[#1a2332] hover:bg-[#0f172a] text-white border-2 border-white/20 shadow-lg shadow-[#1a2332]/20'
             )}
           >

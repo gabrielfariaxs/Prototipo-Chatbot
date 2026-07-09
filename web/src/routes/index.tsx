@@ -130,7 +130,7 @@ function App() {
 
   // Interface Web padrão (Portal)
   return (
-    <main className="min-h-screen flex items-center justify-center px-8 relative bg-[#f8fafc]">
+    <main className="min-h-screen flex items-center justify-center px-4 md:px-8 relative bg-[#f8fafc]">
       {/* Botão de Logout Absoluto (Corporativo) */}
       <button 
         onClick={handleLogout}
@@ -144,9 +144,9 @@ function App() {
       <div className="pointer-events-none fixed -left-20 -top-24 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(0,123,143,0.05),transparent_70%)]" />
       <div className="pointer-events-none fixed -bottom-20 -right-20 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,127,80,0.05),transparent_70%)]" />
 
-      <div className="rise-in max-w-2xl w-full flex flex-col items-center text-center">
+      <div className="rise-in max-w-2xl w-full flex flex-col items-center text-center mt-12 md:mt-0">
         <p className="island-kicker mb-4 text-[var(--color-primary)] font-bold tracking-widest uppercase text-sm">Portal MedIA</p>
-        <h1 className="display-title mb-6 text-6xl leading-[1.1] font-extrabold tracking-tight text-[var(--sea-ink)] sm:text-7xl">
+        <h1 className="display-title mb-6 text-5xl md:text-6xl leading-[1.1] font-extrabold tracking-tight text-[var(--sea-ink)] sm:text-7xl">
           Bem-vindo ao <span className="media-text-gradient opacity-75">MedIA</span>
         </h1>
         <p className="text-lg text-[var(--sea-ink-soft)] opacity-60 leading-relaxed mb-10 max-w-lg">
@@ -156,9 +156,9 @@ function App() {
         
         <button 
           onClick={() => window.dispatchEvent(new CustomEvent('open-media-chat'))}
-          className="group relative flex items-center gap-3 bg-[var(--color-primary)] text-white px-10 py-5 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          className="group relative flex items-center justify-center w-full md:w-auto gap-3 bg-[var(--color-primary)] text-white px-6 md:px-10 py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer"
         >
-          <MessageCircle className="w-6 h-6" />
+          <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
           Começar Atendimento
           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </button>

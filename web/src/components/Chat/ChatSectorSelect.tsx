@@ -14,7 +14,7 @@ export const ChatSectorSelect: React.FC<ChatSectorSelectProps> = ({ availableSec
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="flex-1 flex flex-col p-8 overflow-y-auto bg-slate-50/50"
+      className="flex-1 flex flex-col p-4 sm:p-8 overflow-y-auto bg-slate-50/50 custom-scrollbar"
     >
       <div className="mb-10 text-center flex flex-col items-center">
         <div className="w-14 h-14 bg-[#1a2332] rounded-full flex items-center justify-center text-white mb-6 shadow-md">
@@ -24,7 +24,7 @@ export const ChatSectorSelect: React.FC<ChatSectorSelectProps> = ({ availableSec
         <p className="text-slate-500 text-sm max-w-[400px] mx-auto leading-relaxed">Por favor, selecione sua área de atuação para personalizarmos o seu atendimento e fornecermos as informações corretas.</p>
       </div>
       
-      <div className="grid grid-cols-2 gap-4 max-w-[800px] mx-auto w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[800px] mx-auto w-full">
         {availableSectors.length > 0 ? (
           availableSectors.map((s, index) => {
             let Icon = Layers;
@@ -68,7 +68,7 @@ export const ChatSectorSelect: React.FC<ChatSectorSelectProps> = ({ availableSec
             )
           })
         ) : (
-          <div className="col-span-2 text-center py-10 opacity-50">Carregando departamentos...</div>
+          <div className="col-span-1 sm:col-span-2 text-center py-10 opacity-50">Carregando departamentos...</div>
         )}
       </div>
 

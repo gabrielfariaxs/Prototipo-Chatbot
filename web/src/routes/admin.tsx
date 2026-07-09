@@ -54,11 +54,11 @@ function AdminDashboard() {
   const maxInsurances = Math.max(...topInsurances.map(i => i.value))
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-10 font-sans">
+    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-10 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Painel de Controle MedIA</h1>
             <p className="text-slate-500 mt-1">Métricas de adoção e eficiência da inteligência artificial.</p>
@@ -107,7 +107,7 @@ function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Chart (Tailwind Bars - Dispensando instalação pesada do Recharts) */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 mb-6">Top Convênios Processados</h3>
             <div className="space-y-4">
               {topInsurances.map((item, i) => (
@@ -127,7 +127,7 @@ function AdminDashboard() {
           </div>
 
           {/* Feedback Table */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full">
             <h3 className="text-lg font-bold text-slate-800 mb-4">Central de Ajustes (Erros da IA)</h3>
             <div className="flex-1 overflow-y-auto max-h-[300px] pr-2 space-y-3 scrollbar-thin scrollbar-thumb-slate-200">
               {metrics.feedbacks.filter(f => f.type === 'down' || f.comment).reverse().map((fb, idx) => (

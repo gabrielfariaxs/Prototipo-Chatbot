@@ -681,11 +681,12 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
   // RENDER UI
   // ============================================================
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/70 p-6">
+    <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/70 p-4 md:p-6">
       {/* Title / Back Button */}
-      <div className="flex items-center gap-3 mb-6">
-        <button 
-          onClick={onBack}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 md:mb-6">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onBack}
           className="p-2 hover:bg-slate-200 border border-slate-200 bg-white text-slate-700 rounded-xl transition-all shadow-sm cursor-pointer"
           title="Voltar ao Chat"
         >
@@ -695,9 +696,10 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
           <h2 className="text-xl font-bold text-[#1a2332] tracking-tight">FatureIA Automação</h2>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Módulo de Conciliação e Loteamento</p>
         </div>
+        </div>
         
         {/* Nomenclature Status Badge */}
-        <div className="ml-auto flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm">
+        <div className="sm:ml-auto flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm w-fit">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-slate-500">Nomenclaturas:</span>
           {nomenStatus === 'loading' && <span className="text-blue-500 animate-pulse">Carregando...</span>}
@@ -707,10 +709,10 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
       </div>
 
       {/* Main Section */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 overflow-y-auto md:overflow-hidden custom-scrollbar">
         
         {/* Uploads Panel */}
-        <div className="flex flex-col gap-5 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-4 md:gap-5 md:overflow-y-auto md:pr-1 shrink-0">
           
           {/* Lote Excel Upload */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
@@ -803,7 +805,7 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
         </div>
 
         {/* Console / Output Panel */}
-        <div className="flex flex-col gap-4 overflow-hidden">
+        <div className="flex flex-col gap-4 overflow-hidden shrink-0 min-h-[500px] md:min-h-0">
           
           {/* Console Window */}
           <div className="flex-1 bg-[#0b0f19] text-emerald-400 font-mono text-[11px] p-4 rounded-2xl shadow-inner border border-slate-800 flex flex-col overflow-hidden relative">

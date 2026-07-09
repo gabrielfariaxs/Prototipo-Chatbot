@@ -18,7 +18,7 @@ export const Route = createRootRoute({
       },
       {
         name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
+        content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
       },
       {
         title: 'MedIA - Arthromed',
@@ -26,6 +26,18 @@ export const Route = createRootRoute({
       {
         name: 'theme-color',
         content: '#1a2332',
+      },
+      {
+        httpEquiv: 'Cache-Control',
+        content: 'no-cache, no-store, must-revalidate',
+      },
+      {
+        httpEquiv: 'Pragma',
+        content: 'no-cache',
+      },
+      {
+        httpEquiv: 'Expires',
+        content: '0',
       },
     ],
     links: [

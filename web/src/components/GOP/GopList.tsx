@@ -186,23 +186,23 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
 
       {/* Toolbar */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-4">
-        <div className="flex flex-wrap items-center gap-4 flex-1">
+        <div className="flex flex-col md:flex-row gap-3">
           <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1 shrink-0">
             <button 
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex flex-1 justify-center items-center gap-2 cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
             >
               <List size={16} /> {userRole === 'coo' ? 'Cards' : 'Tabela'}
             </button>
             <button 
               onClick={() => setViewMode('kanban')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors ${viewMode === 'kanban' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex flex-1 justify-center items-center gap-2 cursor-pointer transition-colors ${viewMode === 'kanban' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
             >
               <LayoutGrid size={16} /> {userRole === 'coo' ? 'Lista' : 'Kanban'}
             </button>
           </div>
           
-          <div className="relative flex-1 min-w-[220px] max-w-[320px]">
+          <div className="relative flex-1 min-w-[220px] max-w-full md:max-w-[320px]">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input 
               type="text" 
@@ -212,43 +212,43 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 shadow-sm text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
             />
           </div>
+        </div>
 
-          <div className="flex flex-wrap gap-3">
-            <div className="relative">
-              <select 
-                value={filterSetor}
-                onChange={(e) => setFilterSetor(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:border-indigo-500 cursor-pointer"
-              >
-                {setores.map(s => <option key={s} value={s}>{s === 'Todos' ? 'Todos os setores' : s}</option>)}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
-            </div>
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative w-full md:w-auto">
+            <select 
+              value={filterSetor}
+              onChange={(e) => setFilterSetor(e.target.value)}
+              className="appearance-none pl-4 pr-10 py-2.5 w-full md:w-auto bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:border-indigo-500 cursor-pointer"
+            >
+              {setores.map(s => <option key={s} value={s}>{s === 'Todos' ? 'Todos os setores' : s}</option>)}
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
+          </div>
 
-            <div className="relative">
-              <select 
-                value={filterUrgencia}
-                onChange={(e) => setFilterUrgencia(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:border-indigo-500 cursor-pointer"
-              >
-                {urgencias.map(u => <option key={u} value={u}>{u === 'Todas' ? 'Toda urgência' : u}</option>)}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
-            </div>
+          <div className="relative w-full md:w-auto">
+            <select 
+              value={filterUrgencia}
+              onChange={(e) => setFilterUrgencia(e.target.value)}
+              className="appearance-none pl-4 pr-10 py-2.5 w-full md:w-auto bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:border-indigo-500 cursor-pointer"
+            >
+              {urgencias.map(u => <option key={u} value={u}>{u === 'Todas' ? 'Toda urgência' : u}</option>)}
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
+          </div>
 
-            <div className="relative">
-              <select 
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:border-indigo-500 cursor-pointer"
-              >
-                {statusOptions.map(s => <option key={s} value={s}>{s === 'Todos' ? 'Todo status' : s}</option>)}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
-            </div>
+          <div className="relative w-full md:w-auto">
+            <select 
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="appearance-none pl-4 pr-10 py-2.5 w-full md:w-auto bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm hover:bg-slate-50 focus:outline-none focus:border-indigo-500 cursor-pointer"
+            >
+              {statusOptions.map(s => <option key={s} value={s}>{s === 'Todos' ? 'Todo status' : s}</option>)}
+            </select>
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
           </div>
         </div>
-        <span className="text-sm font-bold text-slate-400 tracking-wide shrink-0">{filteredGargalos.length} resultado(s)</span>
+        <span className="text-sm font-bold text-slate-400 tracking-wide shrink-0 block mt-3 md:mt-0">{filteredGargalos.length} resultado(s)</span>
       </div>
 
       {/* Main Content Area */}
@@ -263,7 +263,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
         </div>
       ) : userRole === 'coo' ? (
         /* COO Card Grid View */
-        <div className="grid grid-cols-2 gap-5 mt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
           {filteredGargalos.map((item) => (
             <div 
               key={item.id} 
@@ -318,7 +318,6 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
           {statusOptions.filter(s => s !== 'Todos').map(statusCol => {
             const colItems = filteredGargalos.filter(g => g.status === statusCol)
             const colorClass = statusCol === 'Não Iniciado' ? 'bg-slate-400' : statusCol === 'Em Andamento' ? 'bg-blue-500' : statusCol === 'Em pausa' ? 'bg-red-500' : 'bg-green-500'
-            const textColorClass = statusCol === 'Não Iniciado' ? 'text-slate-600' : statusCol === 'Em Andamento' ? 'text-blue-700' : statusCol === 'Em pausa' ? 'text-red-700' : 'text-green-700'
             
             return (
               <div key={statusCol} className="flex-1 min-w-[260px] bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col h-[500px]">
@@ -350,7 +349,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
                         {item.tratativa_decisao && (
                           <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-md w-fit flex items-center gap-1.5 shadow-sm">
                             <CheckCircle2 className="w-3 h-3" />
-                            Respondido pelo COO
+                            Respondido
                           </div>
                         )}
                         <div className="flex items-center gap-2">
@@ -372,7 +371,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
       ) : (
         /* Lider Table View */
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mt-2">
-          <div className="grid grid-cols-[2fr_1.5fr_1.2fr_1fr_1.2fr_auto] gap-4 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="hidden md:grid grid-cols-[2fr_1.5fr_1.2fr_1fr_1.2fr_auto] gap-4 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Nome da Não Conformidade</div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Setor</div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Data de Registro</div>
@@ -385,48 +384,65 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
               <div 
                 key={item.id} 
                 onClick={() => onSelect(item.id)}
-                className={`grid grid-cols-[2fr_1.5fr_1.2fr_1fr_1.2fr_auto] gap-4 px-6 py-5 items-center cursor-pointer hover:bg-slate-50 transition-colors ${i !== filteredGargalos.length - 1 ? 'border-b border-slate-100' : ''}`}
+                className={`flex flex-col md:grid md:grid-cols-[2fr_1.5fr_1.2fr_1fr_1.2fr_auto] gap-4 px-6 py-5 md:items-center cursor-pointer hover:bg-slate-50 transition-colors ${i !== filteredGargalos.length - 1 ? 'border-b border-slate-100' : ''}`}
               >
-                <div className="flex flex-col pr-4">
+                <div className="flex flex-col md:pr-4">
                   <span className="font-bold text-[#1a2332] text-[15px] leading-tight mb-1">{item.titulo}</span>
                   <div className="flex items-center gap-3">
                     <span className="text-[12px] font-semibold text-slate-400">{item.autor_nome}</span>
                     {item.tratativa_decisao && (
                       <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
                         <CheckCircle2 className="w-3 h-3" />
-                        Respondido pelo COO
+                        <span className="hidden md:inline">Respondido pelo COO</span>
+                        <span className="md:hidden">Respondido</span>
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="text-[14px] font-semibold text-slate-600">{item.setor}</div>
-                <div className="text-[14px] font-semibold text-slate-600">{formatDate(item.data_registro)}</div>
-                <div>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider
-                    ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
-                      item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
-                      'bg-green-50 text-green-600'}`}>
-                    {item.urgencia}
-                  </span>
+                
+                <div className="flex md:hidden items-center justify-between text-xs mt-2 border-t border-slate-50 pt-3">
+                  <span className="font-bold text-slate-600">{item.setor}</span>
+                  <span className="font-semibold text-slate-400">{formatDate(item.data_registro)}</span>
                 </div>
-                <div>
-                  <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
-                    ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
-                      item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
-                      item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 
-                      item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
-                      'bg-slate-100 text-slate-500'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${
-                      item.status === 'Em Andamento' ? 'bg-blue-500' : 
-                      item.status === 'Não Iniciado' ? 'bg-slate-400' : 
-                      item.status === 'Em pausa' ? 'bg-red-500' : 
-                      item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
-                    }`}></div>
-                    {item.status}
-                  </span>
+
+                <div className="hidden md:flex items-center text-sm font-bold text-slate-600">
+                  {item.setor}
                 </div>
-                <div className="w-6 flex justify-end text-slate-300">
-                  <ChevronRight className="w-5 h-5" />
+                <div className="hidden md:flex items-center text-sm font-semibold text-slate-500">
+                  {formatDate(item.data_registro)}
+                </div>
+
+                <div className="flex items-center justify-between md:justify-start gap-4 md:gap-0 mt-3 md:mt-0">
+                  <div className="flex flex-col gap-1.5 md:contents">
+                    <span className="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-widest">Urgência</span>
+                    <span className={`inline-flex items-center justify-center px-3 md:px-2.5 py-1.5 md:py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider w-fit
+                      ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
+                        item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
+                        'bg-green-50 text-green-600'}`}>
+                      {item.urgencia}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1.5 md:contents">
+                    <span className="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right md:text-left">Status</span>
+                    <span className={`inline-flex items-center gap-2 px-3 md:px-3.5 py-1.5 rounded-full text-[12px] font-bold w-fit ml-auto md:ml-0
+                      ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
+                        item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
+                        item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 
+                        item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
+                        'bg-slate-100 text-slate-500'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        item.status === 'Em Andamento' ? 'bg-blue-500' : 
+                        item.status === 'Não Iniciado' ? 'bg-slate-400' : 
+                        item.status === 'Em pausa' ? 'bg-red-500' : 
+                        item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
+                      }`}></div>
+                      {item.status}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="hidden md:flex items-center justify-end">
+                  <ChevronRight size={18} className="text-slate-300" strokeWidth={2.5} />
                 </div>
               </div>
             ))}

@@ -15,7 +15,7 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
 
   const SETORES = [
     'Comercial externo', 'Comercial interno', 'Instrumentação', 'T.I',
-    'Qualidade / RT', 'Qualidade', 'Gente Gestão', 'Financeiro', 'Estoque e logistica',
+    'Qualidade / RT', 'Gente Gestão', 'Financeiro', 'Estoque e logistica',
     'Supply Chain', 'Compras', 'Operações'
   ]
 

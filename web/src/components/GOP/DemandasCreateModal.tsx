@@ -40,11 +40,11 @@ export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClos
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-[#f8fafc] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col border border-slate-200">
+    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-0 md:p-4 animate-in fade-in duration-200">
+      <div className="bg-[#f8fafc] rounded-none md:rounded-2xl w-full max-w-2xl h-full md:h-auto md:max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col border border-slate-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-200 bg-white shrink-0">
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 border-b border-slate-200 bg-white shrink-0">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Nova Atribuição</span>
             <h2 className="text-2xl font-extrabold text-[#1a2332]">Registrar Demanda</h2>
@@ -55,15 +55,15 @@ export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClos
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 p-8 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar">
           <div className="space-y-8">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
               <h3 className="text-[13px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                 <FileText size={16} /> Detalhes da Demanda
               </h3>
               
               <div className="flex flex-col gap-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-bold text-[#1a2332] flex items-center gap-2">
                       <User size={16} className="text-slate-400" />
@@ -110,7 +110,7 @@ export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClos
         </form>
 
         {/* Footer */}
-        <div className="p-6 bg-white border-t border-slate-200 flex justify-end gap-3 shrink-0">
+        <div className="p-4 md:p-6 bg-white border-t border-slate-200 flex justify-end gap-3 shrink-0">
             <button 
               type="button" 
               onClick={onClose}

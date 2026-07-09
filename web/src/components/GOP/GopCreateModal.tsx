@@ -102,15 +102,15 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0b0f19]/60 backdrop-blur-sm flex justify-center items-center p-4">
+    <div className="fixed inset-0 z-50 bg-[#0b0f19]/60 backdrop-blur-sm flex justify-center items-center p-0 md:p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="bg-white w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="bg-white w-full max-w-4xl h-full md:h-[90vh] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 bg-white shrink-0">
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 border-b border-slate-100 bg-white shrink-0">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Novo Relato</span>
             <h2 className="text-2xl font-extrabold text-[#1a2332]">Registro de Não Conformidade Operacional</h2>
@@ -121,7 +121,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
           <div className="max-w-3xl mx-auto space-y-10">
             
             {/* 1. Informações Gerais */}
@@ -130,7 +130,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                 <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">1</span>
                 Informações Gerais
               </h3>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-bold text-[#1a2332]">Setor *</label>
                   <input 
