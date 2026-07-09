@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Search, Calendar, User, Clock, CheckCircle2, Circle, X } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 import { DemandasCreateModal } from './DemandasCreateModal'
 import { DemandasDetailModal } from './DemandasDetailModal'
 
@@ -12,43 +13,40 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [selectedDemanda, setSelectedDemanda] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [demandas, setDemandas] = useState<any[]>([])
   
-  // Mock data for prototype - added sector
-  const [demandas, setDemandas] = useState<any[]>([
-    {
-      id: '1',
-      data_criacao: new Date().toISOString(),
-      prazo: '2026-07-20',
-      funcionario: 'Carlos Silva',
-      setor: 'Financeiro',
-      descricao: 'Revisar os processos de faturamento do mês anterior e enviar o relatório de inconformidades.',
-      status: 'Pendente',
-      anexo: undefined
-    },
-    {
-      id: '2',
-      data_criacao: new Date(Date.now() - 86400000).toISOString(),
-      prazo: '2026-07-05', // Past date to test expiration
-      funcionario: 'Ana Souza',
-      setor: 'T.I',
-      descricao: 'Atualizar a planilha de controle de equipamentos do setor de TI.',
-      status: 'Pendente',
-      anexo: undefined
-    }
-  ])
-
-  // Lock expired items
   useEffect(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    setDemandas(prev => prev.map(d => {
-      if (d.status !== 'Feito' && new Date(d.prazo) < today && d.status !== 'Não concluído') {
-        return { ...d, status: 'Não concluído' }
-      }
-      return d
-    }))
-  }, [])
+    fetchDemandas()
+  }, [userSector, userRole])
+
+  const fetchDemandas = async () => {
+    let query = supabase
+      .from('demandas')
+      .select('*')
+      .order('data_criacao', { ascending: false })
+
+    if (userRole !== 'coo' && userSector) {
+      query = query.eq('setor', userSector)
+    }
+
+    const { data, error } = await query
+    if (data) {
+      // Auto-lock logic on fetch
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const processedData = await Promise.all(data.map(async (d) => {
+        if (d.status !== 'Feito' && new Date(d.prazo) < today && d.status !== 'Não concluído') {
+          // Update DB if we are fetching and notice it's expired
+          await supabase.from('demandas').update({ status: 'Não concluído' }).eq('id', d.id)
+          return { ...d, status: 'Não concluído' }
+        }
+        return d
+      }))
+
+      setDemandas(processedData)
+    }
+  }
 
   const isExpired = (prazo: string) => {
     const today = new Date()
@@ -59,26 +57,26 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
   const filteredDemandas = demandas.filter(d => {
     const matchesSearch = d.descricao.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           d.funcionario.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesSector = userRole === 'coo' || d.setor === userSector
-    return matchesSearch && matchesSector
+    return matchesSearch
   })
 
   const handleAddDemanda = (novaDemanda: any) => {
-    setDemandas([{ ...novaDemanda, id: Date.now().toString(), status: 'Pendente', data_criacao: new Date().toISOString(), setor: userSector }, ...demandas])
+    fetchDemandas() // Re-fetch instead of local state update to ensure sync
   }
 
-  const handleSaveDemanda = (id: string, novoStatus: string, anexo?: string) => {
-    setDemandas(demandas.map(d => {
-      if (d.id === id) {
-        return { ...d, status: novoStatus, anexo }
-      }
-      return d
-    }))
+  const handleSaveDemanda = async (id: string, novoStatus: string, anexo?: string) => {
+    await supabase
+      .from('demandas')
+      .update({ status: novoStatus, anexo })
+      .eq('id', id)
+      
+    fetchDemandas()
     setSelectedDemanda(null)
   }
 
-  const handleDeleteDemanda = (id: string) => {
-    setDemandas(demandas.filter(d => d.id !== id))
+  const handleDeleteDemanda = async (id: string) => {
+    await supabase.from('demandas').delete().eq('id', id)
+    fetchDemandas()
     setSelectedDemanda(null)
   }
 
@@ -178,9 +176,10 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
 
       {isCreateModalOpen && (
         <DemandasCreateModal 
+          userSector={userSector}
           onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={(demanda) => {
-            handleAddDemanda(demanda)
+          onSuccess={() => {
+            handleAddDemanda(null)
             setIsCreateModalOpen(false)
           }}
         />

@@ -1,17 +1,20 @@
 import React, { useState } from 'react'
-import { X, Calendar, User, FileText } from 'lucide-react'
+import { X, Calendar, User, FileText, Loader2 } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 interface DemandasCreateModalProps {
   onClose: () => void
-  onSuccess: (demanda: any) => void
+  onSuccess: () => void
+  userSector?: string
 }
 
-export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClose, onSuccess }) => {
+export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClose, onSuccess, userSector = 'T.I' }) => {
   const [funcionario, setFuncionario] = useState('')
   const [prazo, setPrazo] = useState('')
   const [descricao, setDescricao] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!funcionario.trim() || !prazo || !descricao.trim()) {
@@ -19,11 +22,21 @@ export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClos
       return
     }
 
-    onSuccess({
+    setIsSubmitting(true)
+    const { error } = await supabase.from('demandas').insert({
       funcionario,
       prazo,
-      descricao
+      descricao,
+      setor: userSector,
+      status: 'Pendente'
     })
+    setIsSubmitting(false)
+
+    if (error) {
+      alert("Erro ao criar demanda: " + error.message)
+    } else {
+      onSuccess()
+    }
   }
 
   return (
@@ -98,19 +111,23 @@ export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClos
 
         {/* Footer */}
         <div className="p-6 bg-white border-t border-slate-200 flex justify-end gap-3 shrink-0">
-          <button 
-            type="button"
-            onClick={onClose}
-            className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button 
-            onClick={handleSubmit}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-8 rounded-xl shadow-lg shadow-blue-600/20 transition-all cursor-pointer flex items-center gap-2"
-          >
-            Atribuir Demanda
-          </button>
+            <button 
+              type="button" 
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-6 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="px-8 py-3 rounded-xl text-sm font-bold text-white bg-[#1a2332] hover:bg-blue-600 transition-colors shadow-lg cursor-pointer flex items-center gap-2"
+            >
+              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+              Registrar Demanda
+            </button>
         </div>
 
       </div>
