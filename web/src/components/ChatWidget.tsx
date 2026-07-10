@@ -911,7 +911,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
         setInput(`${actionText.charAt(0).toUpperCase() + actionText.slice(1)} para mim.`)
       }
     }
-    }
+    
     reader.readAsDataURL(file)
     })
   }
@@ -936,12 +936,12 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             )}
           >
             {/* Unified Corporate Header */}
-            <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between z-10 shrink-0">
-              <div className="flex items-center gap-4">
+            <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2">
+              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar flex-1">
                 {step === 'chat' && (
                   <button 
                     onClick={handleBackToSectors}
-                    className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors cursor-pointer"
+                    className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors cursor-pointer shrink-0"
                     title="Voltar aos setores"
                   >
                     <ArrowLeft size={20} />
@@ -951,7 +951,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 <button 
                   onClick={() => setStep('onboarding')}
                   className={cn(
-                    "flex items-center gap-3 p-2 -ml-2 rounded-xl transition-all cursor-pointer",
+                    "flex items-center gap-3 p-2 -ml-2 sm:-ml-2 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap",
                     step !== 'gop' ? "bg-slate-50 shadow-sm border border-slate-100" : "hover:bg-slate-50 opacity-60 hover:opacity-100 border border-transparent"
                   )}
                 >
@@ -975,13 +975,13 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 </button>
 
                 {/* Divider */}
-                <div className="hidden sm:block h-8 w-px bg-slate-200 mx-1"></div>
+                <div className="hidden sm:block h-8 w-px bg-slate-200 mx-1 shrink-0"></div>
 
                 {/* GOP Button */}
                 <button 
                   onClick={() => setStep('gop')}
                   className={cn(
-                    "flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer",
+                    "flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap",
                     step === 'gop' ? "bg-slate-50 shadow-sm border border-slate-100" : "hover:bg-slate-50 opacity-60 hover:opacity-100 border border-transparent"
                   )}
                 >
@@ -994,7 +994,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   </div>
                 </button>
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {step === 'chat' && (
                   <>
                     <button

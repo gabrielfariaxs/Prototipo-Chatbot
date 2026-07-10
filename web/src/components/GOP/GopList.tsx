@@ -83,7 +83,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
   return (
     <div className="w-full max-w-[1100px] mx-auto p-8 flex flex-col gap-6">
       {/* Header Area */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
         <div>
           {userRole === 'coo' ? (
             <>
@@ -102,7 +102,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
         {userRole === 'lider' && (
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer shrink-0"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center justify-center w-full md:w-auto gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer shrink-0"
           >
             <Plus size={18} strokeWidth={2.5} />
             Reportar Nova Não Conformidade
@@ -112,7 +112,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
 
       {/* Stats Cards */}
       {userRole === 'coo' ? (
-        <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1.5fr] gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1.5fr] gap-4">
           <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[120px]">
             <div className="flex items-center gap-2 text-slate-500 text-[13px] font-bold">
               <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
@@ -150,7 +150,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             <span className="text-3xl font-extrabold text-[#1a2332]">{resolvidos}</span>
           </div>
           
-          <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col h-[120px] overflow-hidden">
+          <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col h-[120px] overflow-hidden lg:col-span-1 md:col-span-2">
             <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-3">Não Conformidades por setor</span>
             <div className="flex flex-col gap-2 overflow-y-auto pr-1 custom-scrollbar">
               {Object.entries(setorCounts).map(([setor, count]: [string, any]) => (
@@ -166,7 +166,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {[
             { label: 'Total reportado', value: gargalos.length, color: 'bg-slate-400' },
             { label: 'Em andamento', value: gargalos.filter(g => g.status === 'Em Andamento').length, color: 'bg-blue-500' },
@@ -185,18 +185,18 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
       )}
 
       {/* Toolbar */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-4">
-        <div className="flex flex-col md:flex-row gap-3">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-4 flex-wrap">
+        <div className="flex flex-col md:flex-row gap-3 flex-wrap">
           <div className="flex bg-white rounded-xl shadow-sm border border-slate-200 p-1 shrink-0">
             <button 
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold flex flex-1 justify-center items-center gap-2 cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex flex-1 justify-center items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${viewMode === 'list' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
             >
               <List size={16} /> {userRole === 'coo' ? 'Cards' : 'Tabela'}
             </button>
             <button 
               onClick={() => setViewMode('kanban')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold flex flex-1 justify-center items-center gap-2 cursor-pointer transition-colors ${viewMode === 'kanban' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex flex-1 justify-center items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${viewMode === 'kanban' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
             >
               <LayoutGrid size={16} /> {userRole === 'coo' ? 'Lista' : 'Kanban'}
             </button>
@@ -214,7 +214,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex flex-col md:flex-row gap-3 flex-wrap">
           <div className="relative w-full md:w-auto">
             <select 
               value={filterSetor}
