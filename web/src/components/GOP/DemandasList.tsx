@@ -35,14 +35,14 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
-      const processedData = await Promise.all(data.map(async (d) => {
+      const processedData = data.map((d) => {
         if (d.status !== 'Feito' && new Date(d.prazo) < today && d.status !== 'Não concluído') {
-          // Update DB if we are fetching and notice it's expired
-          await supabase.from('demandas').update({ status: 'Não concluído' }).eq('id', d.id)
+          // Update DB if we are fetching and notice it's expired (do not await to avoid blocking UI)
+          supabase.from('demandas').update({ status: 'Não concluído' }).eq('id', d.id).then()
           return { ...d, status: 'Não concluído' }
         }
         return d
-      }))
+      })
 
       setDemandas(processedData)
     }

@@ -271,14 +271,14 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
               className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group"
             >
               {/* Top Tags */}
-              <div className="flex items-center justify-between mb-4">
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider shrink-0 whitespace-nowrap
                   ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
                     item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
                     'bg-green-50 text-green-600'}`}>
                   {item.urgencia}
                 </span>
-                <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
+                <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold shrink-0 whitespace-nowrap
                   ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
                     item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
                     item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 
@@ -415,7 +415,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
                 <div className="flex items-center justify-between md:justify-start gap-4 md:gap-0 mt-3 md:mt-0">
                   <div className="flex flex-col gap-1.5 md:contents">
                     <span className="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-widest">Urgência</span>
-                    <span className={`inline-flex items-center justify-center px-3 md:px-2.5 py-1.5 md:py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider w-fit
+                    <span className={`inline-flex items-center justify-center px-3 md:px-2.5 py-1.5 md:py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider w-fit shrink-0 whitespace-nowrap
                       ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
                         item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
                         'bg-green-50 text-green-600'}`}>
@@ -424,7 +424,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
                   </div>
                   <div className="flex flex-col gap-1.5 md:contents">
                     <span className="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right md:text-left">Status</span>
-                    <span className={`inline-flex items-center gap-2 px-3 md:px-3.5 py-1.5 rounded-full text-[12px] font-bold w-fit ml-auto md:ml-0
+                    <span className={`inline-flex items-center gap-2 px-3 md:px-3.5 py-1.5 rounded-full text-[12px] font-bold w-fit ml-auto md:ml-0 shrink-0 whitespace-nowrap
                       ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
                         item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
                         item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 

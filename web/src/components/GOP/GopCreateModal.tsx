@@ -16,20 +16,12 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
   const [dataRegistro, setDataRegistro] = useState(new Date().toISOString().split('T')[0])
   const [nome, setNome] = useState('')
   const [descricao, setDescricao] = useState('')
-  const [frequencia, setFrequencia] = useState('')
-  const [impactos, setImpactos] = useState<string[]>([])
   const [consequencias, setConsequencias] = useState('')
   const [causa, setCausa] = useState('')
-  const [urgencia, setUrgencia] = useState('')
-  const [sugestao, setSugestao] = useState('')
   const [arquivos, setArquivos] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleImpactoToggle = (val: string) => {
-    setImpactos(prev => prev.includes(val) ? prev.filter(i => i !== val) : [...prev, val])
-  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -81,12 +73,8 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
       data_registro: dataRegistro,
       titulo: nome,
       descricao,
-      frequencia,
-      impacto: impactos,
       consequencias,
       causa_provavel: causa,
-      urgencia,
-      sugestao_lider: sugestao,
       status: 'Não Iniciado',
       evidencias: evidenciasUrls
     })
@@ -249,103 +237,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
               </div>
             </section>
 
-            <hr className="border-slate-100" />
 
-            {/* 4. Classificação */}
-            <section>
-              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
-                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">4</span>
-                Classificação
-              </h3>
-              <div className="flex flex-col gap-8">
-                <div className="flex flex-col gap-3">
-                  <label className="text-sm font-bold text-[#1a2332]">Frequência</label>
-                  <div className="flex flex-wrap gap-4">
-                    {['Única', 'Semanal', 'Diária', 'Várias vezes ao dia'].map(f => (
-                      <label key={f} className={`px-5 py-3 border rounded-xl text-[15px] font-semibold cursor-pointer transition-colors flex items-center gap-2.5 ${frequencia === f ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                        <input type="radio" name="freq" value={f} checked={frequencia === f} onChange={() => setFrequencia(f)} className="hidden" />
-                        <div className={`w-4 h-4 rounded-full border ${frequencia === f ? 'border-blue-500 bg-blue-500' : 'border-slate-300 bg-white'}`}></div>
-                        {f}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <label className="text-sm font-bold text-[#1a2332]">Impacto <span className="font-normal text-slate-400 ml-1">(selecione todos aplicáveis)</span></label>
-                  <div className="flex flex-wrap gap-4">
-                    {['Financeiro', 'Operacional', 'Cliente', 'Estoque', 'Compras', 'Comercial'].map(i => (
-                      <label key={i} className={`px-5 py-3 border rounded-xl text-[15px] font-semibold cursor-pointer transition-colors flex items-center gap-2.5 ${impactos.includes(i) ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                        <input type="checkbox" checked={impactos.includes(i)} onChange={() => handleImpactoToggle(i)} className="hidden" />
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${impactos.includes(i) ? 'border-blue-500 bg-blue-500 text-white' : 'border-slate-300 bg-white'}`}>
-                          {impactos.includes(i) && <span className="text-[12px]">✓</span>}
-                        </div>
-                        {i}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <hr className="border-slate-100" />
-
-            {/* 5. Análise */}
-            <section>
-              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
-                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">5</span>
-                Análise
-              </h3>
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Consequências</label>
-                  <textarea 
-                    value={consequencias} 
-                    onChange={e => setConsequencias(e.target.value)}
-                    placeholder="O que acontece de negativo por causa dessa não conformidade?"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none text-slate-700"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Causa Provável</label>
-                  <textarea 
-                    value={causa} 
-                    onChange={e => setCausa(e.target.value)}
-                    placeholder="Qual a raiz mais provável do problema?"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none text-slate-700"
-                  />
-                </div>
-                <div className="flex flex-col gap-3">
-                  <label className="text-sm font-bold text-[#1a2332]">Urgência</label>
-                  <div className="flex gap-4">
-                    {['Alta', 'Média', 'Baixa'].map(u => (
-                      <label key={u} className={`flex-1 text-center py-3 border rounded-xl text-[15px] font-bold cursor-pointer transition-colors ${urgencia === u ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                        <input type="radio" name="urgencia" value={u} checked={urgencia === u} onChange={() => setUrgencia(u)} className="hidden" />
-                        {u}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <hr className="border-slate-100" />
-
-            {/* 6. Ação */}
-            <section>
-              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
-                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">6</span>
-                Ação
-              </h3>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-[#1a2332]">Sugestão do Líder</label>
-                <textarea 
-                  value={sugestao} 
-                  onChange={e => setSugestao(e.target.value)}
-                  placeholder="Qual solução você propõe?"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px] resize-none text-slate-700"
-                />
-              </div>
-            </section>
 
           </div>
         </div>

@@ -12,6 +12,7 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [resetSector, setResetSector] = useState('')
+  const [role, setRole] = useState('lider')
 
   const SETORES = [
     'Comercial externo', 'Comercial interno', 'Instrumentação', 'T.I',
@@ -65,6 +66,7 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
 
       // Sucesso!
       localStorage.setItem('userSector', sector)
+      localStorage.setItem('userLevel', role)
       if (onSuccess) onSuccess()
     } catch (err: any) {
       setError('Ocorreu um erro ao conectar ao servidor. Tente novamente.')
@@ -178,6 +180,24 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
                   </div>
                 </div>
 
+                {/* Role Field */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-wider text-[#64748b] uppercase">
+                    Cargo
+                  </label>
+                  <div className="relative flex items-center">
+                    <ShieldAlert className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all appearance-none cursor-pointer"
+                      disabled={loading}
+                    >
+                      <option value="lider">Líder</option>
+                      <option value="colaborador">Colaborador</option>
+                    </select>
+                  </div>
+                </div>
                 {/* Password Field */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">

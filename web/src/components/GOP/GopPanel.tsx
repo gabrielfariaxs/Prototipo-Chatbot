@@ -11,11 +11,19 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
   const [userInitials, setUserInitials] = useState<string>('US')
   const [activeTab, setActiveTab] = useState<'lider' | 'coo' | 'demandas'>('lider')
   const [userSector, setUserSector] = useState<string>('T.I')
+  const [userLevel, setUserLevel] = useState<string>('lider')
 
   useEffect(() => {
     const savedSector = localStorage.getItem('userSector')
     if (savedSector) {
       setUserSector(savedSector)
+    }
+    const savedLevel = localStorage.getItem('userLevel')
+    if (savedLevel) {
+      setUserLevel(savedLevel)
+      if (savedLevel === 'colaborador') {
+        setActiveTab('demandas')
+      }
     }
   }, [])
 
@@ -58,18 +66,20 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
         
         <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
           <div className="bg-slate-100 rounded-lg p-1 flex items-center shadow-inner min-w-max shrink-0">
-            <button 
-              onClick={() => setActiveTab('lider')}
-              className={`px-4 py-1.5 rounded-md text-xs font-bold cursor-pointer transition-colors ${activeTab === 'lider' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Líder de Setor
-            </button>
-            {userSector === 'Operações' && (
+            {userLevel !== 'colaborador' && (
+              <button 
+                onClick={() => setActiveTab('lider')}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold cursor-pointer transition-colors ${activeTab === 'lider' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Líder de Setor
+              </button>
+            )}
+            {userLevel !== 'colaborador' && userSector === 'Operações' && (
               <button 
                 onClick={() => setActiveTab('coo')}
                 className={`px-4 py-1.5 rounded-md text-xs font-bold cursor-pointer transition-colors ${activeTab === 'coo' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Revisão COO
+                Revisão COO / Qualidade
               </button>
             )}
             <button 
@@ -88,7 +98,7 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
             </button>
             <div className="text-right flex flex-col justify-center">
               <span className="text-xs font-bold text-slate-800 leading-tight">{userName}</span>
-              <span className="text-[10px] text-slate-400 font-semibold leading-tight">{activeTab === 'coo' ? 'Diretor de Operações' : 'Líder de Setor'}</span>
+              <span className="text-[10px] text-slate-400 font-semibold leading-tight">{userLevel === 'colaborador' ? 'Colaborador' : activeTab === 'coo' ? 'Diretor de Operações' : 'Líder de Setor'}</span>
             </div>
             <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md">
               {userInitials}

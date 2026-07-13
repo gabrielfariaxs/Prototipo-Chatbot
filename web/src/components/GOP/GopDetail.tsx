@@ -14,6 +14,13 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
   const [indicador, setIndicador] = useState('')
   const [revisao, setRevisao] = useState('')
   const [status, setStatus] = useState('')
+  const [urgencia, setUrgencia] = useState('')
+  const [impactos, setImpactos] = useState<string[]>([])
+
+  const handleImpactoToggle = (val: string) => {
+    if (userRole !== 'coo') return;
+    setImpactos(prev => prev.includes(val) ? prev.filter(i => i !== val) : [...prev, val])
+  }
 
   useEffect(() => {
     fetchGargalo()
@@ -35,6 +42,8 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
       setIndicador(data.tratativa_indicador || '')
       setRevisao(data.tratativa_revisao || '')
       setStatus(data.status || '')
+      setUrgencia(data.urgencia || '')
+      setImpactos(data.impacto || [])
     } else {
       console.error('Erro ao buscar gargalo:', error)
     }
@@ -52,6 +61,8 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
         tratativa_indicador: indicador,
         tratativa_revisao: revisao,
         status: status,
+        urgencia: urgencia,
+        impacto: impactos,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -121,12 +132,14 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Relato do Líder</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider
-                  ${gargalo.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
-                    gargalo.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
-                    'bg-green-50 text-green-600'}`}>
-                {gargalo.urgencia}
-              </span>
+              {gargalo.urgencia && (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider
+                    ${gargalo.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
+                      gargalo.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
+                      'bg-green-50 text-green-600'}`}>
+                  {gargalo.urgencia}
+                </span>
+              )}
               <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
                   ${gargalo.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
                     gargalo.status === 'Não Iniciado' ? 'bg-red-50 text-red-600' : 
@@ -164,20 +177,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
             <p className="text-slate-600 text-[15px] leading-relaxed break-words">{gargalo.descricao}</p>
           </div>
 
-          <div className="flex flex-col md:grid md:grid-cols-[1fr_2fr] gap-6">
-            <div className="flex flex-col gap-2">
-              <h3 className="font-bold text-[#1a2332] text-[15px]">Frequência</h3>
-              <div className="inline-flex px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-slate-50 w-fit">{gargalo.frequencia}</div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="font-bold text-[#1a2332] text-[15px]">Impacto</h3>
-              <div className="flex gap-2 flex-wrap">
-                {gargalo.impacto?.map((imp: string) => (
-                  <span key={imp} className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[13px] font-bold">{imp}</span>
-                ))}
-              </div>
-            </div>
-          </div>
+
 
           <div className="flex flex-col gap-2 mt-2">
             <h3 className="font-bold text-[#1a2332] text-[15px]">Consequências</h3>
@@ -245,6 +245,34 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
           </div>
 
           <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2 mt-1">
+              <label className="text-[13px] font-bold text-slate-700">Impacto <span className="font-normal text-slate-400 ml-1">(selecione todos aplicáveis)</span></label>
+              <div className="flex flex-wrap gap-2">
+                {['Financeiro', 'Operacional', 'Cliente', 'Estoque', 'Compras', 'Comercial'].map(i => (
+                  <label key={i} className={`px-3 py-2 border rounded-lg text-[13px] font-semibold transition-colors flex items-center gap-2 ${userRole !== 'coo' ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'} ${impactos.includes(i) ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                    <input type="checkbox" checked={impactos.includes(i)} onChange={() => handleImpactoToggle(i)} className="hidden" disabled={userRole !== 'coo'} />
+                    <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${impactos.includes(i) ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-300 bg-white'}`}>
+                      {impactos.includes(i) && <span className="text-[10px]">✓</span>}
+                    </div>
+                    {i}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+
+            <div className="flex flex-col gap-2 mt-1">
+              <label className="text-[13px] font-bold text-slate-700">Urgência</label>
+              <div className="flex gap-4">
+                {['Alta', 'Média', 'Baixa'].map(u => (
+                  <label key={u} className={`flex-1 text-center py-2.5 border rounded-xl text-[13px] font-bold transition-colors ${userRole !== 'coo' ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'} ${urgencia === u ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                    <input type="radio" name="urgencia" value={u} checked={urgencia === u} onChange={() => setUrgencia(u)} className="hidden" disabled={userRole !== 'coo'} />
+                    {u}
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="flex flex-col gap-2">
               <label className="text-[13px] font-bold text-slate-700">Decisão Tomada</label>
               <textarea 
