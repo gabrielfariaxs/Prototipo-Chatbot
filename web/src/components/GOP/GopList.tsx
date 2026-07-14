@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Plus, Search, ChevronDown, ChevronRight, LayoutGrid, List, Loader2 } from 'lucide-react'
+import { Plus, Search, ChevronDown, ChevronRight, LayoutGrid, List, Loader2, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { GopCreateModal } from './GopCreateModal'
 

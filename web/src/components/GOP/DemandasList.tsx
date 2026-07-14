@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Search, Calendar, User, Clock, CheckCircle2, Circle, X } from 'lucide-react'
+import { Plus, Search, Calendar, User, Clock, CheckCircle2, Circle, X, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { DemandasCreateModal } from './DemandasCreateModal'
 import { DemandasDetailModal } from './DemandasDetailModal'
@@ -14,12 +14,14 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
   const [selectedDemanda, setSelectedDemanda] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [demandas, setDemandas] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   
   useEffect(() => {
     fetchDemandas()
   }, [userSector, userRole])
 
   const fetchDemandas = async () => {
+    setLoading(true)
     let query = supabase
       .from('demandas')
       .select('*')
@@ -46,6 +48,7 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
 
       setDemandas(processedData)
     }
+    setLoading(false)
   }
 
   const isExpired = (prazo: string) => {
@@ -123,7 +126,12 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
         </div>
 
         <div className="flex flex-col">
-          {filteredDemandas.length > 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center p-12 text-slate-400 bg-white">
+              <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-500" />
+              <span className="text-sm font-bold">Carregando demandas...</span>
+            </div>
+          ) : filteredDemandas.length > 0 ? (
             filteredDemandas.map((demanda, i) => {
               const expired = isExpired(demanda.prazo) && demanda.status !== 'Feito'
               return (

@@ -75,7 +75,11 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
       descricao,
       consequencias,
       causa_provavel: causa,
+      sugestao_lider: '',
       status: 'Não Iniciado',
+      urgencia: 'Média',
+      frequencia: 'Ocasional',
+      impacto: [],
       evidencias: evidenciasUrls
     })
     setIsSubmitting(false)
