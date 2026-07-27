@@ -62,6 +62,10 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
   const [logs, setLogs] = useState<LogMessage[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [processedWorkbook, setProcessedWorkbook] = useState<any | null>(null)
+  
+  // Drag states
+  const [isDraggingLote, setIsDraggingLote] = useState(false)
+  const [isDraggingPdf, setIsDraggingPdf] = useState(false)
 
   const consoleEndRef = useRef<HTMLDivElement>(null)
 
@@ -162,7 +166,7 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
     }
 
     const isNewItem = (lineStr: string): boolean => {
-      return /^(\S+)\s+(.+?)\s+(\d{10,})\s+(\d+)\s+/.test(lineStr)
+      return /^(\S+)\s+(\d+)\s+([\d.,]+)\s+([\d.,]+)\s+/.test(lineStr)
     }
 
     const parseLoteLine = (lineStr: string, itemObj: PDFItem) => {
@@ -198,37 +202,43 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
       }
 
       // Parse item line
-      const itemMatch = line.match(/^(\S+)\s+(.+?)\s+(\d{10,})\s+(\d+)\s+([\d.,]+)\s+([\d.,]+)\s*$/)
+      const itemMatch = line.match(/^(\S+)\s+(\d+)\s+([\d.,]+)\s+([\d.,]+)\s+(.+)$/)
       if (itemMatch) {
+        let desc = itemMatch[5].trim();
+        let anvisa = "";
+        let fab = "";
+        const anvisaMatch = desc.match(/\s+(\d{8,})(?:\s+(.+))?$/);
+        if (anvisaMatch) {
+          anvisa = anvisaMatch[1];
+          fab = anvisaMatch[2] ? anvisaMatch[2].trim() : "";
+          desc = desc.substring(0, anvisaMatch.index).trim();
+        }
+
         const item: PDFItem = {
           codigo: itemMatch[1],
-          descricao: itemMatch[2].trim(),
-          reg_anvisa: itemMatch[3],
-          quantidade: parseInt(itemMatch[4], 10),
-          valor_unit: parseBRL(itemMatch[5]),
-          subtotal: parseBRL(itemMatch[6]),
-          fabricante: "",
+          descricao: desc,
+          reg_anvisa: anvisa,
+          quantidade: parseInt(itemMatch[2], 10),
+          valor_unit: parseBRL(itemMatch[3]),
+          subtotal: parseBRL(itemMatch[4]),
+          fabricante: fab,
           lote_qtd: 0,
           lote_numero: "",
           lote_validade: ""
         }
 
-        // Check next lines for manufacturer & lote
+        // Check next lines for lote
         let nextIdx = i + 1
-        if (nextIdx < lines.length) {
+        while (nextIdx < lines.length) {
           const nextLine = lines[nextIdx].trim()
-          if (nextLine && !nextLine.startsWith('Lote:') && !isNewItem(nextLine)) {
-            item.fabricante = nextLine
-            nextIdx++
-          }
-        }
-
-        if (nextIdx < lines.length) {
-          const nextLine = lines[nextIdx].trim()
+          if (!nextLine || isNewItem(nextLine)) break;
+          
           if (nextLine.startsWith('Lote:')) {
             parseLoteLine(nextLine, item)
-            nextIdx++
+          } else if (!item.fabricante && !nextLine.startsWith('Forma')) {
+            item.fabricante = nextLine
           }
+          nextIdx++
         }
 
         data.itens.push(item)
@@ -413,6 +423,10 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
           fullText += pageText + "\n"
         }
 
+        // PRE-PROCESS FULLTEXT TO ADD NEWLINES FOR ITEMS AND LOTE
+        fullText = fullText.replace(/(\s+)([A-Z0-9.-]+)\s+(\d+)\s+([\d.,]+)\s+([\d.,]+)\s+/gi, '\n$2 $3 $4 $5 ')
+        fullText = fullText.replace(/\s+Lote:/gi, '\nLote:')
+
         const pdfData = parsePDFText(file.name, fullText)
         parsedPDFs.push(pdfData)
         
@@ -441,7 +455,11 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
     try {
       await workbook.xlsx.load(loteBuffer)
     } catch (excelErr: any) {
-      addLog('error', `❌ Falha ao carregar arquivo Excel: ${excelErr.message}`)
+      let errorMsg = excelErr.message
+      if (errorMsg.includes("Can't find end of central directory") || errorMsg.includes("is this a zip file")) {
+        errorMsg = "O arquivo não é um .xlsx válido (provavelmente é um .xls ou .csv exportado de sistema). Para preservar os estilos, abra-o no Microsoft Excel e vá em 'Salvar Como' -> 'Pasta de Trabalho do Excel (*.xlsx)' e envie este novo arquivo."
+      }
+      addLog('error', `❌ Falha ao carregar arquivo Excel: ${errorMsg}`)
       setIsProcessing(false)
       return
     }
@@ -662,14 +680,44 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
   // ============================================================
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const filesArray = Array.from(e.target.files).filter(f => f.type === 'application/pdf')
+      const filesArray = Array.from(e.target.files).filter(f => f.type === 'application/pdf' || f.name.endsWith('.pdf'))
       setPdfFiles(prev => [...prev, ...filesArray])
     }
   }
 
   const handleLoteUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setLoteFile(e.target.files[0])
+      const file = e.target.files[0]
+      if (file.name.toLowerCase().endsWith('.xls') || file.name.toLowerCase().endsWith('.csv')) {
+        alert('Este formato de arquivo (' + file.name.slice(-4) + ') não preserva os estilos visuais. Por favor, abra o arquivo no Excel e vá em "Salvar Como" -> "Pasta de Trabalho do Excel (*.xlsx)" antes de enviar.')
+        e.target.value = ''
+      } else {
+        setLoteFile(file)
+      }
+    }
+  }
+
+  const handleLoteDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDraggingLote(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0]
+      if (file.name.toLowerCase().endsWith('.xls') || file.name.toLowerCase().endsWith('.csv')) {
+        alert('Este formato de arquivo (' + file.name.slice(-4) + ') não preserva os estilos visuais. Por favor, abra o arquivo no Excel e vá em "Salvar Como" -> "Pasta de Trabalho do Excel (*.xlsx)" antes de enviar.')
+      } else if (file.name.toLowerCase().endsWith('.xlsx')) {
+        setLoteFile(file)
+      } else {
+        alert('Por favor, selecione um arquivo Excel (.xlsx)')
+      }
+    }
+  }
+
+  const handlePdfDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDraggingPdf(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf' || f.name.endsWith('.pdf'))
+      setPdfFiles(prev => [...prev, ...filesArray])
     }
   }
 
@@ -722,11 +770,16 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
             </h3>
             
             {!loteFile ? (
-              <label className="border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-slate-50/50 hover:bg-slate-50">
-                <FileSpreadsheet size={32} className="text-slate-400" />
+              <label 
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingLote(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDraggingLote(false); }}
+                onDrop={handleLoteDrop}
+                className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${isDraggingLote ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'}`}
+              >
+                <FileSpreadsheet size={32} className={isDraggingLote ? "text-emerald-500" : "text-slate-400"} />
                 <span className="text-xs font-bold text-slate-500">Selecione a Planilha Lote (.xlsx)</span>
                 <span className="text-[10px] text-slate-400">Arraste ou clique para navegar</span>
-                <input type="file" accept=".xlsx" onChange={handleLoteUpload} className="hidden" />
+                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleLoteUpload} className="hidden" />
               </label>
             ) : (
               <div className="flex items-center justify-between p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl text-emerald-800">
@@ -756,7 +809,12 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
 
             {/* Input Drop */}
             <div className="flex gap-2 mb-4">
-              <label className="flex-1 border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all bg-slate-50/50 hover:bg-slate-50">
+              <label 
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingPdf(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDraggingPdf(false); }}
+                onDrop={handlePdfDrop}
+                className={`flex-1 border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${isDraggingPdf ? 'border-red-400 bg-red-50' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'}`}
+              >
                 <span className="text-xs font-bold text-slate-500 text-center">Selecionar PDFs</span>
                 <span className="text-[9px] text-slate-400 text-center">Multiplo arquivo / pasta</span>
                 <input 

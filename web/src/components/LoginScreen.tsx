@@ -4,9 +4,10 @@ import { Mail, Lock, ArrowRight, ShieldAlert, X, Eye, EyeOff, Loader2, ArrowLeft
 
 interface LoginScreenProps {
   onSuccess?: () => void
+  onBackToMenu?: () => void
 }
 
-export function LoginScreen({ onSuccess }: LoginScreenProps) {
+export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
   const [view, setView] = useState<'login' | 'forgot_password'>('login')
   const [sector, setSector] = useState('')
   const [password, setPassword] = useState('')
@@ -151,6 +152,16 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
           
           {view === 'login' ? (
             <>
+              {onBackToMenu && (
+                <button 
+                  onClick={onBackToMenu}
+                  type="button"
+                  className="flex items-center gap-2 text-xs font-semibold text-[#64748b] hover:text-[#0f172a] transition-colors mb-5 cursor-pointer bg-transparent border-none p-0 outline-none"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Voltar ao Menu Principal</span>
+                </button>
+              )}
               <div className="text-center mb-7">
                 <h1 className="text-[22px] font-bold text-[#0f172a] mb-1.5">Acesso Restrito</h1>
                 <p className="text-sm text-[#64748b]">Utilize suas credenciais corporativas.</p>

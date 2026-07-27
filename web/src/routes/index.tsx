@@ -88,10 +88,7 @@ function App() {
     )
   }
 
-  // Se não houver sessão ativa, exige login
-  if (!session) {
-    return <LoginScreen onSuccess={() => {}} />
-  }
+  // Exibe a aplicação (com o Menu Principal por padrão no ChatWidget)
 
   // Se estiver autenticado e for modo Desktop (Widget)
   if (isDesktop) {

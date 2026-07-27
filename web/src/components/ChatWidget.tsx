@@ -9,6 +9,9 @@ import { ChatOnboarding } from './Chat/ChatOnboarding'
 import { ChatSectorSelect } from './Chat/ChatSectorSelect'
 import { ChatDashboard } from './Chat/ChatDashboard'
 import { FilePreviewModal } from './Chat/FilePreviewModal'
+import { LoginScreen } from './LoginScreen'
+import { supabase } from '../lib/supabase'
+import type { Session } from '@supabase/supabase-js'
 
 type Message = {
   id: string
@@ -117,7 +120,47 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedbackComment: comment } : m))
     saveGlobalFeedback(msgId, 'down', comment)
   }
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop'>('onboarding')
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login'>('onboarding')
+  const [session, setSession] = useState<Session | null>(null)
+  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
+      setSession(session)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: Session | null) => {
+      setSession(session)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleSelectChatbotModule = () => {
+    if (session) {
+      handleStart()
+    } else {
+      setPendingModule('chatbot')
+      setStep('login')
+    }
+  }
+
+  const handleSelectNocModule = () => {
+    if (session) {
+      setStep('gop')
+    } else {
+      setPendingModule('noc')
+      setStep('login')
+    }
+  }
+
+  const handleLoginSuccess = () => {
+    if (pendingModule === 'noc') {
+      setStep('gop')
+    } else {
+      handleStart()
+    }
+    setPendingModule(null)
+  }
+
   const [sector, setSector] = useState<string | null>(null)
   const [availableSectors, setAvailableSectors] = useState<string[]>([])
   const [stepSession, setStepSession] = useState<{
@@ -938,61 +981,32 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             {/* Unified Corporate Header */}
             <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar flex-1">
-                {step === 'chat' && (
+                {step !== 'onboarding' && (
                   <button 
-                    onClick={handleBackToSectors}
-                    className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors cursor-pointer shrink-0"
-                    title="Voltar aos setores"
+                    onClick={() => setStep('onboarding')}
+                    className="flex items-center gap-2 p-2 -ml-2 rounded-xl text-slate-600 hover:text-[#1a2332] hover:bg-slate-100 transition-all cursor-pointer shrink-0 font-bold text-xs"
+                    title="Voltar ao Menu Principal"
                   >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={18} />
+                    <span>Voltar ao Menu</span>
                   </button>
                 )}
-                {/* MedIA Button */}
-                <button 
-                  onClick={() => setStep('onboarding')}
-                  className={cn(
-                    "flex items-center gap-3 p-2 -ml-2 sm:-ml-2 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap",
-                    step !== 'gop' ? "bg-slate-50 shadow-sm border border-slate-100" : "hover:bg-slate-50 opacity-60 hover:opacity-100 border border-transparent"
-                  )}
-                >
-                  <div className="w-10 h-10 bg-[#1a2332] rounded-xl flex items-center justify-center text-white shrink-0">
-                    <Bot size={22} strokeWidth={1.5} />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <div className="flex items-center gap-3">
-                      <h1 className="font-bold text-[#1a2332] text-lg leading-tight">MedIA</h1>
-                      {step === 'chat' && sector && (
-                        <div className="flex flex-col ml-2">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Departamento</span>
-                          <div className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[11px] font-semibold flex items-center border border-slate-200">
-                            {sector}
-                          </div>
-                        </div>
-                      )}
+                {step === 'chat' && sector && (
+                  <div className="flex items-center gap-2 ml-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Setor:</span>
+                    <div className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-semibold border border-slate-200">
+                      {sector}
                     </div>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Assistente Corp</p>
                   </div>
-                </button>
-
-                {/* Divider */}
-                <div className="hidden sm:block h-8 w-px bg-slate-200 mx-1 shrink-0"></div>
-
-                {/* GOP Button */}
-                <button 
-                  onClick={() => setStep('gop')}
-                  className={cn(
-                    "flex items-center gap-3 p-2 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap",
-                    step === 'gop' ? "bg-slate-50 shadow-sm border border-slate-100" : "hover:bg-slate-50 opacity-60 hover:opacity-100 border border-transparent"
-                  )}
-                >
-                  <div className="w-10 h-10 bg-[#1a2332] rounded-xl flex items-center justify-center text-white shrink-0">
-                    <Layers size={22} strokeWidth={1.5} />
+                )}
+                {step === 'gop' && (
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-bold border border-indigo-100 flex items-center gap-1.5">
+                      <Layers size={14} />
+                      <span>Módulo NOC (NCO)</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col text-left">
-                    <h1 className="font-bold text-[#1a2332] text-lg leading-tight">NCO</h1>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Não Conformidades Operacionais</p>
-                  </div>
-                </button>
+                )}
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {step === 'chat' && (
@@ -1056,7 +1070,23 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             <div className="flex-1 flex flex-col overflow-hidden relative">
               <AnimatePresence mode="wait">
                 {step === 'onboarding' && (
-                  <ChatOnboarding onStart={handleStart} />
+                  <ChatOnboarding 
+                    onStart={handleSelectChatbotModule} 
+                    onOpenNoc={handleSelectNocModule}
+                    onOpenPortfolio={() => {
+                      const portfolioUrl = localStorage.getItem('portfolio_url') || 'https://portifolioarthromed-medic.vercel.app'
+                      window.open(portfolioUrl, '_blank')
+                    }}
+                  />
+                )}
+
+                {step === 'login' && (
+                  <div className="flex-1 overflow-y-auto w-full flex items-center justify-center p-4">
+                    <LoginScreen 
+                      onSuccess={handleLoginSuccess}
+                      onBackToMenu={() => setStep('onboarding')}
+                    />
+                  </div>
                 )}
 
                 {step === 'gop' && (
