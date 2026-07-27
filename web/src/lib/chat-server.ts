@@ -90,6 +90,8 @@ export async function getChatClient() {
   const chatClient = apiKey ? new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: apiKey,
+    timeout: 180000, // 3 minutos para permitir processamento de laudos e exames longos
+    maxRetries: 2,
   }) : null
 
   return { chatClient, apiKey, debugInfo }

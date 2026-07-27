@@ -10,6 +10,7 @@ import { ChatSectorSelect } from './Chat/ChatSectorSelect'
 import { ChatDashboard } from './Chat/ChatDashboard'
 import { FilePreviewModal } from './Chat/FilePreviewModal'
 import { LoginScreen } from './LoginScreen'
+import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 
@@ -120,9 +121,9 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedbackComment: comment } : m))
     saveGlobalFeedback(msgId, 'down', comment)
   }
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login'>('onboarding')
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login' | 'doc_clinica'>('onboarding')
   const [session, setSession] = useState<Session | null>(null)
-  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | null>(null)
+  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
@@ -152,9 +153,20 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     }
   }
 
+  const handleSelectDocClinicaModule = () => {
+    if (session) {
+      setStep('doc_clinica')
+    } else {
+      setPendingModule('doc_clinica')
+      setStep('login')
+    }
+  }
+
   const handleLoginSuccess = () => {
     if (pendingModule === 'noc') {
       setStep('gop')
+    } else if (pendingModule === 'doc_clinica') {
+      setStep('doc_clinica')
     } else {
       handleStart()
     }
@@ -1007,6 +1019,14 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     </div>
                   </div>
                 )}
+                {step === 'doc_clinica' && (
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="bg-amber-50 text-amber-800 px-2.5 py-1 rounded-md text-xs font-bold border border-amber-200 flex items-center gap-1.5">
+                      <FileText size={14} />
+                      <span>Solicitação Médica</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {step === 'chat' && (
@@ -1077,6 +1097,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       const portfolioUrl = localStorage.getItem('portfolio_url') || 'https://portifolioarthromed-medic.vercel.app'
                       window.open(portfolioUrl, '_blank')
                     }}
+                    onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
                   />
                 )}
 
@@ -1091,6 +1112,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
                 {step === 'gop' && (
                   <GopPanel onPreviewFile={setPreviewFile} />
+                )}
+
+                {step === 'doc_clinica' && (
+                  <ClinicalDocPanel />
                 )}
 
                 {step === 'sector' && (
