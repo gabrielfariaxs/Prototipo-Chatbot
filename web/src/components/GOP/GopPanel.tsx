@@ -38,82 +38,89 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
 
   return (
     <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-y-auto w-full relative">
-      
-      {/* Top Header */}
-      <div className="w-full bg-white border-b border-slate-200 px-4 md:px-8 py-3 flex flex-col md:flex-row md:items-center justify-between sticky top-0 z-10 gap-3">
-        <div className="flex items-center justify-between w-full md:w-auto">
-          <span className="font-bold text-[#1a2332] text-sm tracking-widest uppercase">Módulo NCO</span>
-          <div className="flex items-center gap-2 md:hidden">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md">
-              {userInitials}
+      <style>{`.brand-filete-bar { height: 3px; background: linear-gradient(90deg, #1f29de 0%, #1f29de 100%); }`}</style>
+           {/* Top Header */}
+      <div className="w-full bg-white border-b border-[#e6e9f2] sticky top-0 z-10 shadow-xs">
+        <div className="px-4 md:px-8 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center justify-between w-full md:w-auto">
+            <div>
+              <span className="font-display font-extrabold text-[#14161f] text-base leading-none block">Módulo NCO</span>
+              <span className="eyebrow text-[9px] block mt-0.5">Não Conformidades Operacionais</span>
             </div>
-            <button 
-              onClick={async () => {
-                await supabase.auth.signOut();
-                localStorage.removeItem('userSector');
-                window.location.reload();
-              }}
-              className="w-8 h-8 flex items-center justify-center rounded-full border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors"
-            >
-              <LogOut size={14} />
-            </button>
-          </div>
-        </div>
-        
-        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
-          <div className="bg-slate-100 rounded-lg p-1 flex items-center shadow-inner min-w-max shrink-0">
-            {userLevel !== 'colaborador' && (
+            <div className="flex items-center gap-2 md:hidden">
+              <div className="w-8 h-8 rounded-full bg-[#1f29de] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                {userInitials}
+              </div>
               <button 
-                onClick={() => { setActiveTab('lider'); setSelectedId(null); }}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold cursor-pointer transition-colors ${activeTab === 'lider' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  localStorage.removeItem('userSector');
+                  window.location.reload();
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors"
               >
-                Líder de Setor
+                <LogOut size={14} />
               </button>
-            )}
-            {userLevel !== 'colaborador' && userSector === 'Operações' && (
-              <button 
-                onClick={() => { setActiveTab('coo'); setSelectedId(null); }}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold cursor-pointer transition-colors ${activeTab === 'coo' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Revisão COO / Qualidade
-              </button>
-            )}
-            <button 
-              onClick={() => setActiveTab('demandas')}
-              className={`px-4 py-1.5 rounded-md text-xs font-bold cursor-pointer transition-colors ${activeTab === 'demandas' ? 'bg-[#1a2332] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Demandas
-            </button>
+            </div>
           </div>
           
-          <div className="hidden md:block w-px h-6 bg-slate-200"></div>
-          
-          <div className="hidden md:flex items-center gap-3 shrink-0">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer transition-colors">
-              <Bell size={16} />
-            </button>
-            <div className="text-right flex flex-col justify-center">
-              <span className="text-xs font-bold text-slate-800 leading-tight">{userName}</span>
-              <span className="text-[10px] text-slate-400 font-semibold leading-tight">
-                {userLevel === 'colaborador' ? 'Colaborador' : activeTab === 'coo' ? 'Diretor de Operações' : 'Líder de Setor'}
-              </span>
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
+            <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs min-w-max shrink-0">
+              {userLevel !== 'colaborador' && (
+                <button 
+                  type="button"
+                  onClick={() => { setActiveTab('lider'); setSelectedId(null); }}
+                  className={`px-4 py-1.5 rounded-[8px] text-xs font-bold cursor-pointer transition-all ${activeTab === 'lider' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
+                >
+                  Líder de Setor
+                </button>
+              )}
+              {userLevel !== 'colaborador' && (userSector === 'Operações' || userSector === 'Gestor (Diogo)') && (
+                <button 
+                  type="button"
+                  onClick={() => { setActiveTab('coo'); setSelectedId(null); }}
+                  className={`px-4 py-1.5 rounded-[8px] text-xs font-bold cursor-pointer transition-all ${activeTab === 'coo' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
+                >
+                  Revisão COO / Qualidade
+                </button>
+              )}
+              <button 
+                type="button"
+                onClick={() => setActiveTab('demandas')}
+                className={`px-4 py-1.5 rounded-[8px] text-xs font-bold cursor-pointer transition-all ${activeTab === 'demandas' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
+              >
+                Demandas
+              </button>
             </div>
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-md">
-              {userInitials}
+            
+            <div className="hidden md:block w-px h-6 bg-[#e6e9f2]"></div>
+            
+            <div className="hidden md:flex items-center gap-3 shrink-0">
+              <div className="text-right flex flex-col justify-center">
+                <span className="text-xs font-bold text-[#14161f] leading-tight">{userName}</span>
+                <span className="text-[10px] text-[#5b6276] font-semibold leading-tight">
+                  {userLevel === 'colaborador' ? 'Colaborador' : activeTab === 'coo' ? 'Diretor de Operações' : 'Líder de Setor'}
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-[#1f29de] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                {userInitials}
+              </div>
+              <button 
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  localStorage.removeItem('userSector');
+                  window.location.reload();
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors"
+              >
+                <LogOut size={14} />
+              </button>
             </div>
-            <button 
-              onClick={async () => {
-                await supabase.auth.signOut();
-                localStorage.removeItem('userSector');
-                window.location.reload();
-              }}
-              className="ml-2 w-8 h-8 flex items-center justify-center rounded-full border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors"
-              title="Sair da conta"
-            >
-              <LogOut size={14} />
-            </button>
           </div>
         </div>
+        <div className="brand-filete-bar" />
       </div>
 
       {/* Content - Both tabs rendered simultaneously, hidden via CSS */}
@@ -132,7 +139,7 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
               <div className={activeTab === 'lider' ? 'block' : 'hidden'}>
                 <GopList onSelect={setSelectedId} userRole="lider" userSector={userSector} />
               </div>
-              {userSector === 'Operações' && (
+              {(userSector === 'Operações' || userSector === 'Gestor (Diogo)') && (
                 <div className={activeTab === 'coo' ? 'block' : 'hidden'}>
                   <GopList onSelect={setSelectedId} userRole="coo" userSector={userSector} />
                 </div>

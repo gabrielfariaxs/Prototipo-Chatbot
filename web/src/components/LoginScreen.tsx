@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Mail, Lock, ArrowRight, ShieldAlert, X, Eye, EyeOff, Loader2, ArrowLeft, Send, User } from 'lucide-react'
+import { BrandLockup } from './BrandLockup'
 
 interface LoginScreenProps {
   onSuccess?: () => void
@@ -18,20 +19,20 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
   const SETORES = [
     'Comercial externo', 'Comercial interno', 'Instrumentação', 'T.I',
     'Qualidade / RT', 'Gente Gestão', 'Financeiro', 'Estoque e logistica',
-    'Supply Chain', 'Compras', 'Operações'
+    'Supply Chain', 'Compras', 'Operações', 'Gestor/Diretoria'
   ]
 
   const getEmailFromSector = (sec: string) => {
-    // Normaliza para remover acentos, depois substitui não-alfanuméricos por _
     const slug = sec
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '_')
       .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '') // Remove _ no começo ou fim
+      .replace(/^_|_$/g, '')
     return `${slug}@medic.com.br`
   }
+
   const [resetSuccess, setResetSuccess] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -57,7 +58,7 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
 
       if (authError) {
         if (authError.message === 'Invalid login credentials' || authError.status === 400) {
-          setError('E-mail corporativo ou senha incorretos.')
+          setError('Credenciais incorretas para o setor selecionado.')
         } else {
           setError(authError.message)
         }
@@ -65,9 +66,8 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
         return
       }
 
-      // Sucesso!
       localStorage.setItem('userSector', sector)
-      localStorage.setItem('userLevel', role)
+      localStorage.setItem('userLevel', sector === 'Gestor/Diretoria' ? 'coo' : role)
       if (onSuccess) onSuccess()
     } catch (err: any) {
       setError('Ocorreu um erro ao conectar ao servidor. Tente novamente.')
@@ -90,65 +90,38 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(mappedEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: window.location.origin,
       })
 
       if (resetError) {
         setError(resetError.message)
-        setLoading(false)
-        return
+      } else {
+        setResetSuccess(true)
       }
-
-      setResetSuccess(true)
-      setLoading(false)
-    } catch (err: any) {
-      setError('Ocorreu um erro ao conectar ao servidor. Tente novamente.')
+    } catch (err) {
+      setError('Erro ao enviar e-mail de recuperação.')
+    } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#f8fafc] px-4 overflow-hidden">
-      {/* Background Dot Grid */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-60" 
-        style={{
-          backgroundImage: 'radial-gradient(#e2e8f0 1.2px, transparent 1.2px)',
-          backgroundSize: '24px 24px'
-        }}
-      />
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#f5f7fb] px-4 overflow-hidden">
       
-      {/* Soft gradient orbs in background */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(0,123,143,0.03),transparent_70%)] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(255,127,80,0.03),transparent_70%)] pointer-events-none" />
-
-      {/* Main card and header container */}
-      <div className="rise-in max-w-[480px] w-full flex flex-col items-center relative z-10">
+      {/* Container */}
+      <div className="max-w-[480px] w-full flex flex-col items-center relative z-10 my-auto py-8">
         
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="flex items-center gap-3.5 mb-2.5">
-            {/* MedIA Icon */}
-            <div className="w-11 h-11 bg-[#1a2332] rounded-xl flex items-center justify-center shadow-md">
-              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h1v2H9V9zm5 0h1v2h-1V9z" />
-              </svg>
-            </div>
-            
-            {/* Brand text */}
-            <div className="text-left">
-              <h2 className="text-xl font-bold tracking-tight text-[#0f172a] leading-none mb-0.5">MedIA</h2>
-              <span className="text-[10px] font-extrabold tracking-widest text-[#64748b] uppercase">Assistente Corp</span>
-            </div>
-          </div>
+          <BrandLockup showAppName={true} className="mb-4" />
           
-          <p className="text-[11px] font-bold tracking-[0.2em] text-[#64748b] uppercase mt-2.5">
-            Portal do Colaborador
-          </p>
+          <span className="eyebrow mt-2">
+            Portal do Colaborador &bull; Acesso Corporativo
+          </span>
         </div>
 
-        {/* Login & Forgot Password White Card */}
-        <div className="w-full bg-white rounded-[24px] p-8 sm:p-10 shadow-[0_12px_40px_rgba(15,23,42,0.04)] border border-[#f1f5f9]">
+        {/* Card */}
+        <div className="w-full bg-white rounded-[16px] p-8 sm:p-10 shadow-[0_4px_22px_rgba(20,22,31,0.06)] border border-[#e6e9f2]">
           
           {view === 'login' ? (
             <>
@@ -156,227 +129,206 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
                 <button 
                   onClick={onBackToMenu}
                   type="button"
-                  className="flex items-center gap-2 text-xs font-semibold text-[#64748b] hover:text-[#0f172a] transition-colors mb-5 cursor-pointer bg-transparent border-none p-0 outline-none"
+                  className="flex items-center gap-2 text-xs font-semibold text-[#5b6276] hover:text-[#1f29de] transition-colors mb-6 cursor-pointer bg-transparent border-none p-0 outline-none"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <ArrowLeft size={16} />
                   <span>Voltar ao Menu Principal</span>
                 </button>
               )}
-              <div className="text-center mb-7">
-                <h1 className="text-[22px] font-bold text-[#0f172a] mb-1.5">Acesso Restrito</h1>
-                <p className="text-sm text-[#64748b]">Utilize suas credenciais corporativas.</p>
+
+              <div className="mb-6">
+                <h1 className="font-display font-extrabold text-2xl text-[#14161f] mb-1 leading-tight">
+                  Acesse sua conta
+                </h1>
+                <p className="text-xs text-[#5b6276] leading-relaxed">
+                  Selecione seu setor de atuação para validar seu nível de acesso.
+                </p>
               </div>
 
-              {/* Form */}
+              {error && (
+                <div className="mb-6 p-3.5 bg-[#feecec] border border-[#f7b4b4] text-[#b42121] text-xs font-semibold rounded-[11px] flex items-center gap-2.5">
+                  <ShieldAlert size={16} className="shrink-0 text-[#dc2f2f]" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <form onSubmit={handleLogin} className="space-y-5">
-                
-                {/* Sector Field */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-wider text-[#64748b] uppercase">
-                    Setor
+                {/* Setor */}
+                <div>
+                  <label className="eyebrow block mb-2">
+                    Setor Corporativo *
                   </label>
-                  <div className="relative flex items-center">
-                    <User className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
-                    <select
-                      value={sector}
-                      onChange={(e) => setSector(e.target.value)}
-                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all appearance-none cursor-pointer"
-                      disabled={loading}
-                    >
-                      <option value="" disabled>Selecione seu setor...</option>
-                      {SETORES.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <select
+                    value={sector}
+                    onChange={(e) => setSector(e.target.value)}
+                    required
+                    className="w-full h-[44px] px-3.5 bg-white border border-[#e6e9f2] rounded-[11px] text-sm font-semibold text-[#14161f] outline-none focus:border-[#1f29de] focus:ring-2 focus:ring-[#1f29de]/20 transition-all cursor-pointer"
+                  >
+                    <option value="">Selecione seu setor...</option>
+                    {SETORES.map((sec) => (
+                      <option key={sec} value={sec}>{sec}</option>
+                    ))}
+                  </select>
+                  {sector && (
+                    <span className="text-[11px] font-mono text-[#9097aa] mt-1.5 block">
+                      E-mail: {getEmailFromSector(sector)}
+                    </span>
+                  )}
                 </div>
 
-                {/* Role Field */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-wider text-[#64748b] uppercase">
-                    Cargo
-                  </label>
-                  <div className="relative flex items-center">
-                    <ShieldAlert className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all appearance-none cursor-pointer"
-                      disabled={loading}
-                    >
-                      <option value="lider">Líder</option>
-                      <option value="colaborador">Colaborador</option>
-                    </select>
-                  </div>
-                </div>
-                {/* Password Field */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-bold tracking-wider text-[#64748b] uppercase">
-                      Senha
+                {/* Perfil */}
+                {sector && sector !== 'Gestor/Diretoria' && (
+                  <div>
+                    <label className="eyebrow block mb-2">
+                      Nível de Acesso *
                     </label>
-                    <button 
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRole('lider')}
+                        className={`h-[44px] rounded-[11px] text-xs font-bold transition-all cursor-pointer ${
+                          role === 'lider'
+                            ? 'bg-[#1f29de] text-white shadow-xs'
+                            : 'bg-[#fafbfe] border border-[#e6e9f2] text-[#5b6276] hover:border-[#1f29de]'
+                        }`}
+                      >
+                        Líder de Setor
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRole('colaborador')}
+                        className={`h-[44px] rounded-[11px] text-xs font-bold transition-all cursor-pointer ${
+                          role === 'colaborador'
+                            ? 'bg-[#1f29de] text-white shadow-xs'
+                            : 'bg-[#fafbfe] border border-[#e6e9f2] text-[#5b6276] hover:border-[#1f29de]'
+                        }`}
+                      >
+                        Colaborador
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Password */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="eyebrow">
+                      Senha Corporativa *
+                    </label>
+                    <button
                       type="button"
-                      onClick={() => {
-                        setView('forgot_password')
-                        setError('')
-                        setResetSuccess(false)
-                      }}
-                      className="text-[11px] font-semibold text-[#64748b] hover:text-[#0f172a] transition-colors cursor-pointer outline-none bg-transparent border-none p-0"
+                      onClick={() => setView('forgot_password')}
+                      className="text-xs font-semibold text-[#1f29de] hover:underline cursor-pointer bg-transparent border-none p-0 outline-none"
                     >
-                      Esqueceu?
+                      Esqueceu a senha?
                     </button>
                   </div>
                   <div className="relative flex items-center">
-                    <Lock className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
-                    <input 
-                      type={showPassword ? "text" : "password"}
+                    <Lock size={16} className="absolute left-3.5 text-[#9097aa]" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-12 text-sm text-[#0f172a] placeholder-[#94a3b8] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all"
-                      disabled={loading}
+                      placeholder="Digite sua senha"
+                      required
+                      className="w-full h-[44px] pl-10 pr-10 bg-white border border-[#e6e9f2] rounded-[11px] text-sm font-medium text-[#14161f] outline-none focus:border-[#1f29de] focus:ring-2 focus:ring-[#1f29de]/20 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 text-[#94a3b8] hover:text-[#475569] transition-colors outline-none"
-                      disabled={loading}
+                      className="absolute right-3.5 text-[#9097aa] hover:text-[#14161f] transition-colors bg-transparent border-none outline-none p-0 cursor-pointer"
                     >
-                      {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="p-3.5 bg-red-50 border border-red-100 rounded-xl flex gap-2.5 items-start animate-shake">
-                    <ShieldAlert className="w-[18px] h-[18px] text-red-500 shrink-0 mt-0.5" />
-                    <p className="text-[12px] font-medium text-red-700 leading-relaxed">{error}</p>
-                  </div>
-                )}
-
-                {/* Submit Button */}
+                {/* Submit */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#1e293b] hover:bg-[#0f172a] active:scale-[0.98] text-white py-4 px-6 rounded-xl font-bold text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed disabled:active:scale-100"
+                  className="w-full h-[44px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer mt-2"
                 >
                   {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Entrando...</span>
-                    </>
+                    <Loader2 size={18} className="animate-spin" />
                   ) : (
                     <>
-                      <span>Entrar na Plataforma</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <span>Entrar no Portal</span>
+                      <ArrowRight size={16} />
                     </>
                   )}
                 </button>
               </form>
-
-              {/* Bottom Security Warning */}
-              <div className="mt-8 p-4 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl flex gap-3 items-start">
-                <ShieldAlert className="w-[18px] h-[18px] text-[#64748b] shrink-0 mt-0.5" />
-                <p className="text-[10px] font-semibold text-[#64748b] leading-normal">
-                  Acesso monitorado e restrito a colaboradores autorizados da Arthromed e Medic. Tentativas de acesso não autorizado serão registradas.
-                </p>
-              </div>
             </>
           ) : (
             <>
-              {/* Back to Login Link */}
               <button 
-                onClick={() => {
-                  setView('login')
-                  setError('')
-                  setResetSuccess(false)
-                }}
-                className="flex items-center gap-2 text-xs font-semibold text-[#64748b] hover:text-[#0f172a] transition-colors mb-6 cursor-pointer bg-transparent border-none p-0 outline-none"
+                onClick={() => setView('login')}
+                type="button"
+                className="flex items-center gap-2 text-xs font-semibold text-[#5b6276] hover:text-[#1f29de] transition-colors mb-6 cursor-pointer bg-transparent border-none p-0 outline-none"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Voltar para o Login</span>
+                <ArrowLeft size={16} />
+                <span>Voltar ao Login</span>
               </button>
 
-              <div className="mb-7">
-                <h1 className="text-[22px] font-bold text-[#0f172a] mb-2">Recuperar Senha</h1>
-                <p className="text-xs text-[#64748b] leading-relaxed">
-                  Digite o endereço de e-mail associado à sua conta corporativa. Enviaremos um link para você redefinir sua senha.
+              <div className="mb-6">
+                <h1 className="font-display font-extrabold text-2xl text-[#14161f] mb-1">
+                  Recuperar Senha
+                </h1>
+                <p className="text-xs text-[#5b6276] leading-relaxed">
+                  Informe seu setor para enviarmos as instruções de redefinição.
                 </p>
               </div>
 
-              {/* Reset Success State */}
-              {resetSuccess && (
-                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex gap-3 items-start mb-6">
-                  <div className="p-1.5 bg-emerald-500 text-white rounded-lg shrink-0">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-emerald-800 text-xs mb-0.5">E-mail de instruções enviado!</h4>
-                    <p className="text-[10px] text-emerald-600 leading-relaxed font-medium">
-                      Verifique sua caixa de entrada corporativa e siga as etapas do link enviado para cadastrar uma nova senha.
-                    </p>
-                  </div>
+              {resetSuccess ? (
+                <div className="p-4 bg-[#e6fdf2] border border-[#93f6c8] text-[#067247] text-xs font-semibold rounded-[11px] space-y-2">
+                  <p>Instruções enviadas para o e-mail do setor selecionado com sucesso.</p>
+                  <button
+                    type="button"
+                    onClick={() => setView('login')}
+                    className="text-[#1f29de] font-bold underline cursor-pointer"
+                  >
+                    Ir para a tela de login
+                  </button>
                 </div>
-              )}
-
-              {/* Form */}
-              <form onSubmit={handleResetPassword} className="space-y-5">
-                
-                {/* Reset Sector Field */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-wider text-[#64748b] uppercase">
-                    Seu Setor
-                  </label>
-                  <div className="relative flex items-center">
-                    <User className="absolute left-4 w-[18px] h-[18px] text-[#94a3b8]" />
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-5">
+                  <div>
+                    <label className="eyebrow block mb-2">
+                      Selecione seu Setor *
+                    </label>
                     <select
                       value={resetSector}
                       onChange={(e) => setResetSector(e.target.value)}
-                      className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3.5 pl-11 pr-4 text-sm text-[#0f172a] focus:bg-white focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] outline-none transition-all appearance-none cursor-pointer"
-                      disabled={loading}
+                      required
+                      className="w-full h-[44px] px-3.5 bg-white border border-[#e6e9f2] rounded-[11px] text-sm font-semibold text-[#14161f] outline-none focus:border-[#1f29de] focus:ring-2 focus:ring-[#1f29de]/20 transition-all cursor-pointer"
                     >
-                      <option value="" disabled>Selecione seu setor...</option>
-                      {SETORES.map(s => (
-                        <option key={s} value={s}>{s}</option>
+                      <option value="">Selecione seu setor...</option>
+                      {SETORES.map((sec) => (
+                        <option key={sec} value={sec}>{sec}</option>
                       ))}
                     </select>
                   </div>
-                </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="p-3.5 bg-red-50 border border-red-100 rounded-xl flex gap-2.5 items-start animate-shake">
-                    <ShieldAlert className="w-[18px] h-[18px] text-red-500 shrink-0 mt-0.5" />
-                    <p className="text-[12px] font-medium text-red-700 leading-relaxed">{error}</p>
-                  </div>
-                )}
-
-                {/* Reset Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading || resetSuccess}
-                  className="w-full bg-[#1e293b] hover:bg-[#0f172a] active:scale-[0.98] text-white py-4 px-6 rounded-xl font-bold text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed disabled:active:scale-100"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Enviando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Enviar Instruções</span>
-                      <Send className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-[44px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                  >
+                    {loading ? <Loader2 size={18} className="animate-spin" /> : <span>Enviar Instruções</span>}
+                  </button>
+                </form>
+              )}
             </>
           )}
 
+        </div>
+
+        {/* Footer info */}
+        <div className="mt-8 text-center space-y-1">
+          <p className="text-[11px] font-mono text-[#9097aa] m-0">
+            ARTHROMED &bull; MEDIC ORTOPEDIA &bull; SISTEMA MEDIA
+          </p>
         </div>
 
       </div>

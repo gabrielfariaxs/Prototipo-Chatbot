@@ -4,7 +4,7 @@ import {
   Loader2, Check, Eye, Code
 } from 'lucide-react'
 import { generateResponse } from '../../lib/chat'
-import { processClinicalFile, ProcessedFile } from '../../lib/pdf-reader'
+import { processClinicalFile, type ProcessedFile } from '../../lib/pdf-reader'
 
 /**
  * Renderizador de Papel A4 com layout de Grade 2 Colunas e Linhas Inferiores (Fiel ao modelo InCore/Claude)
@@ -36,13 +36,13 @@ function ClinicalPaperDocument({ content }: { content: string }) {
     })
   }
 
-  const flushGridFields = (key: number) => {
+  const flushGridFields = (key: number | string) => {
     if (sectionFields.length === 0) return null
     const fields = [...sectionFields]
     sectionFields = []
 
     return (
-      <div key={key} className="my-3 grid grid-cols-2 gap-x-6 gap-y-3 font-sans">
+      <div key={`grid-${key}`} className="my-3 grid grid-cols-2 gap-x-6 gap-y-3 font-sans">
         {fields.map((f, fIdx) => (
           <div key={fIdx} className="flex flex-col">
             <span className="text-[9px] font-bold tracking-wider text-slate-500 uppercase">{f.label}</span>
@@ -55,7 +55,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
     )
   }
 
-  const flushTable = (key: number) => {
+  const flushTable = (key: number | string) => {
     if (tableRows.length === 0) return null
     const header = tableRows[0]
     const rows = tableRows.slice(1).filter(r => !r.every(cell => cell.includes('---') || cell.includes(':')))
@@ -64,7 +64,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
     inTable = false
 
     return (
-      <div key={key} className="my-4 overflow-x-auto rounded-sm border border-slate-300 shadow-2xs">
+      <div key={`table-${key}`} className="my-4 overflow-x-auto rounded-sm border border-slate-300 shadow-2xs">
         <table className="w-full text-left border-collapse text-[11px] font-sans">
           <thead>
             <tr className="bg-[#005f73] text-white font-bold border-b border-[#005f73]">
@@ -580,31 +580,34 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
     <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-y-auto p-4 sm:p-8 w-full max-w-[1300px] mx-auto">
       
       {/* Header Banner */}
-      <div className="mb-6 bg-gradient-to-r from-[#1a2332] to-[#253248] text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-13 h-13 bg-amber-500 text-slate-950 rounded-2xl flex items-center justify-center shadow-lg shrink-0 font-extrabold">
-            <Stethoscope size={28} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">Solicitação Médica</h2>
-              <span className="bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-400/30 uppercase">
-                Metodologia Anti-Glosa
-              </span>
+      <div className="mb-6 bg-white border border-[#e6e9f2] text-[#14161f] rounded-[16px] shadow-xs overflow-hidden">
+        <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#1f29de] text-white rounded-[11px] flex items-center justify-center shadow-xs shrink-0 font-extrabold">
+              <Stethoscope size={24} />
             </div>
-            <p className="text-xs text-slate-300 mt-1 max-w-[600px] leading-relaxed">
-              Central para vendedores, representantes e médicos. Envie fotos ou PDFs dos pedidos para a IA extrair dados e compilar a solicitação padronizada em Word (.docx).
-            </p>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="font-display font-extrabold text-2xl tracking-tight text-[#14161f]">Solicitação Médica</h2>
+                <span className="bg-[#1f29de]/10 text-[#1f29de] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-[#1f29de]/20 uppercase">
+                  Metodologia Anti-Glosa
+                </span>
+              </div>
+              <p className="text-xs text-[#5b6276] mt-1 max-w-[600px] leading-relaxed">
+                Central para vendedores, representantes e médicos. Envie fotos ou PDFs dos pedidos para a IA extrair dados e compilar a solicitação padronizada em Word (.docx).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <span className="text-[11px] font-bold text-[#1f29de] bg-[#eef0fe] px-3 py-1.5 rounded-[11px] border border-[#c3c7fb] flex items-center gap-1.5">
+              <Sparkles size={14} />
+              Resolução CFM 2.318/2022
+            </span>
+            <span className="text-[10px] text-[#9097aa] font-semibold">Normativas ANS & STF Atualizadas</span>
           </div>
         </div>
-
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center gap-1.5">
-            <Sparkles size={14} />
-            Resolução CFM 2.318/2022
-          </span>
-          <span className="text-[10px] text-slate-400 font-medium">Normativas ANS & STF Atualizadas</span>
-        </div>
+        <div className="brand-filete-bar" />
       </div>
 
       {/* 3-Step Guided Workflow Banner */}

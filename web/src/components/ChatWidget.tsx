@@ -11,6 +11,7 @@ import { ChatDashboard } from './Chat/ChatDashboard'
 import { FilePreviewModal } from './Chat/FilePreviewModal'
 import { LoginScreen } from './LoginScreen'
 import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
+import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 
@@ -121,9 +122,9 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedbackComment: comment } : m))
     saveGlobalFeedback(msgId, 'down', comment)
   }
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login' | 'doc_clinica'>('onboarding')
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login' | 'doc_clinica' | 'chamados_ti'>('onboarding')
   const [session, setSession] = useState<Session | null>(null)
-  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | null>(null)
+  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
@@ -136,7 +137,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }, [])
 
   const handleSelectChatbotModule = () => {
-    if (session) {
+    if (session || localStorage.getItem('userSector')) {
       handleStart()
     } else {
       setPendingModule('chatbot')
@@ -145,7 +146,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }
 
   const handleSelectNocModule = () => {
-    if (session) {
+    if (session || localStorage.getItem('userSector')) {
       setStep('gop')
     } else {
       setPendingModule('noc')
@@ -154,10 +155,19 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }
 
   const handleSelectDocClinicaModule = () => {
-    if (session) {
+    if (session || localStorage.getItem('userSector')) {
       setStep('doc_clinica')
     } else {
       setPendingModule('doc_clinica')
+      setStep('login')
+    }
+  }
+
+  const handleSelectChamadosTiModule = () => {
+    if (session || localStorage.getItem('userSector')) {
+      setStep('chamados_ti')
+    } else {
+      setPendingModule('chamados_ti')
       setStep('login')
     }
   }
@@ -167,6 +177,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       setStep('gop')
     } else if (pendingModule === 'doc_clinica') {
       setStep('doc_clinica')
+    } else if (pendingModule === 'chamados_ti') {
+      setStep('chamados_ti')
     } else {
       handleStart()
     }
@@ -1098,6 +1110,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       window.open(portfolioUrl, '_blank')
                     }}
                     onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
+                    onOpenChamadosTi={handleSelectChamadosTiModule}
                   />
                 )}
 
@@ -1116,6 +1129,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
                 {step === 'doc_clinica' && (
                   <ClinicalDocPanel />
+                )}
+
+                {step === 'chamados_ti' && (
+                  <ChamadosTiPanel />
                 )}
 
                 {step === 'sector' && (
@@ -1137,22 +1154,22 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                         <div
                           key={msg.id}
                           className={cn(
-                            'flex gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300',
-                            msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'items-start'
+                            'flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300',
+                            msg.role === 'user' ? 'ml-auto flex-row-reverse max-w-[60%]' : 'items-start max-w-[85%]'
                           )}
                         >
                           {msg.role !== 'user' && (
-                            <div className="p-2 rounded-full shrink-0 flex items-center justify-center w-8 h-8 bg-[#1a2332] text-white shadow-sm mt-1">
-                              <Lightbulb size={14} />
+                            <div className="p-2 rounded-full shrink-0 flex items-center justify-center w-9 h-9 bg-[#2b2d32] text-white shadow-xs mt-1">
+                              <Lightbulb size={16} />
                             </div>
                           )}
-                          <div className="flex flex-col gap-1.5">
+                          <div className="flex flex-col gap-1.5 min-w-0">
                             <div
                               className={cn(
-                                'p-4 rounded-2xl text-[14px] leading-relaxed',
+                                'p-4 text-[14px] leading-relaxed',
                                 msg.role === 'user'
-                                  ? 'bg-[#1a2332] text-white rounded-tr-sm shadow-md'
-                                  : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm'
+                                  ? 'bg-[#1f29de] text-white rounded-[16px_16px_4px_16px] shadow-xs font-medium'
+                                  : 'bg-white border border-[#e6e9f2] text-[#14161f] rounded-[16px_16px_16px_4px] shadow-xs'
                               )}
                             >
                               {msg.role === 'user' ? (
@@ -1188,18 +1205,18 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                             </div>
                             {msg.role !== 'user' && (
                               <div className="flex items-center gap-3 px-1">
-                                <span className="text-[10px] text-slate-400 font-medium">
+                                <span className="font-mono text-[12.5px] text-[#9097aa]">
                                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 <div className="flex items-center gap-2">
-                                  <button className="text-slate-300 hover:text-slate-500 transition-colors"><ThumbsUp size={12} /></button>
-                                  <button className="text-slate-300 hover:text-slate-500 transition-colors"><ThumbsDown size={12} /></button>
-                                  <button className="text-slate-300 hover:text-slate-500 transition-colors"><Copy size={12} /></button>
+                                  <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsUp size={12} /></button>
+                                  <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsDown size={12} /></button>
+                                  <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><Copy size={12} /></button>
                                 </div>
                               </div>
                             )}
                             {msg.role === 'user' && (
-                              <span className="text-[10px] text-slate-400 font-medium text-right px-1">
+                              <span className="font-mono text-[12.5px] text-[#9097aa] text-right px-1">
                                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
@@ -1282,20 +1299,19 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                         </div>
                       )}
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-slate-100/70 border border-slate-200 rounded-full flex items-center p-1.5 pr-2 focus-within:ring-2 focus-within:ring-[#1a2332]/20 focus-within:border-[#1a2332]/30 transition-all">
+                        <div className="flex-1 h-[52px] bg-[#ffffff] border border-[#e6e9f2] rounded-[11px] flex items-center px-3 focus-within:border-[#1f29de] focus-within:ring-2 focus-within:ring-[#1f29de]/16 transition-all">
                           <button 
+                            type="button"
                             className={cn(
-                              "p-2.5 transition-colors relative rounded-full hover:bg-slate-200/50 cursor-pointer",
-                              attachedFiles.length > 0 ? "text-[#1a2332]" : "text-slate-400"
+                              "p-2 transition-colors relative rounded-lg hover:bg-[#fafbfe] cursor-pointer",
+                              attachedFiles.length > 0 ? "text-[#1f29de]" : "text-[#9097aa]"
                             )}
                             title="Adicionar Anexo"
                             onClick={() => document.getElementById('file-upload')?.click()}
                           >
                             <Paperclip size={18} />
                             {attachedFiles.length > 0 && (
-                              <span className="absolute top-2 right-2 w-3 h-3 bg-green-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white font-bold">
-                                {attachedFiles.length}
-                              </span>
+                              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#06df82] rounded-full border-2 border-white" />
                             )}
                             <input 
                               type="file" 
@@ -1307,8 +1323,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                             />
                           </button>
 
-
-                          
                           <input
                             type="text"
                             value={input}
@@ -1316,17 +1330,18 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                             placeholder={
                               attachedFiles.length > 0
-                                ? `${attachedFiles.length} arquivo(s) pronto(s)` 
+                                ? `${attachedFiles.length} arquivo(s) selecionado(s)` 
                                 : "Descreva sua solicitação ou dúvida..."
                             }
                             disabled={isLoading}
-                            className="flex-1 border-none bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400 px-2 disabled:opacity-75"
+                            className="flex-1 border-none bg-transparent outline-none text-sm text-[#14161f] placeholder-[#9097aa] px-2 disabled:opacity-75"
                           />
                           
                           {attachedFiles.length > 0 && (
                             <button
+                              type="button"
                               onClick={() => setAttachedFiles([])}
-                              className="p-2 text-slate-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                              className="p-1.5 text-[#9097aa] hover:text-[#dc2f2f] rounded-lg hover:bg-[#feecec] transition-colors"
                               title="Remover arquivos"
                             >
                               <X size={16} />
@@ -1334,16 +1349,17 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                           )}
                         </div>
                         <button
+                          type="button"
                           onClick={() => handleSend()}
                           disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-                          className="p-3.5 bg-blue-600 text-white rounded-full disabled:opacity-50 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all cursor-pointer"
+                          className="h-[52px] w-[52px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] disabled:opacity-50 transition-all shadow-xs flex items-center justify-center cursor-pointer shrink-0"
                         >
                           <Send size={18} />
                         </button>
                       </div>
-                      <div className="text-center mt-4">
-                        <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">
-                          MEDIA CORPORATE ASSISTANT • POWERED BY ARTHROMED
+                      <div className="text-center mt-3">
+                        <p className="eyebrow m-0 text-[10px]">
+                          MEDIA CORPORATE ASSISTANT &bull; POWERED BY ARTHROMED & MEDIC
                         </p>
                       </div>
                     </div>

@@ -1,20 +1,33 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Sparkles, Stethoscope } from 'lucide-react'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Sparkles, Stethoscope, ChevronLeft, ChevronRight, Monitor } from 'lucide-react'
+import { BrandLockup } from '../BrandLockup'
 
 interface ChatOnboardingProps {
   onStart: () => void;
   onOpenNoc?: () => void;
   onOpenPortfolio?: () => void;
   onOpenSolicitacaoMedica?: () => void;
+  onOpenChamadosTi?: () => void;
 }
 
 export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ 
   onStart, 
   onOpenNoc, 
   onOpenPortfolio,
-  onOpenSolicitacaoMedica
+  onOpenSolicitacaoMedica,
+  onOpenChamadosTi
 }) => {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const handlePortfolioClick = () => {
     if (onOpenPortfolio) {
       onOpenPortfolio()
@@ -24,6 +37,77 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     }
   }
 
+  const CARDS = [
+    {
+      id: 'chatbot',
+      icon: <Bot size={24} strokeWidth={2} />,
+      tag: 'Assistente Corporativo',
+      title: 'Chatbot (MedIA)',
+      description: 'Assistente inteligente para suporte em procedimentos internos, dúvidas operacionais e consulta de materiais.',
+      actionText: 'Acessar Chatbot',
+      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#1f29de] bg-[#eef0fe] border-[#c3c7fb]',
+      hoverTitle: 'group-hover:text-[#1f29de]',
+      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      action: onStart
+    },
+    {
+      id: 'noc',
+      icon: <Layers size={24} strokeWidth={2} />,
+      tag: 'Gestão Operacional',
+      title: 'NOC (NCO)',
+      description: 'Módulo para registro, acompanhamento e tratativas de Não Conformidades Operacionais.',
+      actionText: 'Acessar NOC',
+      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#357fc4] bg-[#357fc4]/10 border-[#357fc4]/30',
+      hoverTitle: 'group-hover:text-[#357fc4]',
+      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      action: () => { if (onOpenNoc) onOpenNoc() }
+    },
+    {
+      id: 'portfolio',
+      icon: <BookOpen size={24} strokeWidth={2} />,
+      tag: 'Catálogo Online',
+      title: 'Portfólio de Produtos',
+      description: 'Catálogo completo de produtos, materiais ortopédicos e especificações corporativas.',
+      actionText: 'Abrir Portfólio',
+      actionIcon: <ExternalLink size={16} className="group-hover:translate-x-0.5 transition-transform" />,
+      tagColor: 'text-[#4ec7ac] bg-[#4ec7ac]/10 border-[#4ec7ac]/30',
+      hoverTitle: 'group-hover:text-[#4ec7ac]',
+      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      action: handlePortfolioClick
+    },
+    {
+      id: 'solicitacao',
+      icon: <Stethoscope size={24} strokeWidth={2} />,
+      tag: 'Padrão CFM / ANS',
+      title: 'Solicitação Médica',
+      description: 'Solicitações cirúrgicas, justificativas de OPME e recursos de negativa estruturados anti-glosa.',
+      actionText: 'Acessar Módulo',
+      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#fd6192] bg-[#fd6192]/10 border-[#fd6192]/30',
+      hoverTitle: 'group-hover:text-[#fd6192]',
+      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      action: () => { if (onOpenSolicitacaoMedica) onOpenSolicitacaoMedica() }
+    },
+    {
+      id: 'chamados_ti',
+      icon: <Monitor size={24} strokeWidth={2} />,
+      tag: 'Suporte Técnico',
+      title: 'Chamados de T.I',
+      description: 'Abertura e acompanhamento de chamados de suporte técnico com aprovação do gestor responsável.',
+      actionText: 'Abrir Chamados',
+      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#664ba6] bg-[#664ba6]/10 border-[#664ba6]/30',
+      hoverTitle: 'group-hover:text-[#664ba6]',
+      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      action: () => { if (onOpenChamadosTi) onOpenChamadosTi() }
+    }
+  ]
+
+  const nextCard = () => setActiveIndex((prev) => Math.min(prev + 1, CARDS.length - 1))
+  const prevCard = () => setActiveIndex((prev) => Math.max(prev - 1, 0))
+
   return (
     <motion.div
       key="onboarding"
@@ -31,171 +115,129 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.25 }}
-      className="flex-1 flex flex-col items-center p-4 sm:p-8 bg-[#f8fafc] overflow-y-auto w-full justify-center min-h-full"
+      className="flex-1 flex flex-col items-center p-4 sm:p-8 bg-[#f5f7fb] overflow-hidden w-full justify-center min-h-full"
     >
-      <div className="w-full max-w-[960px] flex flex-col items-center justify-center my-auto py-6">
+      <div className="w-full max-w-[960px] flex flex-col items-center justify-center my-auto py-2">
         
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-2 bg-slate-200/60 text-slate-700 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold tracking-wider uppercase mb-3 border border-slate-300/40">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            Portal Corporativo
+        <div className="text-center mb-10 sm:mb-12">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <BrandLockup showAppName={true} />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1a2332] tracking-tight mb-2">
-            O que você deseja acessar?
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-[460px] mx-auto leading-relaxed">
-            Selecione um dos módulos abaixo para iniciar suas atividades ou consultar informações operacionais.
+          <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-[#14161f] tracking-tight mb-2">
+            Módulos Corporativos
+          </h1>
+          <p className="text-sm text-[#5b6276] max-w-[480px] mx-auto leading-relaxed">
+            Selecione um módulo operacional abaixo para iniciar suas atividades.
           </p>
         </div>
 
-        {/* Modules Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 w-full max-w-[960px]">
+        {/* 3D Carousel Container */}
+        <div className="relative w-full max-w-[900px] mx-auto h-[400px] flex items-center justify-center select-none" style={{ perspective: '1200px' }}>
           
-          {/* Card 1: Chatbot (MedIA) */}
-          <motion.div
-            whileHover={{ y: -4, scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onStart}
-            className="group bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full pointer-events-none" />
-            <div>
-              <div className="w-12 h-12 bg-[#1a2332] rounded-xl flex items-center justify-center text-white shadow-md mb-4 group-hover:scale-105 transition-transform">
-                <Bot size={26} strokeWidth={1.75} />
-              </div>
-              <span className="text-[10px] font-bold text-blue-600 tracking-wider uppercase bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-md inline-block mb-2">
-                Assistente Corp
-              </span>
-              <h3 className="text-lg font-bold text-[#1a2332] mb-1.5 group-hover:text-blue-600 transition-colors">
-                Chatbot (MedIA)
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                Assistente inteligente para suporte em procedimentos internos, dúvidas operacionais e consulta de materiais.
-              </p>
-            </div>
-            
+          {/* Side Arrows */}
+          <div className="absolute left-2 sm:left-8 z-50 flex items-center h-full pointer-events-none">
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onStart()
-              }}
-              className="w-full bg-[#1a2332] hover:bg-[#253043] text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer mt-auto"
+              type="button"
+              onClick={prevCard}
+              disabled={activeIndex === 0}
+              className="pointer-events-auto p-2.5 rounded-full bg-white shadow-md text-[#5b6276] hover:text-[#1f29de] hover:scale-105 active:scale-95 disabled:opacity-0 transition-all border border-[#e6e9f2]"
             >
-              <span>Acessar Chatbot</span>
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              <ChevronLeft size={24} strokeWidth={2} />
             </button>
-          </motion.div>
-
-          {/* Card 2: NOC / NCO */}
-          <motion.div
-            whileHover={{ y: -4, scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onOpenNoc}
-            className="group bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none" />
-            <div>
-              <div className="w-12 h-12 bg-indigo-900 rounded-xl flex items-center justify-center text-white shadow-md mb-4 group-hover:scale-105 transition-transform">
-                <Layers size={26} strokeWidth={1.75} />
-              </div>
-              <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-md inline-block mb-2">
-                Gestão Operacional
-              </span>
-              <h3 className="text-lg font-bold text-[#1a2332] mb-1.5 group-hover:text-indigo-600 transition-colors">
-                NOC (NCO)
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                Módulo para registro, acompanhamento e tratativas de Não Conformidades Operacionais.
-              </p>
-            </div>
-            
+          </div>
+          
+          <div className="absolute right-2 sm:right-8 z-50 flex items-center h-full pointer-events-none">
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                if (onOpenNoc) onOpenNoc()
-              }}
-              className="w-full bg-indigo-950 hover:bg-indigo-900 text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer mt-auto"
+              type="button"
+              onClick={nextCard}
+              disabled={activeIndex === CARDS.length - 1}
+              className="pointer-events-auto p-2.5 rounded-full bg-white shadow-md text-[#5b6276] hover:text-[#1f29de] hover:scale-105 active:scale-95 disabled:opacity-0 transition-all border border-[#e6e9f2]"
             >
-              <span>Acessar NOC</span>
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              <ChevronRight size={24} strokeWidth={2} />
             </button>
-          </motion.div>
+          </div>
 
-          {/* Card 3: Portfólio */}
-          <motion.div
-            whileHover={{ y: -4, scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handlePortfolioClick}
-            className="group bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full pointer-events-none" />
-            <div>
-              <div className="w-12 h-12 bg-emerald-800 rounded-xl flex items-center justify-center text-white shadow-md mb-4 group-hover:scale-105 transition-transform">
-                <BookOpen size={26} strokeWidth={1.75} />
-              </div>
-              <span className="text-[10px] font-bold text-emerald-700 tracking-wider uppercase bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-md inline-block mb-2">
-                Catálogo Online
-              </span>
-              <h3 className="text-lg font-bold text-[#1a2332] mb-1.5 group-hover:text-emerald-700 transition-colors">
-                Portfólio
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                Catálogo completo de produtos, materiais ortopédicos e especificações corporativas.
-              </p>
-            </div>
+          {CARDS.map((card, index) => {
+            const offset = index - activeIndex
+            const isActive = offset === 0
             
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                handlePortfolioClick()
-              }}
-              className="w-full bg-emerald-900 hover:bg-emerald-950 text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer mt-auto"
-            >
-              <span>Abrir Portfólio</span>
-              <ExternalLink size={14} className="group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </motion.div>
-
-          {/* Card 4: Solicitação Médica */}
-          <motion.div
-            whileHover={{ y: -4, scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onOpenSolicitacaoMedica}
-            className="group bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-bl-full pointer-events-none" />
-            <div>
-              <div className="w-12 h-12 bg-amber-900 rounded-xl flex items-center justify-center text-white shadow-md mb-4 group-hover:scale-105 transition-transform">
-                <Stethoscope size={26} strokeWidth={1.75} />
-              </div>
-              <span className="text-[10px] font-bold text-amber-700 tracking-wider uppercase bg-amber-50 border border-amber-100 px-2.5 py-0.5 rounded-md inline-block mb-2">
-                Padrão CFM / ANS
-              </span>
-              <h3 className="text-lg font-bold text-[#1a2332] mb-1.5 group-hover:text-amber-700 transition-colors">
-                Solicitação Médica
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                Solicitações cirúrgicas, justificativas de OPME e recursos de negativa estruturados anti-glosa.
-              </p>
-            </div>
+            const xBase = isMobile ? 60 : 180
+            const x = offset * xBase
+            const z = Math.abs(offset) * -120
+            const rotateY = offset * -15
+            const scale = 1 - Math.abs(offset) * 0.1
             
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                if (onOpenSolicitacaoMedica) onOpenSolicitacaoMedica()
-              }}
-              className="w-full bg-amber-900 hover:bg-amber-950 text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer mt-auto"
-            >
-              <span>Acessar Módulo</span>
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </motion.div>
+            return (
+              <motion.div
+                key={card.id}
+                onClick={() => { 
+                  if (!isActive) setActiveIndex(index)
+                  else card.action()
+                }}
+                initial={false}
+                animate={{ 
+                  x, 
+                  z, 
+                  rotateY, 
+                  scale, 
+                  opacity: isActive ? 1 : 0.6 
+                }}
+                transition={{ type: 'spring', stiffness: 220, damping: 25 }}
+                style={{
+                  position: 'absolute',
+                  transformStyle: 'preserve-3d',
+                  zIndex: CARDS.length - Math.abs(offset)
+                }}
+                className={`group bg-white rounded-[24px] p-6 border border-[#e6e9f2] shadow-[0_4px_22px_rgba(20,22,31,0.06)] flex flex-col justify-between w-[290px] sm:w-[320px] h-[360px] overflow-hidden ${isActive ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'}`}
+              >
+                <div>
+                  <div className="w-12 h-12 bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] flex items-center justify-center text-[#1f29de] shadow-xs mb-5 transition-transform">
+                    {card.icon}
+                  </div>
+                  <span className={`eyebrow px-2.5 py-1 rounded-[8px] border inline-block mb-3 ${card.tagColor}`}>
+                    {card.tag}
+                  </span>
+                  <h2 className={`font-display font-extrabold text-xl text-[#14161f] mb-2 ${isActive ? card.hoverTitle : ''} transition-colors`}>
+                    {card.title}
+                  </h2>
+                  <p className="text-xs text-[#5b6276] leading-relaxed mb-6 line-clamp-3">
+                    {card.description}
+                  </p>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isActive) card.action()
+                    else setActiveIndex(index)
+                  }}
+                  disabled={!isActive}
+                  className={`w-full ${card.btnBg} text-white py-3 rounded-[11px] text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs mt-auto ${isActive ? 'opacity-100 cursor-pointer translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+                >
+                  <span>{card.actionText}</span>
+                  {card.actionIcon}
+                </button>
+              </motion.div>
+            )
+          })}
+        </div>
 
+        {/* Navigation Dots */}
+        <div className="flex items-center gap-2 mt-8">
+          {CARDS.map((_, i) => (
+            <button 
+              key={i} 
+              type="button"
+              onClick={() => setActiveIndex(i)}
+              className={`rounded-full transition-all duration-300 ${activeIndex === i ? 'w-6 h-2 bg-[#1f29de]' : 'w-2 h-2 bg-[#9097aa] hover:bg-[#5b6276]'}`}
+              aria-label={`Ir para slide ${i + 1}`}
+            />
+          ))}
         </div>
 
       </div>
     </motion.div>
   )
 }
-

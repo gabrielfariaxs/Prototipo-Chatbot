@@ -729,35 +729,39 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
   // RENDER UI
   // ============================================================
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/70 p-4 md:p-6">
-      {/* Title / Back Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 md:mb-6">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={onBack}
-          className="p-2 hover:bg-slate-200 border border-slate-200 bg-white text-slate-700 rounded-xl transition-all shadow-sm cursor-pointer"
-          title="Voltar ao Chat"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <div className="flex flex-col">
-          <h2 className="text-xl font-bold text-[#1a2332] tracking-tight">FatureIA Automação</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Módulo de Conciliação e Loteamento</p>
+    <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/70">
+      {/* Top Bar Header */}
+      <div className="w-full bg-white border-b border-[#e6e9f2] sticky top-0 z-10 shadow-xs mb-4">
+        <div className="px-4 md:px-8 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button 
+              type="button"
+              onClick={onBack}
+              className="p-2 text-[#5b6276] hover:text-[#1f29de] hover:bg-[#eef0fe] rounded-[11px] transition-colors cursor-pointer"
+              title="Voltar ao Chatbot"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex flex-col">
+              <h2 className="font-display font-extrabold text-xl text-[#14161f] tracking-tight">FatureIA Automação</h2>
+              <span className="eyebrow text-[9px] block">Módulo de Conciliação e Loteamento</span>
+            </div>
+          </div>
+          
+          {/* Nomenclature Status Badge */}
+          <div className="sm:ml-auto flex items-center gap-2 bg-[#fafbfe] border border-[#e6e9f2] px-3 py-1.5 rounded-[11px] text-xs font-semibold shadow-xs w-fit">
+            <span className="w-2 h-2 rounded-full bg-[#06df82] animate-pulse" />
+            <span className="text-[#5b6276]">Nomenclaturas:</span>
+            {nomenStatus === 'loading' && <span className="text-[#1f29de] font-mono animate-pulse">Carregando...</span>}
+            {nomenStatus === 'success' && <span className="text-[#067247] font-mono font-bold">Pronto ({nomenclatures.length})</span>}
+            {nomenStatus === 'error' && <span className="text-[#b42121] font-mono font-bold">Falha</span>}
+          </div>
         </div>
-        </div>
-        
-        {/* Nomenclature Status Badge */}
-        <div className="sm:ml-auto flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm w-fit">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-slate-500">Nomenclaturas:</span>
-          {nomenStatus === 'loading' && <span className="text-blue-500 animate-pulse">Carregando...</span>}
-          {nomenStatus === 'success' && <span className="text-emerald-600 font-bold">Pronto ({nomenclatures.length})</span>}
-          {nomenStatus === 'error' && <span className="text-red-500 font-bold">Falha</span>}
-        </div>
+        <div className="brand-filete-bar" />
       </div>
 
       {/* Main Section */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 overflow-y-auto md:overflow-hidden custom-scrollbar">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 overflow-y-auto md:overflow-hidden custom-scrollbar p-4 md:p-6">
         
         {/* Uploads Panel */}
         <div className="flex flex-col gap-4 md:gap-5 md:overflow-y-auto md:pr-1 shrink-0">
@@ -945,11 +949,26 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
             <div className="flex gap-3">
               {!processedWorkbook ? (
                 <button
+                  type="button"
                   onClick={processFiles}
-                  disabled={isProcessing || nomenclatures.length === 0 || !loteFile || pdfFiles.length === 0}
-                  className="flex-1 bg-[#1a2332] hover:bg-[#253043] text-white py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:scale-[1.01] cursor-pointer disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed"
+                  disabled={!loteFile || pdfFiles.length === 0 || isProcessing}
+                  className={`w-full py-3.5 px-4 rounded-[11px] font-bold text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer ${
+                    !loteFile || pdfFiles.length === 0 || isProcessing
+                      ? 'bg-[#e6e9f2] text-[#9097aa] cursor-not-allowed'
+                      : 'bg-[#1f29de] hover:bg-[#1a22b8] text-white'
+                  }`}
                 >
-                  <Play size={16} /> Processar Lote
+                  {isProcessing ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin" />
+                      <span>Processando Conciliação...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={16} />
+                      <span>Iniciar Processamento</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <>
