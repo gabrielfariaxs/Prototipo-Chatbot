@@ -6,48 +6,7 @@ import { ChamadosTiCreateModal } from './ChamadosTiCreateModal'
 import { ChamadosTiDetailModal } from './ChamadosTiDetailModal'
 import { supabase } from '../../lib/supabase'
 
-const INITIAL_MOCK_CHAMADOS: ChamadoTI[] = [
-  {
-    id: '1',
-    code: 'TI-2026-101',
-    title: 'Erro ao emitir Nota Fiscal no Protheus',
-    description: 'Ao tentar faturar a nota fiscal do pedido #4920, o sistema exibe erro de comunicação com o SEFAZ.',
-    priority: 'alta',
-    status: 'pendente_aprovacao',
-    creatorName: 'Carlos Silva',
-    creatorSector: 'Financeiro',
-    approverSector: 'Gestor/Diretoria',
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
-  },
-  {
-    id: '2',
-    code: 'TI-2026-102',
-    title: 'Troca de leitor de código de barras no estoque',
-    description: 'Leitor com mau contato na porta USB no setor de conferência de carga.',
-    priority: 'media',
-    status: 'aprovado',
-    creatorName: 'Mariana Costa',
-    creatorSector: 'Estoque e logistica',
-    approverSector: 'Operações',
-    approvedBy: 'Diogo (Gestor)',
-    createdAt: new Date(Date.now() - 3600000 * 5).toISOString()
-  },
-  {
-    id: '3',
-    code: 'TI-2026-103',
-    title: 'Permissão de acesso à pasta de Qualidade',
-    description: 'Necessário liberar acesso de leitura e escrita para novos estagiários.',
-    priority: 'baixa',
-    status: 'concluido',
-    creatorName: 'Ana Souza',
-    creatorSector: 'Qualidade / RT',
-    approverSector: 'Qualidade / RT',
-    approvedBy: 'Ana Souza',
-    assignedTech: 'Equipe T.I',
-    resolutionNotes: 'Permissões concedidas via Active Directory.',
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString()
-  }
-]
+const INITIAL_MOCK_CHAMADOS: ChamadoTI[] = []
 
 export const ChamadosTiPanel: React.FC = () => {
   const [chamados, setChamados] = useState<ChamadoTI[]>([])
@@ -70,13 +29,16 @@ export const ChamadosTiPanel: React.FC = () => {
     const savedChamados = localStorage.getItem('chamados_ti_items')
     if (savedChamados) {
       try {
-        setChamados(JSON.parse(savedChamados))
+        const parsed = JSON.parse(savedChamados)
+        const cleaned = parsed.filter((c: any) => c.id !== '1' && c.id !== '2' && c.id !== '3')
+        setChamados(cleaned)
+        localStorage.setItem('chamados_ti_items', JSON.stringify(cleaned))
       } catch (e) {
-        setChamados(INITIAL_MOCK_CHAMADOS)
+        setChamados([])
       }
     } else {
-      setChamados(INITIAL_MOCK_CHAMADOS)
-      localStorage.setItem('chamados_ti_items', JSON.stringify(INITIAL_MOCK_CHAMADOS))
+      setChamados([])
+      localStorage.setItem('chamados_ti_items', JSON.stringify([]))
     }
   }, [])
 
@@ -298,27 +260,15 @@ export const ChamadosTiPanel: React.FC = () => {
         <div className="brand-filete-bar" />
       </div>
 
-      {/* Main Content - Coming Soon Notice */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center my-auto">
-        <div className="bg-white rounded-[24px] border border-[#e2e8f0] p-8 sm:p-12 max-w-[540px] w-full shadow-[0_4px_20px_rgba(18,29,43,0.05)] flex flex-col items-center">
-          <div className="w-16 h-16 rounded-[16px] bg-[#eef4fa] text-[#1b497d] flex items-center justify-center mb-6 border border-[#b3c7e0] shadow-xs">
-            <Monitor size={32} />
-          </div>
-          
-          <span className="eyebrow bg-[#1b497d]/10 text-[#1b497d] px-3 py-1 rounded-full border border-[#1b497d]/20 mb-3">
-            Módulo de Suporte T.I
-          </span>
-
-          <h2 className="font-display font-extrabold text-3xl text-[#1e293b] mb-3">
-            Sistema novo em breve...
-          </h2>
-
-          <p className="text-sm text-[#475569] leading-relaxed max-w-[420px] mb-6">
-            Estamos preparando a nova plataforma unificada para abertura e acompanhamento de solicitações técnicas de T.I.
-          </p>
-
-          <div className="w-full brand-filete-bar rounded-full" />
-        </div>
+      {/* Main Content */}
+      <div className="flex-1">
+        <ChamadosTiList 
+          chamados={getTabChamados()}
+          userSector={userSector}
+          userName={userName}
+          onSelect={(c) => setSelectedChamado(c)}
+          onOpenCreateModal={() => setIsCreateModalOpen(true)}
+        />
       </div>
 
       {/* Create Modal */}

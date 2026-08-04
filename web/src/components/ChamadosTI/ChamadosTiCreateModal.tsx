@@ -16,7 +16,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
   onClose,
   onCreate
 }) => {
-  const defaultSector = SETORES_APROVADORES.includes(userSector) ? userSector : 'Gestor/Diretoria'
+  const defaultSector = userSector === 'T.I' ? 'none' : 'none'
   const [title, setTitle] = useState('')
   const [requesterName, setRequesterName] = useState(userName || '')
   const [priority, setPriority] = useState<ChamadoPriority>('media')
@@ -178,31 +178,33 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
             </div>
           </div>
 
-          {/* Approver Sector (Optional) */}
-          <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-xl space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertCircle size={16} className="text-blue-600 shrink-0" />
-                <label className="text-xs font-bold text-blue-950 uppercase tracking-wider">
-                  Direcionar para Aprovação de (Opcional)
-                </label>
+          {/* Approver Sector (Visível apenas para usuários do setor de T.I) */}
+          {userSector === 'T.I' && (
+            <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={16} className="text-blue-600 shrink-0" />
+                  <label className="text-xs font-bold text-blue-950 uppercase tracking-wider">
+                    Direcionar para Aprovação de (Opcional)
+                  </label>
+                </div>
+                <span className="text-[10px] font-extrabold text-blue-600 uppercase bg-blue-100/80 px-2 py-0.5 rounded">Opcional T.I</span>
               </div>
-              <span className="text-[10px] font-extrabold text-blue-600 uppercase bg-blue-100/80 px-2 py-0.5 rounded">Opcional</span>
+              <p className="text-[11px] text-blue-800 leading-relaxed">
+                Selecione o gestor se a demanda exigir aprovação prévia. Caso contrário, selecione "Nenhum" para enviar direto para a T.I.
+              </p>
+              <select
+                value={approverSector}
+                onChange={(e) => setApproverSector(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-blue-300 rounded-xl text-sm font-bold text-[#1a2332] outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+              >
+                <option value="none">Nenhum / Enviar Direto para a T.I (Sem Aprovação)</option>
+                {SETORES_APROVADORES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
-            <p className="text-[11px] text-blue-800 leading-relaxed">
-              Selecione o gestor se a demanda exigir aprovação prévia. Caso contrário, selecione "Nenhum" para enviar direto para a T.I.
-            </p>
-            <select
-              value={approverSector}
-              onChange={(e) => setApproverSector(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-white border border-blue-300 rounded-xl text-sm font-bold text-[#1a2332] outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
-            >
-              <option value="none">Nenhum / Enviar Direto para a T.I (Sem Aprovação)</option>
-              {SETORES_APROVADORES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+          )}
 
           {/* Description */}
           <div>
