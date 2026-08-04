@@ -5,7 +5,7 @@ export default function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="mt-20 bg-[#ffffff] border-t border-[#e6e9f2] text-[#5b6276]">
+    <footer className="mt-20 bg-[#ffffff] border-t border-[#e2e8f0] text-[#475569]">
       {/* Signature 3px gradient bar at top */}
       <div className="brand-filete-bar" />
 
@@ -13,11 +13,11 @@ export default function Footer() {
         <BrandLockup showAppName={true} />
 
         <div className="text-center md:text-right space-y-1">
-          <p className="m-0 text-xs font-medium text-[#5b6276]">
-            &copy; {year} Arthromed & Medic Ortopedia. Todos os direitos reservados.
+          <p className="m-0 text-xs font-medium text-[#475569]">
+            &copy; {year} Grupo Medic (Holding). Todos os direitos reservados.
           </p>
-          <p className="m-0 text-[11px] font-bold text-[#9097aa] uppercase tracking-wider">
-            MedIA Corporativo &bull; Distribuição de OPME
+          <p className="m-0 text-[11px] font-bold text-[#94a3b8] uppercase tracking-wider">
+            Medic Ortopedia &bull; Arthromed Material Médico
           </p>
         </div>
       </div>

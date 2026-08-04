@@ -12,44 +12,38 @@ export const BrandLockup: React.FC<BrandLockupProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`inline-flex items-center gap-3.5 select-none min-w-[260px] ${className}`}>
-      {/* Medic Brand Representation */}
-      <div className="flex items-center gap-2">
-        {/* Medic Icon Tiles */}
-        <div className="flex gap-0.5 items-center">
-          <div className="w-2.5 h-6 bg-[#357fc4] rounded-xs" />
-          <div className="w-2.5 h-6 bg-[#4ec7ac] rounded-xs" />
-          <div className="w-2.5 h-6 bg-[#fd6192] rounded-xs" />
-        </div>
-        <div className="flex flex-col justify-center leading-none">
-          <span className={`font-display font-extrabold text-base tracking-tight ${light ? 'text-white' : 'text-[#14161f]'}`}>
-            MEDIC
-          </span>
-          <span className={`text-[9px] font-bold tracking-wider uppercase ${light ? 'text-slate-300' : 'text-[#5b6276]'}`}>
-            ORTOPEDIA
-          </span>
-        </div>
+    <div className={`inline-flex items-center gap-3.5 select-none min-w-[240px] ${className}`}>
+      {/* Texto Principal Grupo Medic (Holding) */}
+      <div className="flex flex-col justify-center leading-none">
+        <span className={`font-display font-extrabold text-base tracking-tight ${light ? 'text-white' : 'text-[#121d2b]'}`}>
+          GRUPO MEDIC
+        </span>
+        <span className={`text-[9px] font-bold tracking-wider uppercase ${light ? 'text-slate-300' : 'text-[#475569]'}`}>
+          HOLDING INSTITUCIONAL
+        </span>
       </div>
 
       {/* 1px Vertical Divider */}
-      <div className={`w-px h-7 ${light ? 'bg-white/30' : 'bg-[#e6e9f2]'}`} />
+      <div className={`w-px h-7 ${light ? 'bg-white/30' : 'bg-[#e2e8f0]'}`} />
 
-      {/* Arthromed Brand Representation */}
-      <div className="flex flex-col justify-center leading-none">
-        <span className={`font-display font-extrabold text-base tracking-tight ${light ? 'text-white' : 'text-[#1f29de]'}`}>
-          ARTHROMED
-        </span>
-        <span className={`text-[9px] font-bold tracking-wider uppercase ${light ? 'text-slate-300' : 'text-[#5b6276]'}`}>
-          TECNOLOGIA OPME
-        </span>
+      {/* Marcas Operacionais (Medic Ortopedia | Arthromed) */}
+      <div className="hidden sm:flex items-center gap-2 leading-none">
+        <div className="flex flex-col">
+          <span className={`text-[10px] font-extrabold ${light ? 'text-slate-200' : 'text-[#1b497d]'}`}>
+            Medic Ortopedia
+          </span>
+          <span className={`text-[10px] font-extrabold ${light ? 'text-slate-300' : 'text-[#17a398]'}`}>
+            Arthromed OPME
+          </span>
+        </div>
       </div>
 
       {/* Product Name Badge: MedIA */}
       {showAppName && (
         <>
-          <div className={`w-px h-5 ${light ? 'bg-white/20' : 'bg-[#e6e9f2]'}`} />
-          <div className="flex items-center gap-1 bg-[#1f29de]/10 border border-[#1f29de]/20 px-2.5 py-1 rounded-full">
-            <span className="font-display font-extrabold text-xs text-[#1f29de]">
+          <div className={`w-px h-5 ${light ? 'bg-white/20' : 'bg-[#e2e8f0]'}`} />
+          <div className="flex items-center gap-1 bg-[#1b497d]/10 border border-[#1b497d]/20 px-2.5 py-1 rounded-full">
+            <span className="font-display font-extrabold text-xs text-[#1b497d]">
               MedIA
             </span>
           </div>

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { ChevronLeft, File, FileText, Image as ImageIcon, Calendar, Loader2, Trash2 } from 'lucide-react'
+import React, { useEffect, useState, useRef } from 'react'
+import { ChevronLeft, File, FileText, Image as ImageIcon, Calendar, Loader2, Trash2, Edit, Save, X, Paperclip, Plus } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string, onBack: () => void, userRole: string, onPreviewFile?: (file: any) => void }) => {
@@ -16,6 +16,17 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
   const [status, setStatus] = useState('')
   const [urgencia, setUrgencia] = useState('')
   const [impactos, setImpactos] = useState<string[]>([])
+
+  // Edição do Relato da Não Conformidade
+  const [isEditingReport, setIsEditingReport] = useState(false)
+  const [editTitulo, setEditTitulo] = useState('')
+  const [editSetor, setEditSetor] = useState('')
+  const [editDescricao, setEditDescricao] = useState('')
+  const [editUrgencia, setEditUrgencia] = useState('')
+
+  // Anexo de novas evidências
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingEvidence, setUploadingEvidence] = useState(false)
 
   const handleImpactoToggle = (val: string) => {
     if (userRole !== 'coo') return;
@@ -44,10 +55,103 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
       setStatus(data.status || '')
       setUrgencia(data.urgencia || '')
       setImpactos(data.impacto || [])
+
+      setEditTitulo(data.titulo || '')
+      setEditSetor(data.setor || '')
+      setEditDescricao(data.descricao || '')
+      setEditUrgencia(data.urgencia || 'Média')
     } else {
       console.error('Erro ao buscar gargalo:', error)
     }
     setLoading(false)
+  }
+
+  const handleUploadNewEvidence = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    setUploadingEvidence(true)
+
+    const newFiles = Array.from(e.target.files)
+    const uploadedEvidencias: any[] = []
+
+    for (const file of newFiles) {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('evidencias')
+        .upload(fileName, file)
+        
+      if (uploadData) {
+        const { data: publicUrlData } = supabase.storage
+          .from('evidencias')
+          .getPublicUrl(fileName)
+          
+        uploadedEvidencias.push({
+          name: file.name,
+          type: file.type,
+          url: publicUrlData.publicUrl
+        })
+      } else {
+        // Fallback Base64 data URL
+        const base64Url = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(file)
+        })
+        uploadedEvidencias.push({
+          name: file.name,
+          type: file.type,
+          url: base64Url
+        })
+      }
+    }
+
+    const existingEvidencias = gargalo.evidencias || []
+    const combined = [...existingEvidencias, ...uploadedEvidencias]
+
+    const { error } = await supabase
+      .from('gargalos')
+      .update({ evidencias: combined, updated_at: new Date().toISOString() })
+      .eq('id', id)
+
+    setUploadingEvidence(false)
+    if (!error) {
+      alert('Nova(s) evidência(s) anexada(s) com sucesso!')
+      setGargalo((prev: any) => ({ ...prev, evidencias: combined }))
+    } else {
+      alert('Erro ao salvar nova evidência.')
+      console.error(error)
+    }
+  }
+
+  const handleSaveReportEdit = async () => {
+    setSaving(true)
+    const { error } = await supabase
+      .from('gargalos')
+      .update({
+        titulo: editTitulo,
+        setor: editSetor,
+        descricao: editDescricao,
+        urgencia: editUrgencia,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+
+    setSaving(false)
+    if (!error) {
+      alert('Não conformidade atualizada com sucesso!')
+      setGargalo((prev: any) => ({
+        ...prev,
+        titulo: editTitulo,
+        setor: editSetor,
+        descricao: editDescricao,
+        urgencia: editUrgencia
+      }))
+      setIsEditingReport(false)
+    } else {
+      alert('Erro ao atualizar não conformidade.')
+      console.error(error)
+    }
   }
 
   const handleSave = async () => {
@@ -116,88 +220,208 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
           <ChevronLeft size={16} strokeWidth={3} /> Voltar para a fila
         </button>
 
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
-        >
-          <Trash2 size={16} strokeWidth={2.5} /> Excluir Não Conformidade
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsEditingReport(!isEditingReport)}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+          >
+            {isEditingReport ? <X size={16} strokeWidth={2.5} /> : <Edit size={16} strokeWidth={2.5} />}
+            <span>{isEditingReport ? 'Cancelar Edição' : 'Editar Não Conformidade'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="flex items-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+          >
+            <Trash2 size={16} strokeWidth={2.5} /> Excluir
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col xl:grid xl:grid-cols-[1fr_450px] gap-8 items-start">
-        {/* Left Column: Details */}
-        <div className="bg-white rounded-[1.5rem] p-5 md:p-8 border border-slate-100 shadow-sm flex flex-col gap-6">
-          <div className="flex flex-col gap-4 mb-2">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Relato do Líder</span>
+        {/* Left Column: Details or Edit Form */}
+        <div className="bg-white rounded-[1.5rem] p-5 md:p-8 border border-slate-100 shadow-sm flex flex-col gap-6 w-full">
+          {isEditingReport ? (
+            /* Formulário de Edição da Não Conformidade */
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 className="text-lg font-bold text-[#14161f]">Editar Registro de Não Conformidade</h2>
+                <span className="eyebrow bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-200">Modo de Edição</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="eyebrow block mb-1.5">Título da Não Conformidade *</label>
+                  <input
+                    type="text"
+                    value={editTitulo}
+                    onChange={(e) => setEditTitulo(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:bg-white focus:border-[#1f29de]"
+                  />
+                </div>
+
+                <div>
+                  <label className="eyebrow block mb-1.5">Setor Envolvido *</label>
+                  <input
+                    type="text"
+                    value={editSetor}
+                    onChange={(e) => setEditSetor(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:bg-white focus:border-[#1f29de]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="eyebrow block mb-1.5">Nível de Urgência *</label>
+                <select
+                  value={editUrgencia}
+                  onChange={(e) => setEditUrgencia(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:bg-white focus:border-[#1f29de]"
+                >
+                  <option value="Baixa">Baixa</option>
+                  <option value="Média">Média</option>
+                  <option value="Alta">Alta</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="eyebrow block mb-1.5">Descrição do Problema *</label>
+                <textarea
+                  rows={5}
+                  value={editDescricao}
+                  onChange={(e) => setEditDescricao(e.target.value)}
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1f29de] resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingReport(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveReportEdit}
+                  disabled={saving}
+                  className="px-5 py-2.5 bg-[#1f29de] hover:bg-[#12345b] text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  <span>Salvar Alterações</span>
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {gargalo.urgencia && (
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider
-                    ${gargalo.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
-                      gargalo.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
-                      'bg-green-50 text-green-600'}`}>
-                  {gargalo.urgencia}
-                </span>
+          ) : (
+            /* Modo de Visualização do Relato */
+            <>
+              <div className="flex flex-col gap-4 mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Relato do Líder</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {gargalo.urgencia && (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider
+                        ${gargalo.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
+                          gargalo.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
+                          'bg-green-50 text-green-600'}`}>
+                      {gargalo.urgencia}
+                    </span>
+                  )}
+                  <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
+                      ${gargalo.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
+                        gargalo.status === 'Não Iniciado' ? 'bg-red-50 text-red-600' : 
+                        gargalo.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
+                        'bg-slate-100 text-slate-500'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      gargalo.status === 'Em Andamento' ? 'bg-blue-500' : 
+                      gargalo.status === 'Não Iniciado' ? 'bg-red-500' : 
+                      gargalo.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
+                    }`}></div>
+                    {gargalo.status}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-extrabold text-[#1a2332] tracking-tight leading-tight mt-1">{gargalo.titulo}</h1>
+                <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 mt-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Setor</span>
+                    <span className="text-sm font-bold text-[#1a2332]">{gargalo.setor}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Responsável</span>
+                    <span className="text-sm font-bold text-[#1a2332]">{gargalo.autor_nome}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Registro</span>
+                    <span className="text-sm font-bold text-[#1a2332]">{formatDate(gargalo.data_registro)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100 w-full"></div>
+
+              <div className="flex flex-col gap-2">
+                <h3 className="font-bold text-[#1a2332] text-[15px]">Descrição do Problema</h3>
+                <p className="text-slate-600 text-[15px] leading-relaxed break-words">{gargalo.descricao}</p>
+              </div>
+
+              {gargalo.consequencias && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <h3 className="font-bold text-[#1a2332] text-[15px]">Consequências</h3>
+                  <p className="text-slate-600 text-[15px] leading-relaxed">{gargalo.consequencias}</p>
+                </div>
               )}
-              <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold
-                  ${gargalo.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
-                    gargalo.status === 'Não Iniciado' ? 'bg-red-50 text-red-600' : 
-                    gargalo.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
-                    'bg-slate-100 text-slate-500'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  gargalo.status === 'Em Andamento' ? 'bg-blue-500' : 
-                  gargalo.status === 'Não Iniciado' ? 'bg-red-500' : 
-                  gargalo.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
-                }`}></div>
-                {gargalo.status}
-              </span>
+
+              {gargalo.causa_provavel && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <h3 className="font-bold text-[#1a2332] text-[15px]">Causa Provável</h3>
+                  <p className="text-slate-600 text-[15px] leading-relaxed">{gargalo.causa_provavel}</p>
+                </div>
+              )}
+
+              {gargalo.sugestao_lider && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <h3 className="font-bold text-[#1a2332] text-[15px]">Sugestão do Líder</h3>
+                  <div className="bg-amber-50/50 border border-amber-200/60 rounded-xl p-5">
+                    <p className="text-amber-800 text-[15px] leading-relaxed font-medium">{gargalo.sugestao_lider}</p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-[#1a2332] text-[15px] flex items-center gap-2">
+                <span>Evidências Anexadas</span>
+                {gargalo.evidencias?.length > 0 && (
+                  <span className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-extrabold">
+                    {gargalo.evidencias.length}
+                  </span>
+                )}
+              </h3>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingEvidence}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {uploadingEvidence ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
+                <span>{uploadingEvidence ? 'Anexando...' : '+ Anexar Evidência'}</span>
+              </button>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleUploadNewEvidence} 
+                multiple 
+                className="hidden" 
+              />
             </div>
-            <h1 className="text-2xl font-extrabold text-[#1a2332] tracking-tight leading-tight mt-1">{gargalo.titulo}</h1>
-            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 mt-2">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Setor</span>
-                <span className="text-sm font-bold text-[#1a2332]">{gargalo.setor}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Responsável</span>
-                <span className="text-sm font-bold text-[#1a2332]">{gargalo.autor_nome}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Registro</span>
-                <span className="text-sm font-bold text-[#1a2332]">{formatDate(gargalo.data_registro)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="h-px bg-slate-100 w-full"></div>
-
-          <div className="flex flex-col gap-2">
-            <h3 className="font-bold text-[#1a2332] text-[15px]">Descrição do Problema</h3>
-            <p className="text-slate-600 text-[15px] leading-relaxed break-words">{gargalo.descricao}</p>
-          </div>
-
-
-
-          <div className="flex flex-col gap-2 mt-2">
-            <h3 className="font-bold text-[#1a2332] text-[15px]">Consequências</h3>
-            <p className="text-slate-600 text-[15px] leading-relaxed">{gargalo.consequencias}</p>
-          </div>
-
-          <div className="flex flex-col gap-2 mt-2">
-            <h3 className="font-bold text-[#1a2332] text-[15px]">Causa Provável</h3>
-            <p className="text-slate-600 text-[15px] leading-relaxed">{gargalo.causa_provavel}</p>
-          </div>
-
-          <div className="flex flex-col gap-2 mt-2">
-            <h3 className="font-bold text-[#1a2332] text-[15px]">Sugestão do Líder</h3>
-            <div className="bg-amber-50/50 border border-amber-200/60 rounded-xl p-5">
-              <p className="text-amber-800 text-[15px] leading-relaxed font-medium">{gargalo.sugestao_lider}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 mt-2">
-            <h3 className="font-bold text-[#1a2332] text-[15px]">Evidências Anexadas</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-1">
               {gargalo.evidencias && gargalo.evidencias.length > 0 ? (
                 gargalo.evidencias.map((ev: any, idx: number) => (

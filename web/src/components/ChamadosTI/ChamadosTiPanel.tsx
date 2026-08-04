@@ -300,20 +300,20 @@ export const ChamadosTiPanel: React.FC = () => {
 
       {/* Main Content - Coming Soon Notice */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center my-auto">
-        <div className="bg-white rounded-[24px] border border-[#e6e9f2] p-8 sm:p-12 max-w-[540px] w-full shadow-[0_4px_22px_rgba(20,22,31,0.06)] flex flex-col items-center">
-          <div className="w-16 h-16 rounded-[16px] bg-[#eef0fe] text-[#1f29de] flex items-center justify-center mb-6 border border-[#c3c7fb] shadow-xs">
+        <div className="bg-white rounded-[24px] border border-[#e2e8f0] p-8 sm:p-12 max-w-[540px] w-full shadow-[0_4px_20px_rgba(18,29,43,0.05)] flex flex-col items-center">
+          <div className="w-16 h-16 rounded-[16px] bg-[#eef4fa] text-[#1b497d] flex items-center justify-center mb-6 border border-[#b3c7e0] shadow-xs">
             <Monitor size={32} />
           </div>
           
-          <span className="eyebrow bg-[#1f29de]/10 text-[#1f29de] px-3 py-1 rounded-full border border-[#1f29de]/20 mb-3">
+          <span className="eyebrow bg-[#1b497d]/10 text-[#1b497d] px-3 py-1 rounded-full border border-[#1b497d]/20 mb-3">
             Módulo de Suporte T.I
           </span>
 
-          <h2 className="font-display font-extrabold text-3xl text-[#14161f] mb-3">
+          <h2 className="font-display font-extrabold text-3xl text-[#1e293b] mb-3">
             Sistema novo em breve...
           </h2>
 
-          <p className="text-sm text-[#5b6276] leading-relaxed max-w-[420px] mb-6">
+          <p className="text-sm text-[#475569] leading-relaxed max-w-[420px] mb-6">
             Estamos preparando a nova plataforma unificada para abertura e acompanhamento de solicitações técnicas de T.I.
           </p>
 

@@ -5,43 +5,45 @@
 @import 'tw-animate-css';
 
 :root {
-  /* Neutros (base da interface) */
+  /* Grupo Medic (Holding) — Neutros */
   --surface: #ffffff;
   --surface-2: #fafbfe;
-  --canvas: #f5f7fb;
-  --line: #e6e9f2;
-  --line-soft: #eef1f8;
-  --ink: #14161f;
-  --ink-2: #5b6276;
-  --ink-3: #9097aa;
-  --grafite: #2b2d32;        /* comum às duas marcas; só em superfície escura */
+  --canvas: #f4f6fa;
+  --line: #e2e8f0;
+  --line-soft: #edf2f7;
+  --ink: #1e293b;
+  --ink-2: #475569;
+  --ink-3: #94a3b8;
+  --grafite: #121d2b;
 
-  /* Ação (Arthromed) */
-  --acao: #1f29de;
-  --acao-hover: #1a22b8;
-  --acao-tint: #eef0fe;
-  --acao-tint-line: #c3c7fb;
+  /* Cores Proprietárias Grupo Medic (Holding) */
+  --color-holding-primary: #1b497d; /* Fusão Navy Arthromed + Azul Medic */
+  --color-holding-dark: #121d2b;    /* Azul Grafite de Comando */
+  --color-holding-teal: #17a398;    /* Interpolação Teal */
+  
+  --acao: #1b497d;
+  --acao-hover: #12345b;
+  --acao-tint: #eef4fa;
+  --acao-tint-line: #b3c7e0;
   --on-acao: #ffffff;
 
-  /* Acento de conversão (Arthromed) */
-  --verde: #06df82;
-  --verde-hover: #05b96c;
+  /* Financeiro & Sucesso */
+  --verde: #059669;
+  --verde-hover: #047857;
 
-  /* Acentos Medic — paleta categórica: setores, linhas de produto, séries de gráfico */
-  --m-azul: #357fc4;
-  --m-verde: #4ec7ac;
-  --m-rosa: #fd6192;
-  --m-amarelo: #f4be56;
-  --m-roxo: #664ba6;
+  /* Acentos Harmônicos Disciplinados */
+  --accent-coral: #e05263;
+  --accent-amber: #e5a137;
+  --accent-purple: #6b5b95;
 
   /* Semânticos */
-  --success: #067247; --success-bg: #e6fdf2; --success-bd: #93f6c8;
-  --warning: #92500a; --warning-bg: #fef4e6; --warning-bd: #f9d9a8;
-  --danger: #b42121;  --danger-bg: #feecec;  --danger-bd: #f7b4b4; --danger-solid: #dc2f2f;
-  --info: #1a22b8;    --info-bg: #eef0fe;    --info-bd: #c3c7fb;
+  --success: #059669; --success-bg: #e6fdf5; --success-bd: #a7f3d0;
+  --warning: #d97706; --warning-bg: #fffbeb; --warning-bd: #fde68a;
+  --danger: #dc2626;  --danger-bg: #fef2f2;  --danger-bd: #fecaca; --danger-solid: #dc2626;
+  --info: #1b497d;    --info-bg: #eef4fa;    --info-bd: #b3c7e0;
 
-  /* Assinatura das interfaces */
-  --filete: linear-gradient(90deg,#1f29de 0%,#0e8fb8 28%,#06df82 52%,#f4be56 78%,#fd6192 100%);
+  /* Gradiente Assinatura da Holding Grupo Medic */
+  --filete: linear-gradient(135deg, #121d2b 0%, #1b497d 55%, #17a398 100%);
 
   /* Tipografia */
   --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -49,12 +51,12 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* Forma */
-  --r-sm: 8px; --r-md: 11px; --r-lg: 16px; --r-xl: 24px; --r-pill: 999px;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-pill: 999px;
 
-  /* Sombras (neutras, elevação baixa) */
-  --sh-sm: 0 1px 3px rgba(20,22,31,.07);
-  --sh-md: 0 4px 22px rgba(20,22,31,.06);
-  --sh-lg: 0 24px 60px rgba(20,22,31,.16);
+  /* Sombras */
+  --sh-sm: 0 1px 3px rgba(18,29,43,.06);
+  --sh-md: 0 4px 20px rgba(18,29,43,.05);
+  --sh-lg: 0 20px 50px rgba(18,29,43,.12);
 
   /* Movimento */
   --ease: cubic-bezier(.2,.7,.2,1);
@@ -66,27 +68,27 @@
   --card-foreground: var(--ink);
   --popover: var(--surface);
   --popover-foreground: var(--ink);
-  --primary: var(--acao);
-  --primary-foreground: var(--on-acao);
+  --primary: var(--color-holding-primary);
+  --primary-foreground: #ffffff;
   --secondary: var(--surface-2);
   --secondary-foreground: var(--ink);
   --muted: var(--surface-2);
   --muted-foreground: var(--ink-2);
   --accent: var(--acao-tint);
-  --accent-foreground: var(--acao);
+  --accent-foreground: var(--color-holding-primary);
   --destructive: var(--danger-solid);
   --destructive-foreground: #ffffff;
   --border: var(--line);
   --input: var(--line);
-  --ring: var(--acao);
-  --radius: 11px;
+  --ring: var(--color-holding-primary);
+  --radius: 10px;
 
   /* Gráficos */
-  --chart-1: #1f29de;
-  --chart-2: #0e8fb8;
-  --chart-3: #06df82;
-  --chart-4: #f4be56;
-  --chart-5: #fd6192;
+  --chart-1: #1b497d;
+  --chart-2: #17a398;
+  --chart-3: #059669;
+  --chart-4: #e5a137;
+  --chart-5: #e05263;
 }
 
 @theme inline {
@@ -108,35 +110,6 @@ body {
 .font-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
-.text-display {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 3.25rem;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-
-.text-h1 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 2rem;
-  line-height: 1.15;
-}
-
-.text-h2 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.5rem;
-  line-height: 1.2;
-}
-
-.text-h3 {
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 1.25rem;
-  line-height: 1.3;
-}
-
 .eyebrow {
   font-family: var(--font-ui);
   font-weight: 700;
@@ -146,7 +119,7 @@ body {
   color: var(--ink-2);
 }
 
-/* Assinatura Filete 3px */
+/* Assinatura Filete Gradiente Holding */
 .brand-filete-bar {
   height: 3px;
   width: 100%;
@@ -156,14 +129,14 @@ body {
 /* Botões */
 .btn-primary {
   height: 44px;
-  padding: 0 20px;
+  padding: 0 24px;
   border-radius: var(--r-md);
-  background-color: var(--acao);
-  color: var(--on-acao);
+  background-color: var(--color-holding-primary);
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.875rem;
   display: inline-flex;
-  items-center: center;
+  align-items: center;
   justify-content: center;
   gap: 8px;
   transition: background-color 200ms var(--ease);
@@ -174,17 +147,17 @@ body {
   background-color: var(--acao-hover);
 }
 
-/* Botão de conversão (Verde) - TEXTO SEMPRE GRAFITE #14161f */
+/* Botão Financeiro / Sucesso */
 .btn-conversion {
   height: 44px;
-  padding: 0 20px;
+  padding: 0 24px;
   border-radius: var(--r-md);
   background-color: var(--verde);
-  color: var(--ink); /* Nunca branco */
+  color: #ffffff;
   font-weight: 700;
   font-size: 0.875rem;
   display: inline-flex;
-  items-center: center;
+  align-items: center;
   justify-content: center;
   gap: 8px;
   transition: all 200ms var(--ease);
@@ -193,79 +166,14 @@ body {
 }
 .btn-conversion:hover {
   background-color: var(--verde-hover);
-  color: #ffffff;
 }
 
-.btn-secondary {
-  height: 44px;
-  padding: 0 20px;
-  border-radius: var(--r-md);
+/* Cards com borda lateral de 5px em KPIs */
+.holding-kpi {
   background-color: var(--surface);
   border: 1px solid var(--line);
-  color: var(--ink);
-  font-weight: 600;
-  font-size: 0.875rem;
-  display: inline-flex;
-  items-center: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 200ms var(--ease);
-  cursor: pointer;
-}
-.btn-secondary:hover {
-  border-color: var(--acao);
-  color: var(--acao);
-}
-
-.btn-ghost {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--r-md);
-  background: transparent;
-  color: var(--acao);
-  font-weight: 600;
-  font-size: 0.875rem;
-  display: inline-flex;
-  items-center: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background-color 200ms var(--ease);
-  cursor: pointer;
-  border: none;
-}
-.btn-ghost:hover {
-  background-color: var(--acao-tint);
-}
-
-/* Inputs */
-.ui-input {
-  height: 44px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--line);
-  background-color: var(--surface);
-  padding: 0 14px;
-  font-size: 0.875rem;
-  color: var(--ink);
-  outline: none;
-  transition: all 200ms var(--ease);
-}
-.ui-input:focus {
-  border-color: var(--acao);
-  box-shadow: 0 0 0 3px rgba(31, 41, 222, 0.16);
-}
-
-/* Card */
-.ui-card {
-  background-color: var(--surface);
+  border-left: 5px solid var(--color-holding-primary);
   border-radius: var(--r-lg);
-  border: 1px solid var(--line);
-  box-shadow: var(--sh-md);
-}
-
-/* Liquid Glass Exceção */
-.liquid-glass {
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(20px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), var(--sh-md);
+  padding: 20px;
+  box-shadow: var(--sh-sm);
 }

@@ -169,11 +169,6 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
                       <option key={sec} value={sec}>{sec}</option>
                     ))}
                   </select>
-                  {sector && (
-                    <span className="text-[11px] font-mono text-[#9097aa] mt-1.5 block">
-                      E-mail: {getEmailFromSector(sector)}
-                    </span>
-                  )}
                 </div>
 
                 {/* Perfil */}
