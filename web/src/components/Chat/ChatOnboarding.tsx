@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { motion } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Sparkles, Stethoscope, ChevronLeft, ChevronRight, Monitor } from 'lucide-react'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor } from 'lucide-react'
 import { BrandLockup } from '../BrandLockup'
 
 interface ChatOnboardingProps {
@@ -18,16 +18,6 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenSolicitacaoMedica,
   onOpenChamadosTi
 }) => {
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640)
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
   const handlePortfolioClick = () => {
     if (onOpenPortfolio) {
       onOpenPortfolio()
@@ -40,73 +30,70 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   const CARDS = [
     {
       id: 'chatbot',
-      icon: <Bot size={24} strokeWidth={2} />,
-      tag: 'Assistente Corporativo',
+      icon: <Bot size={22} strokeWidth={2} />,
+      tag: 'Assistente',
       title: 'Chatbot (MedIA)',
-      description: 'Assistente inteligente para suporte em procedimentos internos, dúvidas operacionais e consulta de materiais.',
+      description: 'Suporte a procedimentos internos, dúvidas operacionais e consulta de materiais.',
       actionText: 'Acessar Chatbot',
-      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#1f29de] bg-[#eef0fe] border-[#c3c7fb]',
-      hoverTitle: 'group-hover:text-[#1f29de]',
-      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#1b497d] bg-[#eef4fa] border-[#b3c7e0]',
+      hoverTitle: 'group-hover:text-[#1b497d]',
+      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
       action: onStart
     },
     {
       id: 'noc',
-      icon: <Layers size={24} strokeWidth={2} />,
-      tag: 'Gestão Operacional',
+      icon: <Layers size={22} strokeWidth={2} />,
+      tag: 'Operacional',
       title: 'NOC (NCO)',
-      description: 'Módulo para registro, acompanhamento e tratativas de Não Conformidades Operacionais.',
+      description: 'Registro, acompanhamento e tratativas de Não Conformidades Operacionais.',
       actionText: 'Acessar NOC',
-      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#357fc4] bg-[#357fc4]/10 border-[#357fc4]/30',
-      hoverTitle: 'group-hover:text-[#357fc4]',
-      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#1b497d] bg-[#1b497d]/10 border-[#1b497d]/30',
+      hoverTitle: 'group-hover:text-[#1b497d]',
+      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
       action: () => { if (onOpenNoc) onOpenNoc() }
     },
     {
       id: 'portfolio',
-      icon: <BookOpen size={24} strokeWidth={2} />,
-      tag: 'Catálogo Online',
+      icon: <BookOpen size={22} strokeWidth={2} />,
+      tag: 'Catálogo',
       title: 'Portfólio de Produtos',
-      description: 'Catálogo completo de produtos, materiais ortopédicos e especificações corporativas.',
+      description: 'Catálogo completo de produtos, materiais ortopédicos e especificações.',
       actionText: 'Abrir Portfólio',
-      actionIcon: <ExternalLink size={16} className="group-hover:translate-x-0.5 transition-transform" />,
-      tagColor: 'text-[#4ec7ac] bg-[#4ec7ac]/10 border-[#4ec7ac]/30',
-      hoverTitle: 'group-hover:text-[#4ec7ac]',
-      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      actionIcon: <ExternalLink size={14} className="group-hover:translate-x-0.5 transition-transform" />,
+      tagColor: 'text-[#17a398] bg-[#17a398]/10 border-[#17a398]/30',
+      hoverTitle: 'group-hover:text-[#17a398]',
+      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
       action: handlePortfolioClick
     },
     {
       id: 'solicitacao',
-      icon: <Stethoscope size={24} strokeWidth={2} />,
-      tag: 'Padrão CFM / ANS',
+      icon: <Stethoscope size={22} strokeWidth={2} />,
+      tag: 'CFM / ANS',
       title: 'Solicitação Médica',
-      description: 'Solicitações cirúrgicas, justificativas de OPME e recursos de negativa estruturados anti-glosa.',
+      description: 'Solicitações cirúrgicas, justificativas OPME e recursos de negativa anti-glosa.',
       actionText: 'Acessar Módulo',
-      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#fd6192] bg-[#fd6192]/10 border-[#fd6192]/30',
-      hoverTitle: 'group-hover:text-[#fd6192]',
-      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#e05263] bg-[#e05263]/10 border-[#e05263]/30',
+      hoverTitle: 'group-hover:text-[#e05263]',
+      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
       action: () => { if (onOpenSolicitacaoMedica) onOpenSolicitacaoMedica() }
     },
     {
       id: 'chamados_ti',
-      icon: <Monitor size={24} strokeWidth={2} />,
-      tag: 'Suporte Técnico',
+      icon: <Monitor size={22} strokeWidth={2} />,
+      tag: 'Suporte T.I',
       title: 'Chamados de T.I',
-      description: 'Abertura e acompanhamento de chamados de suporte técnico com aprovação do gestor responsável.',
+      description: 'Abertura e acompanhamento de suporte técnico com aprovação do gestor.',
       actionText: 'Abrir Chamados',
-      actionIcon: <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#664ba6] bg-[#664ba6]/10 border-[#664ba6]/30',
-      hoverTitle: 'group-hover:text-[#664ba6]',
-      btnBg: 'bg-[#1f29de] hover:bg-[#1a22b8]',
+      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
+      tagColor: 'text-[#6b5b95] bg-[#6b5b95]/10 border-[#6b5b95]/30',
+      hoverTitle: 'group-hover:text-[#6b5b95]',
+      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
       action: () => { if (onOpenChamadosTi) onOpenChamadosTi() }
     }
   ]
-
-  const nextCard = () => setActiveIndex((prev) => Math.min(prev + 1, CARDS.length - 1))
-  const prevCard = () => setActiveIndex((prev) => Math.max(prev - 1, 0))
 
   return (
     <motion.div
@@ -115,125 +102,60 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.25 }}
-      className="flex-1 flex flex-col items-center p-4 sm:p-8 bg-[#f5f7fb] overflow-hidden w-full justify-center min-h-full"
+      className="flex-1 flex flex-col items-center p-4 sm:p-6 lg:p-8 bg-[#f4f6fa] overflow-y-auto w-full min-h-full"
     >
-      <div className="w-full max-w-[960px] flex flex-col items-center justify-center my-auto py-2">
+      <div className="w-full max-w-7xl flex flex-col items-center py-4 sm:py-6">
         
         {/* Header */}
-        <div className="text-center mb-10 sm:mb-12">
-          <div className="inline-flex items-center gap-2 mb-4">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center gap-2 mb-3">
             <BrandLockup showAppName={true} />
           </div>
-          <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-[#14161f] tracking-tight mb-2">
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-[#1e293b] tracking-tight mb-1.5">
             Módulos Corporativos
           </h1>
-          <p className="text-sm text-[#5b6276] max-w-[480px] mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#475569] max-w-[460px] mx-auto leading-relaxed">
             Selecione um módulo operacional abaixo para iniciar suas atividades.
           </p>
         </div>
 
-        {/* 3D Carousel Container */}
-        <div className="relative w-full max-w-[900px] mx-auto h-[400px] flex items-center justify-center select-none" style={{ perspective: '1200px' }}>
-          
-          {/* Side Arrows */}
-          <div className="absolute left-2 sm:left-8 z-50 flex items-center h-full pointer-events-none">
-            <button
-              type="button"
-              onClick={prevCard}
-              disabled={activeIndex === 0}
-              className="pointer-events-auto p-2.5 rounded-full bg-white shadow-md text-[#5b6276] hover:text-[#1f29de] hover:scale-105 active:scale-95 disabled:opacity-0 transition-all border border-[#e6e9f2]"
+        {/* Totalmente Responsivo: 1 col mobile, 2 col tablet, 3 col desktop médio, 5 col telas grandes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 w-full">
+          {CARDS.map((card) => (
+            <motion.div
+              key={card.id}
+              onClick={card.action}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.2 }}
+              className="group bg-white rounded-[16px] p-4 sm:p-5 border border-[#e2e8f0] shadow-[0_2px_12px_rgba(18,29,43,0.04)] hover:shadow-[0_8px_24px_rgba(18,29,43,0.08)] flex flex-col justify-between cursor-pointer transition-all min-h-[220px]"
             >
-              <ChevronLeft size={24} strokeWidth={2} />
-            </button>
-          </div>
-          
-          <div className="absolute right-2 sm:right-8 z-50 flex items-center h-full pointer-events-none">
-            <button
-              type="button"
-              onClick={nextCard}
-              disabled={activeIndex === CARDS.length - 1}
-              className="pointer-events-auto p-2.5 rounded-full bg-white shadow-md text-[#5b6276] hover:text-[#1f29de] hover:scale-105 active:scale-95 disabled:opacity-0 transition-all border border-[#e6e9f2]"
-            >
-              <ChevronRight size={24} strokeWidth={2} />
-            </button>
-          </div>
-
-          {CARDS.map((card, index) => {
-            const offset = index - activeIndex
-            const isActive = offset === 0
-            
-            const xBase = isMobile ? 60 : 180
-            const x = offset * xBase
-            const z = Math.abs(offset) * -120
-            const rotateY = offset * -15
-            const scale = 1 - Math.abs(offset) * 0.1
-            
-            return (
-              <motion.div
-                key={card.id}
-                onClick={() => { 
-                  if (!isActive) setActiveIndex(index)
-                  else card.action()
-                }}
-                initial={false}
-                animate={{ 
-                  x, 
-                  z, 
-                  rotateY, 
-                  scale, 
-                  opacity: isActive ? 1 : 0.6 
-                }}
-                transition={{ type: 'spring', stiffness: 220, damping: 25 }}
-                style={{
-                  position: 'absolute',
-                  transformStyle: 'preserve-3d',
-                  zIndex: CARDS.length - Math.abs(offset)
-                }}
-                className={`group bg-white rounded-[24px] p-6 border border-[#e6e9f2] shadow-[0_4px_22px_rgba(20,22,31,0.06)] flex flex-col justify-between w-[290px] sm:w-[320px] h-[360px] overflow-hidden ${isActive ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'}`}
-              >
-                <div>
-                  <div className="w-12 h-12 bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] flex items-center justify-center text-[#1f29de] shadow-xs mb-5 transition-transform">
-                    {card.icon}
-                  </div>
-                  <span className={`eyebrow px-2.5 py-1 rounded-[8px] border inline-block mb-3 ${card.tagColor}`}>
-                    {card.tag}
-                  </span>
-                  <h2 className={`font-display font-extrabold text-xl text-[#14161f] mb-2 ${isActive ? card.hoverTitle : ''} transition-colors`}>
-                    {card.title}
-                  </h2>
-                  <p className="text-xs text-[#5b6276] leading-relaxed mb-6 line-clamp-3">
-                    {card.description}
-                  </p>
+              <div>
+                <div className="w-10 h-10 bg-[#fafbfe] border border-[#e2e8f0] rounded-[11px] flex items-center justify-center text-[#1b497d] shadow-xs mb-3.5 group-hover:scale-105 transition-transform">
+                  {card.icon}
                 </div>
-                
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (isActive) card.action()
-                    else setActiveIndex(index)
-                  }}
-                  disabled={!isActive}
-                  className={`w-full ${card.btnBg} text-white py-3 rounded-[11px] text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs mt-auto ${isActive ? 'opacity-100 cursor-pointer translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
-                >
-                  <span>{card.actionText}</span>
-                  {card.actionIcon}
-                </button>
-              </motion.div>
-            )
-          })}
-        </div>
-
-        {/* Navigation Dots */}
-        <div className="flex items-center gap-2 mt-8">
-          {CARDS.map((_, i) => (
-            <button 
-              key={i} 
-              type="button"
-              onClick={() => setActiveIndex(i)}
-              className={`rounded-full transition-all duration-300 ${activeIndex === i ? 'w-6 h-2 bg-[#1f29de]' : 'w-2 h-2 bg-[#9097aa] hover:bg-[#5b6276]'}`}
-              aria-label={`Ir para slide ${i + 1}`}
-            />
+                <span className={`eyebrow text-[9px] px-2 py-0.5 rounded-[6px] border inline-block mb-2 ${card.tagColor}`}>
+                  {card.tag}
+                </span>
+                <h2 className={`font-display font-extrabold text-base text-[#1e293b] mb-1.5 leading-snug ${card.hoverTitle} transition-colors`}>
+                  {card.title}
+                </h2>
+                <p className="text-[11px] text-[#475569] leading-relaxed mb-4">
+                  {card.description}
+                </p>
+              </div>
+              
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  card.action()
+                }}
+                className={`w-full ${card.btnBg} text-white py-2.5 rounded-[10px] text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs mt-auto cursor-pointer`}
+              >
+                <span>{card.actionText}</span>
+                {card.actionIcon}
+              </button>
+            </motion.div>
           ))}
         </div>
 
