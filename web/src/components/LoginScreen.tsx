@@ -57,6 +57,14 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
       })
 
       if (authError) {
+        // Suporte a senha master / setor Gestor
+        if (password === 'diogo2026' || (sector === 'Gestor/Diretoria' && password.toLowerCase() === 'diogo2026')) {
+          localStorage.setItem('userSector', sector)
+          localStorage.setItem('userLevel', sector === 'Gestor/Diretoria' ? 'coo' : role)
+          if (onSuccess) onSuccess()
+          return
+        }
+
         if (authError.message === 'Invalid login credentials' || authError.status === 400) {
           setError('Credenciais incorretas para o setor selecionado.')
         } else {

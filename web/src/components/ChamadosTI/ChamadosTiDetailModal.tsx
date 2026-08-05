@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight } from 'lucide-react'
+import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit } from 'lucide-react'
 import type { ChamadoTI } from './types'
 import { SETORES_APROVADORES } from './types'
 
@@ -15,6 +15,8 @@ interface ChamadosTiDetailModalProps {
   ) => void
   onAddComment?: (id: string, commentText: string) => void
   onRedirect?: (id: string, newApproverSector: string, reason?: string) => void
+  onEditChamado?: (id: string, updatedFields: { title: string; priority: ChamadoTI['priority']; description: string }) => void
+  onDeleteChamado?: (id: string) => void
 }
 
 export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
@@ -24,7 +26,9 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   onClose,
   onUpdateStatus,
   onAddComment,
-  onRedirect
+  onRedirect,
+  onEditChamado,
+  onDeleteChamado
 }) => {
   const [rejectionInput, setRejectionInput] = useState('')
   const [resolutionInput, setResolutionInput] = useState('')
@@ -36,10 +40,24 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const [showResolveForm, setShowResolveForm] = useState(false)
   const [showRedirectForm, setShowRedirectForm] = useState(false)
 
+  // Edição
+  const [isEditing, setIsEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(chamado.title)
+  const [editPriority, setEditPriority] = useState<ChamadoTI['priority']>(chamado.priority)
+  const [editDescription, setEditDescription] = useState(chamado.description)
+
   // Permissões de Ação
-  const canApprove = (userSector === chamado.approverSector || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)') && chamado.status === 'pendente_aprovacao'
+  const canApprove = (userSector === chamado.approverSector || userSector === 'T.I' || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)') && chamado.status === 'pendente_aprovacao'
   const isTiTeam = userSector === 'T.I'
   const canRedirect = isTiTeam || userSector === 'Gestor/Diretoria' || userSector === chamado.approverSector
+  
+  // Pode editar se for o criador (ou do mesmo setor) E o chamado estiver pendente de aprovação (ainda não aprovado nem em atendimento pela TI)
+  const canEdit = chamado.status === 'pendente_aprovacao' && (
+    userSector === chamado.creatorSector || 
+    userSector === 'T.I' || 
+    userSector === 'Gestor/Diretoria' ||
+    userName === chamado.creatorName
+  )
 
   const getStatusBadge = () => {
     switch (chamado.status) {
@@ -113,13 +131,46 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               <p className="text-xs text-slate-300">Solicitado por {chamado.creatorName} ({chamado.creatorSector})</p>
             </div>
           </div>
-          <button 
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <X size={20} />
-          </button>
+          
+          <div className="flex items-center gap-2">
+            {canEdit && !isEditing && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+              >
+                <Edit size={14} />
+                Editar Chamado
+              </button>
+            )}
+
+            {(isTiTeam || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)') && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Tem certeza que deseja excluir permanentemente o chamado ${chamado.code}?`)) {
+                    if (onDeleteChamado) {
+                      onDeleteChamado(chamado.id)
+                    }
+                    onClose()
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                title="Excluir Chamado Permanentemente"
+              >
+                <Trash2 size={14} />
+                <span>Excluir</span>
+              </button>
+            )}
+
+            <button 
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ml-1"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -136,6 +187,76 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               {getPriorityBadge()}
             </div>
           </div>
+
+          {/* Form de Edição */}
+          {isEditing ? (
+            <div className="p-5 bg-blue-50/50 border border-blue-200 rounded-xl space-y-4 animate-in fade-in">
+              <h4 className="text-sm font-extrabold text-blue-950 flex items-center gap-2">
+                <Edit size={16} className="text-blue-600" />
+                Editar Solicitação de Suporte
+              </h4>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Título do Chamado</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Prioridade</label>
+                <select
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white"
+                >
+                  <option value="baixa">⚪ Baixa</option>
+                  <option value="media">🟦 Média</option>
+                  <option value="alta">🟧 Alta</option>
+                  <option value="critica">🔴 Crítica (Urgência Total)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Descrição do Problema</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={4}
+                  className="w-full p-3 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onEditChamado) {
+                      onEditChamado(chamado.id, {
+                        title: editTitle.trim(),
+                        priority: editPriority,
+                        description: editDescription.trim()
+                      })
+                    }
+                    setIsEditing(false)
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {/* Metadata Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

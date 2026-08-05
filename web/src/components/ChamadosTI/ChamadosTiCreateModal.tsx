@@ -18,7 +18,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 }) => {
   const defaultSector = userSector === 'T.I' ? 'none' : 'none'
   const [title, setTitle] = useState('')
-  const [requesterName, setRequesterName] = useState(userName || '')
+  const [requesterName, setRequesterName] = useState('')
   const [priority, setPriority] = useState<ChamadoPriority>('media')
   const [approverSector, setApproverSector] = useState(defaultSector)
   const [description, setDescription] = useState('')
@@ -73,10 +73,19 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 
     const isDirectToTi = !approverSector || approverSector === 'none' || approverSector === 'Sem Aprovação (Direto T.I)'
 
-    const randomNum = Math.floor(100 + Math.random() * 900)
+    const savedItems = localStorage.getItem('chamados_ti_items')
+    let nextSeq = 1
+    if (savedItems) {
+      try {
+        const list = JSON.parse(savedItems)
+        nextSeq = list.length + 1
+      } catch (e) {}
+    }
+    const codeNum = String(nextSeq).padStart(3, '0')
+
     const newChamado: ChamadoTI = {
       id: Date.now().toString(),
-      code: `TI-2026-${randomNum}`,
+      code: `TI-2026-${codeNum}`,
       title: title.trim(),
       priority,
       status: isDirectToTi ? 'aprovado' : 'pendente_aprovacao',
@@ -143,8 +152,8 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
             />
           </div>
 
-          {/* Grid Solicitante & Prioridade */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Grid Solicitante & Setor & Prioridade */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Nome do Solicitante *
@@ -155,9 +164,21 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
                   type="text"
                   value={requesterName}
                   onChange={(e) => setRequesterName(e.target.value)}
-                  placeholder="Nome do colaborador"
+                  placeholder="Digite seu nome completo"
+                  autoFocus
                   className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Setor Solicitante
+              </label>
+              <div className="px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-extrabold text-slate-700 flex items-center gap-2 cursor-not-allowed">
+                <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                <span>{userSector || 'Geral'}</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase ml-auto">(Automático)</span>
               </div>
             </div>
 

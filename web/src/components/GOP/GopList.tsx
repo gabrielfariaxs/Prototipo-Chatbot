@@ -298,6 +298,12 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
               <h3 className="text-[17px] font-bold text-[#1a2332] mb-2 leading-tight group-hover:text-indigo-600 transition-colors">{item.titulo}</h3>
               <p className="text-slate-500 text-[13px] leading-relaxed line-clamp-2 flex-1 mb-2">{item.descricao}</p>
               
+              {(item.tratativa_autor_badge || item.tratativa_decisao || item.status === 'Resolvido' || item.status === 'Em Andamento') && (
+                <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md mt-1 w-max block">
+                  ✓ {item.tratativa_autor_badge || 'Respondido pelo Gestor de Operações'}
+                </span>
+              )}
+              
               {/* Footer */}
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
                 <div className="flex items-center gap-2 text-[12px] font-bold text-slate-400">
