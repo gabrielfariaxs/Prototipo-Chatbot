@@ -52,11 +52,12 @@ export const Route = createRootRoute({
       {
         rel: 'icon',
         type: 'image/png',
-        href: '/logo.png',
+        href: '/logo.png?v=2',
       },
       {
         rel: 'apple-touch-icon',
-        href: '/logo.png',
+        sizes: '192x192',
+        href: '/logo.png?v=2',
       },
     ],
   }),

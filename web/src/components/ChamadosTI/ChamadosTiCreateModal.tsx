@@ -152,8 +152,8 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
             />
           </div>
 
-          {/* Grid Solicitante & Setor & Prioridade */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Grid Solicitante & Setor */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Nome do Solicitante *
@@ -175,28 +175,31 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Setor Solicitante
               </label>
-              <div className="px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-extrabold text-slate-700 flex items-center gap-2 cursor-not-allowed">
-                <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                <span>{userSector || 'Geral'}</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase ml-auto">(Automático)</span>
+              <div className="px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-extrabold text-slate-700 flex items-center justify-between gap-2 cursor-not-allowed">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span>{userSector || 'Geral'}</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">(Automático)</span>
               </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Prioridade *
-              </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as ChamadoPriority)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all cursor-pointer"
-              >
-                <option value="baixa">Baixa (Dúvidas/Melhorias)</option>
-                <option value="media">Média (Impacto pontual)</option>
-                <option value="alta">Alta (Bloqueio de trabalho)</option>
-                <option value="critica">Crítica (Setor/Sistema parado)</option>
-              </select>
-            </div>
+          {/* Prioridade */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Prioridade *
+            </label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as ChamadoPriority)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all cursor-pointer"
+            >
+              <option value="baixa">Baixa (Dúvidas/Melhorias)</option>
+              <option value="media">Média (Impacto pontual no trabalho)</option>
+              <option value="alta">Alta (Bloqueio total de trabalho)</option>
+              <option value="critica">Crítica (Urgência Total / Setor Parado)</option>
+            </select>
           </div>
 
           {/* Approver Sector (Visível apenas para usuários do setor de T.I) */}

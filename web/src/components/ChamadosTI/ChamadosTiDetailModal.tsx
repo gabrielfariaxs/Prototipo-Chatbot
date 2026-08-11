@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit } from 'lucide-react'
+import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2 } from 'lucide-react'
 import type { ChamadoTI } from './types'
 import { SETORES_APROVADORES } from './types'
 
@@ -213,10 +213,10 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                   onChange={(e) => setEditPriority(e.target.value as any)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white"
                 >
-                  <option value="baixa">⚪ Baixa</option>
-                  <option value="media">🟦 Média</option>
-                  <option value="alta">🟧 Alta</option>
-                  <option value="critica">🔴 Crítica (Urgência Total)</option>
+                  <option value="baixa">Baixa</option>
+                  <option value="media">Média</option>
+                  <option value="alta">Alta</option>
+                  <option value="critica">Crítica (Urgência Total)</option>
                 </select>
               </div>
 
