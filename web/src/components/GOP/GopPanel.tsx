@@ -76,7 +76,7 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
                   Líder de Setor
                 </button>
               )}
-              {userLevel !== 'colaborador' && (userSector === 'Operações' || userSector === 'Gestor (Diogo)') && (
+              {userLevel !== 'colaborador' && (userSector === 'Operações' || userSector === 'Gestor (Diogo)' || userSector.toLowerCase().includes('qualidade')) && (
                 <button 
                   type="button"
                   onClick={() => { setActiveTab('coo'); setSelectedId(null); }}
@@ -139,7 +139,7 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
               <div className={activeTab === 'lider' ? 'block' : 'hidden'}>
                 <GopList onSelect={setSelectedId} userRole="lider" userSector={userSector} />
               </div>
-              {(userSector === 'Operações' || userSector === 'Gestor (Diogo)') && (
+              {(userSector === 'Operações' || userSector === 'Gestor (Diogo)' || userSector.toLowerCase().includes('qualidade')) && (
                 <div className={activeTab === 'coo' ? 'block' : 'hidden'}>
                   <GopList onSelect={setSelectedId} userRole="coo" userSector={userSector} />
                 </div>

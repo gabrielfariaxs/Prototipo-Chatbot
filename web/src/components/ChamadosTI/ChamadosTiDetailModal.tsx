@@ -144,7 +144,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               </button>
             )}
 
-            {(isTiTeam || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)') && (
+            {(isTiTeam || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || userName === chamado.creatorName) && (
               <button
                 type="button"
                 onClick={() => {
@@ -156,7 +156,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                   }
                 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
-                title="Excluir Chamado Permanentemente"
+                title="Excluir Chamado"
               >
                 <Trash2 size={14} />
                 <span>Excluir</span>

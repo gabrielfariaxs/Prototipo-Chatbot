@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { X, Send, AlertCircle, ShieldAlert, Monitor, Paperclip, FileText, Trash2, User } from 'lucide-react'
 import { SETORES_APROVADORES } from './types'
 import type { ChamadoPriority, ChamadoTI, ChamadoEvidenceFile } from './types'
+import { supabase } from '../../lib/supabase'
 
 interface ChamadosTiCreateModalProps {
   userSector: string
@@ -52,7 +53,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
     setEvidenceFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
@@ -73,14 +74,8 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 
     const isDirectToTi = !approverSector || approverSector === 'none' || approverSector === 'Sem Aprovação (Direto T.I)'
 
-    const savedItems = localStorage.getItem('chamados_ti_items')
-    let nextSeq = 1
-    if (savedItems) {
-      try {
-        const list = JSON.parse(savedItems)
-        nextSeq = list.length + 1
-      } catch (e) {}
-    }
+    const { count } = await supabase.from('ti_chamados').select('*', { count: 'exact', head: true })
+    const nextSeq = (count || 0) + 1
     const codeNum = String(nextSeq).padStart(3, '0')
 
     const newChamado: ChamadoTI = {
@@ -97,11 +92,9 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
       evidenceFiles: evidenceFiles.length > 0 ? evidenceFiles : undefined
     }
 
-    setTimeout(() => {
-      onCreate(newChamado)
-      setSubmitting(false)
-      onClose()
-    }, 400)
+    onCreate(newChamado)
+    setSubmitting(false)
+    onClose()
   }
 
   return (

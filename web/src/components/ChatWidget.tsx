@@ -1109,6 +1109,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       const portfolioUrl = localStorage.getItem('portfolio_url') || 'https://portifolioarthromed-medic.vercel.app'
                       window.open(portfolioUrl, '_blank')
                     }}
+                    onOpenMedicPortfolio={() => {
+                      const medicPortfolioUrl = localStorage.getItem('medic_portfolio_url') || 'https://medic-portfolio.vercel.app/'
+                      window.open(medicPortfolioUrl, '_blank')
+                    }}
                     onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
                     onOpenChamadosTi={handleSelectChamadosTiModule}
                   />

@@ -1,12 +1,13 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor } from 'lucide-react'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban } from 'lucide-react'
 import { BrandLockup } from '../BrandLockup'
 
 interface ChatOnboardingProps {
   onStart: () => void;
   onOpenNoc?: () => void;
   onOpenPortfolio?: () => void;
+  onOpenMedicPortfolio?: () => void;
   onOpenSolicitacaoMedica?: () => void;
   onOpenChamadosTi?: () => void;
 }
@@ -15,6 +16,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onStart, 
   onOpenNoc, 
   onOpenPortfolio,
+  onOpenMedicPortfolio,
   onOpenSolicitacaoMedica,
   onOpenChamadosTi
 }) => {
@@ -24,6 +26,15 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     } else {
       const portfolioUrl = localStorage.getItem('portfolio_url') || 'https://portifolioarthromed-medic.vercel.app'
       window.open(portfolioUrl, '_blank')
+    }
+  }
+
+  const handleMedicPortfolioClick = () => {
+    if (onOpenMedicPortfolio) {
+      onOpenMedicPortfolio()
+    } else {
+      const medicPortfolioUrl = localStorage.getItem('medic_portfolio_url') || 'https://medic-portfolio.vercel.app/'
+      window.open(medicPortfolioUrl, '_blank')
     }
   }
 
@@ -66,6 +77,19 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       hoverTitle: 'group-hover:text-[#17a398]',
       btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
       action: handlePortfolioClick
+    },
+    {
+      id: 'medic_portfolio',
+      icon: <FolderKanban size={22} strokeWidth={2} />,
+      tag: 'Novo Catálogo',
+      title: 'Portfólio Medic',
+      description: 'Catálogo de produtos e soluções do ecossistema Medic.',
+      actionText: 'Abrir Portfólio Medic',
+      actionIcon: <ExternalLink size={14} className="group-hover:translate-x-0.5 transition-transform" />,
+      tagColor: 'text-[#0284c7] bg-[#0284c7]/10 border-[#0284c7]/30',
+      hoverTitle: 'group-hover:text-[#0284c7]',
+      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      action: handleMedicPortfolioClick
     },
     {
       id: 'solicitacao',
@@ -119,8 +143,8 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
           </p>
         </div>
 
-        {/* Totalmente Responsivo: 1 col mobile, 2 col tablet, 3 col desktop médio, 5 col telas grandes */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 w-full">
+        {/* Totalmente Responsivo: 1 col mobile, 2 col tablet, 3 col desktop, 6 col telas grandes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4 w-full">
           {CARDS.map((card) => (
             <motion.div
               key={card.id}

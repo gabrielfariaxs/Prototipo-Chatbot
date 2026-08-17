@@ -48,38 +48,38 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
     }
   }
 
-  const KANBAN_PRIORITY_COLUMNS: { id: ChamadoPriority; label: string; bg: string; text: string; border: string; badgeBg: string }[] = [
+  const KANBAN_COLUMNS: { id: ChamadoStatus; label: string; bg: string; text: string; border: string; badgeBg: string }[] = [
     {
-      id: 'critica',
-      label: 'Classificação Crítica',
-      bg: 'bg-red-50/80',
-      text: 'text-red-900',
-      border: 'border-red-200',
-      badgeBg: 'bg-red-600 text-white'
+      id: 'pendente_aprovacao',
+      label: 'Aprovação Pendente',
+      bg: 'bg-amber-50/80',
+      text: 'text-amber-900',
+      border: 'border-amber-200',
+      badgeBg: 'bg-amber-500 text-white'
     },
     {
-      id: 'alta',
-      label: 'Classificação Alta',
-      bg: 'bg-orange-50/80',
-      text: 'text-orange-900',
-      border: 'border-orange-200',
-      badgeBg: 'bg-orange-500 text-white'
-    },
-    {
-      id: 'media',
-      label: 'Classificação Média',
+      id: 'aprovado',
+      label: 'Fila T.I (A Fazer)',
       bg: 'bg-blue-50/80',
       text: 'text-blue-900',
       border: 'border-blue-200',
       badgeBg: 'bg-blue-600 text-white'
     },
     {
-      id: 'baixa',
-      label: 'Classificação Baixa',
-      bg: 'bg-slate-100/80',
-      text: 'text-slate-800',
-      border: 'border-slate-200',
-      badgeBg: 'bg-slate-600 text-white'
+      id: 'em_atendimento',
+      label: 'Em Atendimento',
+      bg: 'bg-indigo-50/80',
+      text: 'text-indigo-900',
+      border: 'border-indigo-200',
+      badgeBg: 'bg-indigo-500 text-white'
+    },
+    {
+      id: 'concluido',
+      label: 'Concluído',
+      bg: 'bg-emerald-50/80',
+      text: 'text-emerald-900',
+      border: 'border-emerald-200',
+      badgeBg: 'bg-emerald-600 text-white'
     }
   ]
 
@@ -112,7 +112,7 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'kanban' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
             >
               <LayoutGrid size={14} />
-              <span>Quadro de Classificação</span>
+              <span>Quadro Kanban</span>
             </button>
             <button
               type="button"
@@ -178,15 +178,15 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
       ) : viewMode === 'kanban' ? (
         /* QUADRO KANBAN (4 Colunas Fluidas 100% Largura) */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 w-full">
-          {KANBAN_PRIORITY_COLUMNS.map((col) => {
-            const columnItems = filteredChamados.filter((c) => c.priority === col.id)
+          {KANBAN_COLUMNS.map((col) => {
+            const columnItems = filteredChamados.filter((c) => c.status === col.id)
 
             return (
               <div 
                 key={col.id}
                 className="bg-white rounded-2xl border border-[#e2e8f0] p-3 md:p-3.5 flex flex-col gap-3 min-h-[500px] shadow-xs w-full min-w-0"
               >
-                {/* Header da Coluna por Classificação */}
+                {/* Header da Coluna por Status */}
                 <div className={`p-3 rounded-xl border ${col.bg} ${col.border} flex items-center justify-between`}>
                   <div className="flex items-center gap-2">
                     <span className={`w-2.5 h-2.5 rounded-full ${col.badgeBg}`} />
@@ -203,7 +203,7 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                 <div className="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[680px]">
                   {columnItems.length === 0 ? (
                     <div className="p-6 border border-dashed border-slate-200 rounded-xl text-center flex flex-col items-center justify-center my-auto text-slate-400">
-                      <span className="text-xs font-medium">Nenhum chamado {col.id}</span>
+                      <span className="text-xs font-medium">Vazio</span>
                     </div>
                   ) : (
                     columnItems.map((item) => (
@@ -216,7 +216,14 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                           <span className="font-mono font-bold text-[11px] text-[#1b497d] bg-[#eef4fa] px-2 py-0.5 rounded-md border border-[#b3c7e0]">
                             {item.code}
                           </span>
-                          {getStatusBadge(item.status, item.approverSector)}
+                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded flex items-center gap-1 w-max ${
+                            item.priority === 'critica' ? 'bg-red-100 text-red-800' :
+                            item.priority === 'alta' ? 'bg-orange-100 text-orange-800' :
+                            item.priority === 'media' ? 'bg-blue-100 text-blue-800' :
+                            'bg-slate-100 text-slate-800'
+                          }`}>
+                            Prioridade {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
+                          </span>
                         </div>
 
                         <div>
