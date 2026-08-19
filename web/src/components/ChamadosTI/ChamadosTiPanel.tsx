@@ -54,10 +54,10 @@ export const ChamadosTiPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'meus' | 'aprovacoes' | 'ti' | 'historico'>('meus')
   const [historySearch, setHistorySearch] = useState('')
 
-  const [userSector, setUserSector] = useState<string>('T.I')
+  const [userSector, setUserSector] = useState<string>('')
   const [userLevel, setUserLevel] = useState<string>('lider')
-  const [userName, setUserName] = useState<string>('Usuário T.I')
-  const [userInitials, setUserInitials] = useState<string>('TI')
+  const [userName, setUserName] = useState<string>('')
+  const [userInitials, setUserInitials] = useState<string>('')
 
   const [notifications, setNotifications] = useState<TiNotification[]>([])
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false)
@@ -78,12 +78,37 @@ export const ChamadosTiPanel: React.FC = () => {
     if (notifData) setNotifications(notifData.map(mapToNotification))
   }
 
-  // Carregar setor/nível e chamados
+  // Carregar setor/nível e nome do usuário a partir do localStorage e sessão
   useEffect(() => {
-    const savedSector = localStorage.getItem('userSector') || 'Gestor/Diretoria'
+    const savedSector = localStorage.getItem('userSector') || 'Geral'
     const savedLevel = localStorage.getItem('userLevel') || 'lider'
     setUserSector(savedSector)
     setUserLevel(savedLevel)
+
+    // Mapeia o nível salvo para um rótulo legível
+    const levelLabel =
+      savedLevel === 'coo' ? 'COO/Diretoria' :
+      savedLevel === 'lider' ? 'Líder de Setor' :
+      'Colaborador'
+
+    // Deriva o nome de exibição combinando nível + setor
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const metaName = session.user.user_metadata?.full_name as string | undefined
+        const displayName = (metaName && metaName.trim())
+          ? metaName.trim()
+          : `${levelLabel} - ${savedSector}`
+        setUserName(displayName)
+        const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+        setUserInitials(initials)
+      } else {
+        // Login via senha master (sem sessão Supabase)
+        const displayName = `${levelLabel} - ${savedSector}`
+        setUserName(displayName)
+        const initials = savedSector.substring(0, 2).toUpperCase()
+        setUserInitials(initials)
+      }
+    })
 
     loadData()
 
@@ -93,17 +118,6 @@ export const ChamadosTiPanel: React.FC = () => {
     }, 10000)
 
     return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuário'
-        setUserName(name)
-        const initials = name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
-        setUserInitials(initials)
-      }
-    })
   }, [])
 
   const addNotification = async (notif: Omit<TiNotification, 'id' | 'createdAt' | 'read'>) => {
@@ -120,7 +134,7 @@ export const ChamadosTiPanel: React.FC = () => {
     }
   }
 
-  const handleCreateChamado = async (newChamado: ChamadoTI) => {
+  const handleCreateChamado = async (newChamado: ChamadoTI): Promise<void> => {
     const { data, error } = await supabase.from('ti_chamados').insert([{
       code: newChamado.code,
       title: newChamado.title,
@@ -135,7 +149,7 @@ export const ChamadosTiPanel: React.FC = () => {
 
     if (error) {
       console.error('Error creating chamado:', error)
-      return
+      throw new Error(error.message || 'Falha ao salvar chamado no banco de dados.')
     }
 
     if (data) {

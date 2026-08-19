@@ -69,7 +69,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       id: 'portfolio',
       icon: <BookOpen size={22} strokeWidth={2} />,
       tag: 'Catálogo',
-      title: 'Portfólio de Produtos',
+      title: 'Portfólio da Arthromed',
       description: 'Catálogo completo de produtos, materiais ortopédicos e especificações.',
       actionText: 'Abrir Portfólio',
       actionIcon: <ExternalLink size={14} className="group-hover:translate-x-0.5 transition-transform" />,

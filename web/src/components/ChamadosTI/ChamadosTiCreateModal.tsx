@@ -8,7 +8,7 @@ interface ChamadosTiCreateModalProps {
   userSector: string
   userName: string
   onClose: () => void
-  onCreate: (newChamado: ChamadoTI) => void
+  onCreate: (newChamado: ChamadoTI) => Promise<void>
 }
 
 export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
@@ -72,29 +72,35 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 
     setSubmitting(true)
 
-    const isDirectToTi = !approverSector || approverSector === 'none' || approverSector === 'Sem Aprovação (Direto T.I)'
+    try {
+      const isDirectToTi = !approverSector || approverSector === 'none' || approverSector === 'Sem Aprovação (Direto T.I)'
 
-    const { count } = await supabase.from('ti_chamados').select('*', { count: 'exact', head: true })
-    const nextSeq = (count || 0) + 1
-    const codeNum = String(nextSeq).padStart(3, '0')
+      const { count } = await supabase.from('ti_chamados').select('*', { count: 'exact', head: true })
+      const nextSeq = (count || 0) + 1
+      const codeNum = String(nextSeq).padStart(3, '0')
 
-    const newChamado: ChamadoTI = {
-      id: Date.now().toString(),
-      code: `TI-2026-${codeNum}`,
-      title: title.trim(),
-      priority,
-      status: isDirectToTi ? 'aprovado' : 'pendente_aprovacao',
-      description: description.trim(),
-      creatorName: requesterName.trim(),
-      creatorSector: userSector || 'Geral',
-      approverSector: isDirectToTi ? 'Sem Aprovação (Direto T.I)' : approverSector,
-      createdAt: new Date().toISOString(),
-      evidenceFiles: evidenceFiles.length > 0 ? evidenceFiles : undefined
+      const newChamado: ChamadoTI = {
+        id: Date.now().toString(),
+        code: `TI-2026-${codeNum}`,
+        title: title.trim(),
+        priority,
+        status: isDirectToTi ? 'aprovado' : 'pendente_aprovacao',
+        description: description.trim(),
+        creatorName: requesterName.trim(),
+        creatorSector: userSector || 'Geral',
+        approverSector: isDirectToTi ? 'Sem Aprovação (Direto T.I)' : approverSector,
+        createdAt: new Date().toISOString(),
+        evidenceFiles: evidenceFiles.length > 0 ? evidenceFiles : undefined
+      }
+
+      await onCreate(newChamado)
+      onClose()
+    } catch (err: any) {
+      console.error('Erro ao salvar chamado:', err)
+      setError('Erro ao salvar o chamado. Verifique sua conexão e tente novamente.')
+    } finally {
+      setSubmitting(false)
     }
-
-    onCreate(newChamado)
-    setSubmitting(false)
-    onClose()
   }
 
   return (

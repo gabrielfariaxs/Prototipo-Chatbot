@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2 } from 'lucide-react'
+import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image } from 'lucide-react'
 import type { ChamadoTI } from './types'
 import { SETORES_APROVADORES } from './types'
 
@@ -39,6 +39,9 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const [showRejectForm, setShowRejectForm] = useState(false)
   const [showResolveForm, setShowResolveForm] = useState(false)
   const [showRedirectForm, setShowRedirectForm] = useState(false)
+
+  // Lightbox de preview de anexos
+  const [previewFile, setPreviewFile] = useState<{ name: string; base64: string; type: string } | null>(null)
 
   // Edição
   const [isEditing, setIsEditing] = useState(false)
@@ -289,27 +292,77 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
           {/* Evidence Files Section */}
           {chamado.evidenceFiles && chamado.evidenceFiles.length > 0 && (
             <div>
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Paperclip size={14} className="text-blue-600" />
                 <span>Evidências / Anexos ({chamado.evidenceFiles.length})</span>
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {chamado.evidenceFiles.map((file, idx) => (
-                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 truncate">
-                      <FileText size={18} className="text-blue-600 shrink-0" />
-                      <span className="text-xs font-bold text-slate-700 truncate">{file.name}</span>
-                    </div>
+
+              {/* Image thumbnails grid */}
+              {chamado.evidenceFiles.some(f => f.type.startsWith('image/')) && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                  {chamado.evidenceFiles.filter(f => f.type.startsWith('image/')).map((file, idx) => (
                     <button
+                      key={idx}
                       type="button"
-                      onClick={() => downloadFile(file)}
-                      className="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 transition-colors"
-                      title="Baixar evidência"
+                      onClick={() => setPreviewFile(file)}
+                      className="relative group aspect-video rounded-xl overflow-hidden border border-slate-200 bg-slate-100 hover:border-blue-400 transition-all shadow-xs cursor-pointer"
+                      title={`Visualizar: ${file.name}`}
                     >
-                      <Download size={14} />
+                      <img
+                        src={`data:${file.type};base64,${file.base64}`}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-[#1a2332]/0 group-hover:bg-[#1a2332]/40 transition-all flex items-center justify-center">
+                        <ZoomIn size={22} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                      </div>
+                      <span className="absolute bottom-0 left-0 right-0 text-[9px] font-bold text-white bg-gradient-to-t from-black/70 to-transparent px-2 py-1 truncate">
+                        {file.name}
+                      </span>
                     </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+
+              {/* Full file list with preview + download buttons */}
+              <div className="space-y-2">
+                {chamado.evidenceFiles.map((file, idx) => {
+                  const isImage = file.type.startsWith('image/')
+                  const isPdf = file.type === 'application/pdf'
+                  return (
+                    <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2 hover:border-blue-300 transition-colors">
+                      <div className="flex items-center gap-2 truncate">
+                        {isImage
+                          ? <Image size={16} className="text-blue-500 shrink-0" />
+                          : <FileText size={16} className="text-red-500 shrink-0" />
+                        }
+                        <span className="text-xs font-bold text-slate-700 truncate">{file.name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                          {isImage ? 'Imagem' : isPdf ? 'PDF' : 'Arquivo'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewFile(file)}
+                          className="p-1.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Visualizar"
+                        >
+                          <ZoomIn size={14} />
+                          <span className="hidden sm:inline text-[11px]">Ver</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadFile(file)}
+                          className="p-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Baixar arquivo"
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -594,6 +647,84 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
         </div>
 
       </div>
+
+      {/* Lightbox de Preview de Anexo */}
+      {previewFile && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          onClick={() => setPreviewFile(null)}
+        >
+          {/* Header do Lightbox */}
+          <div
+            className="w-full max-w-5xl flex items-center justify-between mb-3 px-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2">
+              {previewFile.type.startsWith('image/')
+                ? <Image size={16} className="text-white" />
+                : <FileText size={16} className="text-white" />
+              }
+              <span className="text-white text-sm font-bold truncate max-w-xs sm:max-w-md">{previewFile.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => downloadFile(previewFile)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+              >
+                <Download size={14} />
+                <span>Baixar</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewFile(null)}
+                className="p-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-all cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Conteúdo do Preview */}
+          <div
+            className="w-full max-w-5xl flex-1 flex items-center justify-center overflow-hidden rounded-xl"
+            style={{ maxHeight: 'calc(100vh - 120px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {previewFile.type.startsWith('image/') ? (
+              <img
+                src={`data:${previewFile.type};base64,${previewFile.base64}`}
+                alt={previewFile.name}
+                className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                style={{ maxHeight: 'calc(100vh - 120px)' }}
+              />
+            ) : previewFile.type === 'application/pdf' ? (
+              <iframe
+                src={`data:application/pdf;base64,${previewFile.base64}`}
+                className="w-full rounded-xl shadow-2xl bg-white"
+                style={{ height: 'calc(100vh - 120px)' }}
+                title={previewFile.name}
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-4 p-8 bg-white/10 rounded-2xl border border-white/20">
+                <FileText size={48} className="text-white/60" />
+                <p className="text-white/80 text-sm font-medium">Este tipo de arquivo não pode ser pré-visualizado.</p>
+                <button
+                  type="button"
+                  onClick={() => downloadFile(previewFile)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-slate-800 rounded-xl text-sm font-bold cursor-pointer"
+                >
+                  <Download size={16} />
+                  Baixar para Visualizar
+                </button>
+              </div>
+            )}
+          </div>
+
+          <p className="text-white/40 text-xs mt-3">Clique fora para fechar</p>
+        </div>
+      )}
+
     </div>
   )
 }
