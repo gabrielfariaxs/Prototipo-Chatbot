@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
-import { Search, Filter, Plus, Clock, CheckCircle2, XCircle, Wrench, ShieldCheck, User, Calendar, Eye, Paperclip, LayoutGrid, List, MessageSquare, AlertTriangle } from 'lucide-react'
+import { Search, Filter, Plus, Clock, CheckCircle2, XCircle, Wrench, ShieldCheck, User, Calendar, Eye, Paperclip, LayoutGrid, List, MessageSquare, AlertTriangle, ChevronDown, ChevronUp, Timer, BarChart3, TrendingUp } from 'lucide-react'
 import type { ChamadoTI, ChamadoStatus, ChamadoPriority } from './types'
+import { getChamadoDurationMinutes, formatDurationShort } from './types'
 
 interface ChamadosTiListProps {
   chamados: ChamadoTI[]
   userSector: string
+  userLevel?: string
   userName: string
   onSelect: (chamado: ChamadoTI) => void
   onOpenCreateModal: () => void
@@ -13,13 +15,50 @@ interface ChamadosTiListProps {
 export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
   chamados,
   userSector,
+  userLevel,
   userName,
   onSelect,
   onOpenCreateModal
 }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('todos')
+  const [metricsPeriod, setMetricsPeriod] = useState<'24h' | '7d' | '30d' | '3m' | '6m' | 'todos'>('todos')
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
+  const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({})
+
+  const savedLevel = userLevel || localStorage.getItem('userLevel') || 'lider'
+  const isOperationsLeader = (userSector === 'Operações' || userSector === 'Operacoes') && savedLevel !== 'colaborador'
+  const isGestorOrDiretoria = userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || savedLevel === 'coo'
+  const isTiTeam = userSector === 'T.I'
+  const hasFullAccess = isTiTeam || isGestorOrDiretoria || isOperationsLeader
+
+  // Filtragem por Período para os Cards de Métricas
+  const periodChamados = chamados.filter(c => {
+    if (metricsPeriod === 'todos') return true
+    const createdMs = new Date(c.createdAt).getTime()
+    if (isNaN(createdMs)) return true
+    const diffMs = Date.now() - createdMs
+    if (metricsPeriod === '24h') return diffMs <= 24 * 60 * 60 * 1000
+    if (metricsPeriod === '7d') return diffMs <= 7 * 24 * 60 * 60 * 1000
+    if (metricsPeriod === '30d') return diffMs <= 30 * 24 * 60 * 60 * 1000
+    if (metricsPeriod === '3m') return diffMs <= 90 * 24 * 60 * 60 * 1000
+    if (metricsPeriod === '6m') return diffMs <= 180 * 24 * 60 * 60 * 1000
+    return true
+  })
+
+  // Métricas de Tempo e Atendimento baseadas no período filtrado
+  const concludedChamados = periodChamados.filter(c => c.status === 'concluido')
+  const activeChamados = periodChamados.filter(c => c.status !== 'concluido' && c.status !== 'recusado')
+  
+  const totalConcludedMinutes = concludedChamados.reduce((acc, c) => acc + getChamadoDurationMinutes(c), 0)
+  const avgResolutionMinutes = concludedChamados.length > 0 ? Math.round(totalConcludedMinutes / concludedChamados.length) : 0
+
+  const totalActiveMinutes = activeChamados.reduce((acc, c) => acc + getChamadoDurationMinutes(c), 0)
+  const avgActiveMinutes = activeChamados.length > 0 ? Math.round(totalActiveMinutes / activeChamados.length) : 0
+
+  const toggleExpandColumn = (colId: string) => {
+    setExpandedColumns((prev) => ({ ...prev, [colId]: !prev[colId] }))
+  }
 
   const filteredChamados = chamados.filter((item) => {
     const matchesSearch = 
@@ -84,8 +123,98 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
   ]
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-5 w-full max-w-none">
-      
+    <div className="p-3 sm:p-4 md:p-6 pb-20 space-y-5 w-full max-w-none">
+      {/* KPI Metrics Summary Cards (Apenas Visível para T.I, Líder de Operações e Gestor/Diretoria) */}
+      {hasFullAccess && (
+        <div className="space-y-2.5">
+          {/* Header das Métricas com Filtro de Período */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <BarChart3 size={15} className="text-[#1b497d]" />
+              <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                Métricas de Atendimento
+              </h4>
+            </div>
+
+            {/* Seletor de Período */}
+            <div className="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-2xs self-start sm:self-auto flex-wrap">
+              <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Período:</span>
+              {[
+                { id: '24h', label: '24 Horas' },
+                { id: '7d', label: '7 Dias' },
+                { id: '30d', label: '30 Dias' },
+                { id: '3m', label: '3 Meses' },
+                { id: '6m', label: '6 Meses' },
+                { id: 'todos', label: 'Tudo' }
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setMetricsPeriod(p.id as any)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    metricsPeriod === p.id 
+                      ? 'bg-[#1b497d] text-white shadow-2xs' 
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold shrink-0">
+                <Timer size={18} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Tempo Médio Solução</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-tight block">
+                  {concludedChamados.length > 0 ? formatDurationShort(avgResolutionMinutes) : 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center font-bold shrink-0">
+                <Clock size={18} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Média Fila Ativa</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-tight block">
+                  {activeChamados.length > 0 ? formatDurationShort(avgActiveMinutes) : 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-bold shrink-0">
+                <ShieldCheck size={18} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Concluídos</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-tight block">
+                  {concludedChamados.length} <span className="text-xs font-medium text-slate-400">/ {periodChamados.length}</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold shrink-0">
+                <BarChart3 size={18} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Taxa de Conclusão</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-tight block">
+                  {periodChamados.length > 0 ? `${Math.round((concludedChamados.length / periodChamados.length) * 100)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Controls & Actions Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-xs">
         
@@ -180,11 +309,19 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 w-full">
           {KANBAN_COLUMNS.map((col) => {
             const columnItems = filteredChamados.filter((c) => c.status === col.id)
+            const isConcluido = col.id === 'concluido'
+            const isExpanded = !!expandedColumns[col.id]
+            const displayedItems = isConcluido
+              ? columnItems.slice(0, 3)
+              : isExpanded
+              ? columnItems
+              : columnItems.slice(0, 3)
+            const hasMore = !isConcluido && columnItems.length > 3
 
             return (
               <div 
                 key={col.id}
-                className="bg-white rounded-2xl border border-[#e2e8f0] p-3 md:p-3.5 flex flex-col gap-3 min-h-[500px] shadow-xs w-full min-w-0"
+                className="bg-white rounded-2xl border border-[#e2e8f0] p-3 md:p-3.5 flex flex-col gap-3 min-h-[400px] shadow-xs w-full min-w-0"
               >
                 {/* Header da Coluna por Status */}
                 <div className={`p-3 rounded-xl border ${col.bg} ${col.border} flex items-center justify-between`}>
@@ -200,13 +337,13 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                 </div>
 
                 {/* Cards da Coluna */}
-                <div className="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[680px]">
+                <div className="flex flex-col gap-3 flex-1">
                   {columnItems.length === 0 ? (
                     <div className="p-6 border border-dashed border-slate-200 rounded-xl text-center flex flex-col items-center justify-center my-auto text-slate-400">
                       <span className="text-xs font-medium">Vazio</span>
                     </div>
                   ) : (
-                    columnItems.map((item) => (
+                    displayedItems.map((item) => (
                       <div
                         key={item.id}
                         onClick={() => onSelect(item)}
@@ -245,10 +382,29 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 flex-wrap gap-1">
                             <span className="flex items-center gap-1">
                               <Calendar size={11} /> {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                             </span>
+
+                            {hasFullAccess && (
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 ${
+                                item.status === 'concluido' 
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                  : item.status === 'recusado'
+                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                    : 'bg-amber-50 text-amber-800 border border-amber-200'
+                              }`}>
+                                <Timer size={10} />
+                                {item.status === 'concluido'
+                                  ? `Tempo: ${formatDurationShort(getChamadoDurationMinutes(item))}`
+                                  : item.status === 'recusado'
+                                    ? `Tempo: ${formatDurationShort(getChamadoDurationMinutes(item))}`
+                                    : `Há ${formatDurationShort(getChamadoDurationMinutes(item))}`
+                                }
+                              </span>
+                            )}
+
                             <div className="flex items-center gap-2">
                               {item.comments && item.comments.length > 0 && (
                                 <span className="flex items-center gap-0.5 text-blue-600 font-bold">
@@ -265,6 +421,34 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                         </div>
                       </div>
                     ))
+                  )}
+
+                  {/* Indicador para a coluna Concluído se houver mais de 3 */}
+                  {isConcluido && columnItems.length > 3 && (
+                    <span className="text-[10px] text-slate-400 text-center font-semibold pt-1">
+                      Exibindo os 3 mais recentes
+                    </span>
+                  )}
+
+                  {/* Botão Ver mais / Ver menos para outras colunas */}
+                  {hasMore && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandColumn(col.id)}
+                      className="mt-1 w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-[#1b497d] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <span>Ver menos</span>
+                          <ChevronUp size={14} />
+                        </>
+                      ) : (
+                        <>
+                          <span>Ver mais (+{columnItems.length - 3})</span>
+                          <ChevronDown size={14} />
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
 
@@ -315,6 +499,23 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
 
               {/* Status & Action */}
               <div className="flex items-center gap-3 shrink-0 self-end md:self-center w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+                {hasFullAccess && (
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 ${
+                    item.status === 'concluido' 
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                      : item.status === 'recusado'
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  }`}>
+                    <Timer size={11} />
+                    {item.status === 'concluido'
+                      ? `Resolvido em ${formatDurationShort(getChamadoDurationMinutes(item))}`
+                      : item.status === 'recusado'
+                        ? `Recusado em ${formatDurationShort(getChamadoDurationMinutes(item))}`
+                        : `Aberto há ${formatDurationShort(getChamadoDurationMinutes(item))}`
+                    }
+                  </span>
+                )}
                 {getStatusBadge(item.status, item.approverSector)}
                 <div className="p-2 text-slate-400 group-hover:text-[#1b497d] group-hover:translate-x-0.5 transition-all">
                   <Eye size={18} />

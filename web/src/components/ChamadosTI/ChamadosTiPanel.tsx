@@ -28,6 +28,7 @@ const mapToChamadoTI = (data: any): ChamadoTI => ({
   creatorSector: data.creator_sector,
   approverSector: data.approver_sector,
   createdAt: data.created_at,
+  completedAt: data.completed_at || data.completedAt,
   evidenceFiles: data.evidence_files,
   comments: data.comments,
   approvedBy: data.approved_by,
@@ -183,6 +184,9 @@ export const ChamadosTiPanel: React.FC = () => {
     if (!targetItem) return
 
     let updatePayload: any = { status: newStatus }
+    if (newStatus === 'concluido' || newStatus === 'recusado') {
+      updatePayload.completed_at = new Date().toISOString()
+    }
     if (payload?.approvalNotes) updatePayload.approved_by = userName
     if (payload?.rejectionReason) updatePayload.rejection_reason = payload.rejectionReason
     if (payload?.resolutionNotes) updatePayload.resolution_notes = payload.resolutionNotes
@@ -302,13 +306,16 @@ export const ChamadosTiPanel: React.FC = () => {
     setSelectedChamado(null)
   }
 
+  const isOperationsLeader = (userSector === 'Operações' || userSector === 'Operacoes') && userLevel !== 'colaborador'
+  const isGestorOrDiretoria = userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || userLevel === 'coo'
+  const isTi = userSector === 'T.I'
+  const hasFullAccess = isTi || isGestorOrDiretoria || isOperationsLeader
+
   // Notificações relevantes ao usuário logado
   const relevantNotifications = notifications.filter(n =>
     !n.targetSector ||
     n.targetSector === userSector ||
-    (userSector === 'T.I' && n.targetSector === 'T.I') ||
-    userSector === 'Gestor/Diretoria' ||
-    userSector === 'Gestor (Diogo)' ||
+    hasFullAccess ||
     (n.targetUser && n.targetUser.toLowerCase() === userName.toLowerCase())
   )
 
@@ -337,24 +344,27 @@ export const ChamadosTiPanel: React.FC = () => {
     if (activeTab === 'aprovacoes') {
       return chamados.filter(c =>
         c.status === 'pendente_aprovacao' &&
-        (c.approverSector === userSector || userSector === 'T.I' || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)')
+        (c.approverSector === userSector || hasFullAccess)
       )
     }
     if (activeTab === 'ti') {
-      // T.I / Diretoria vê tudo na fila
+      // Fila T.I / Geral vê tudo na fila
       return chamados
     }
     // 'meus'
+    if (hasFullAccess) {
+      return chamados
+    }
     return chamados.filter(c => c.creatorSector === userSector || c.creatorName.toLowerCase() === userName.toLowerCase())
   }
 
   // Contagem para badges
   const pendingApprovalsCount = chamados.filter(c =>
-    c.status === 'pendente_aprovacao' && (c.approverSector === userSector || userSector === 'T.I' || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)')
+    c.status === 'pendente_aprovacao' && (c.approverSector === userSector || hasFullAccess)
   ).length
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-y-auto w-full relative min-h-screen">
+    <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-y-auto w-full relative h-full pb-20">
 
       {/* Top Header */}
       <div className="w-full bg-white border-b border-[#e6e9f2] sticky top-0 z-40 shadow-xs">
@@ -396,7 +406,7 @@ export const ChamadosTiPanel: React.FC = () => {
                 onClick={() => setActiveTab('meus')}
                 className={`px-4 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${activeTab === 'meus' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
               >
-                Chamados do Setor
+                {hasFullAccess ? 'Todos os Chamados' : 'Chamados do Setor'}
               </button>
 
               <button
@@ -412,21 +422,21 @@ export const ChamadosTiPanel: React.FC = () => {
                 )}
               </button>
 
-              {(userSector === 'T.I' || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)') && (
+              {hasFullAccess && (
                 <>
                   <button
                     type="button"
                     onClick={() => setActiveTab('ti')}
                     className={`px-4 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${activeTab === 'ti' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
                   >
-                    Fila T.I
+                    Fila Geral / T.I
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('historico')}
                     className={`px-4 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${activeTab === 'historico' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
                   >
-                    Histórico T.I
+                    Histórico Geral / T.I
                   </button>
                 </>
               )}
@@ -555,9 +565,9 @@ export const ChamadosTiPanel: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 flex flex-col">
         {activeTab === 'historico' ? (
-          <div className="p-6 h-full flex flex-col overflow-hidden max-w-7xl mx-auto w-full">
+          <div className="p-6 flex-1 flex flex-col max-w-7xl mx-auto w-full pb-12">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-bold text-slate-800">Histórico de Chamados (Base de Conhecimento)</h2>
@@ -574,7 +584,7 @@ export const ChamadosTiPanel: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+            <div className="flex flex-col space-y-3 pb-8">
               {chamados
                 .filter(c => (c.status === 'concluido' || c.status === 'recusado'))
                 .filter(c => 
@@ -617,6 +627,7 @@ export const ChamadosTiPanel: React.FC = () => {
           <ChamadosTiList
             chamados={getTabChamados()}
             userSector={userSector}
+            userLevel={userLevel}
             userName={userName}
             onSelect={(c) => setSelectedChamado(c)}
             onOpenCreateModal={() => setIsCreateModalOpen(true)}
@@ -639,6 +650,7 @@ export const ChamadosTiPanel: React.FC = () => {
         <ChamadosTiDetailModal
           chamado={selectedChamado}
           userSector={userSector}
+          userLevel={userLevel}
           userName={userName}
           onClose={() => setSelectedChamado(null)}
           onUpdateStatus={handleUpdateStatus}

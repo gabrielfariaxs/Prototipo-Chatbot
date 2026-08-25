@@ -37,7 +37,7 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
   }, [])
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-y-auto w-full relative">
+    <div className="flex-1 flex flex-col bg-[#f8fafc] w-full relative overflow-y-auto min-h-0 h-full pb-16">
       <style>{`.brand-filete-bar { height: 3px; background: linear-gradient(90deg, #1f29de 0%, #1f29de 100%); }`}</style>
            {/* Top Header */}
       <div className="w-full bg-white border-b border-[#e6e9f2] sticky top-0 z-10 shadow-xs">

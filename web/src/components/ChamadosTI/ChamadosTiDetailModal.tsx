@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image } from 'lucide-react'
+import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image, Timer } from 'lucide-react'
 import type { ChamadoTI } from './types'
-import { SETORES_APROVADORES } from './types'
+import { SETORES_APROVADORES, getChamadoDurationMinutes, formatDurationFull, getEffectiveCompletionDate } from './types'
 
 interface ChamadosTiDetailModalProps {
   chamado: ChamadoTI
   userSector: string
+  userLevel?: string
   userName: string
   onClose: () => void
   onUpdateStatus: (
@@ -22,6 +23,7 @@ interface ChamadosTiDetailModalProps {
 export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   chamado,
   userSector,
+  userLevel,
   userName,
   onClose,
   onUpdateStatus,
@@ -50,15 +52,19 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const [editDescription, setEditDescription] = useState(chamado.description)
 
   // Permissões de Ação
-  const canApprove = (userSector === chamado.approverSector || userSector === 'T.I' || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)') && chamado.status === 'pendente_aprovacao'
+  const savedLevel = userLevel || localStorage.getItem('userLevel') || 'lider'
+  const isOperationsLeader = (userSector === 'Operações' || userSector === 'Operacoes') && savedLevel !== 'colaborador'
+  const isGestorOrDiretoria = userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || savedLevel === 'coo'
   const isTiTeam = userSector === 'T.I'
-  const canRedirect = isTiTeam || userSector === 'Gestor/Diretoria' || userSector === chamado.approverSector
+  const hasFullAccess = isTiTeam || isGestorOrDiretoria || isOperationsLeader
+
+  const canApprove = (userSector === chamado.approverSector || hasFullAccess) && chamado.status === 'pendente_aprovacao'
+  const canRedirect = hasFullAccess || userSector === chamado.approverSector
   
   // Pode editar se for o criador (ou do mesmo setor) E o chamado estiver pendente de aprovação (ainda não aprovado nem em atendimento pela TI)
   const canEdit = chamado.status === 'pendente_aprovacao' && (
     userSector === chamado.creatorSector || 
-    userSector === 'T.I' || 
-    userSector === 'Gestor/Diretoria' ||
+    hasFullAccess ||
     userName === chamado.creatorName
   )
 
@@ -147,7 +153,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               </button>
             )}
 
-            {(isTiTeam || userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || userName === chamado.creatorName) && (
+            {(hasFullAccess || userName === chamado.creatorName) && (
               <button
                 type="button"
                 onClick={() => {
@@ -190,6 +196,61 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               {getPriorityBadge()}
             </div>
           </div>
+
+          {/* Métrica de Tempo / Ciclo de Vida (Visível apenas para T.I, Líder de Operações e Gestor/Diretoria) */}
+          {hasFullAccess && (() => {
+            const durationMinutes = getChamadoDurationMinutes(chamado)
+            const formattedDuration = formatDurationFull(durationMinutes)
+            const completionDateStr = getEffectiveCompletionDate(chamado)
+            const isFinished = chamado.status === 'concluido' || chamado.status === 'recusado'
+
+            return (
+              <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${
+                chamado.status === 'concluido'
+                  ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                  : chamado.status === 'recusado'
+                    ? 'bg-red-50/70 border-red-200 text-red-950'
+                    : 'bg-amber-50/70 border-amber-200 text-amber-950'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold ${
+                    chamado.status === 'concluido'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : chamado.status === 'recusado'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-amber-100 text-amber-700 animate-pulse'
+                  }`}>
+                    <Timer size={20} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
+                      {isFinished ? 'Tempo Total de Atendimento (Resolução)' : 'Tempo Decorrido em Aberto'}
+                    </span>
+                    <span className="text-sm font-extrabold block">
+                      {formattedDuration}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs font-medium opacity-80 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 w-full md:w-auto justify-between md:justify-end border-slate-200">
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-slate-400">Abertura</span>
+                    <span>{new Date(chamado.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                  </div>
+                  <span>→</span>
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-slate-400">Conclusão</span>
+                    <span>
+                      {completionDateStr
+                        ? new Date(completionDateStr).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                        : 'Em andamento'
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Form de Edição */}
           {isEditing ? (
@@ -510,8 +571,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               </div>
             )}
 
-            {/* 2. Actions for T.I Team */}
-            {isTiTeam && chamado.status === 'aprovado' && (
+            {/* 2. Actions for T.I Team / Leadership */}
+            {hasFullAccess && chamado.status === 'aprovado' && (
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-4">
                 <div>
                   <h5 className="text-xs font-bold text-blue-950 uppercase">Chamado Aprovado</h5>
@@ -528,7 +589,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               </div>
             )}
 
-            {isTiTeam && chamado.status === 'em_atendimento' && (
+            {hasFullAccess && chamado.status === 'em_atendimento' && (
               <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <h5 className="text-xs font-bold text-indigo-950 uppercase">Atendimento em Andamento</h5>

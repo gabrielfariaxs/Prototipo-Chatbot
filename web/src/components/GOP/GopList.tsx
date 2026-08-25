@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Plus, Search, ChevronDown, ChevronRight, LayoutGrid, List, Loader2, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { GopCreateModal } from './GopCreateModal'
@@ -67,10 +67,11 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
     return matchesSearch && matchesSetor && matchesUrgencia && matchesStatus
   })
 
+  
+
   const aguardandoTratativa = gargalos.filter(g => g.status === 'Não Iniciado' || g.status === 'Em Andamento').length
   const altaUrgencia = gargalos.filter(g => g.urgencia === 'Alta').length
   const bloqueados = gargalos.filter(g => g.status === 'Em pausa').length
-  const naoIniciados = gargalos.filter(g => g.status === 'Não Iniciado').length
   const resolvidos = gargalos.filter(g => g.status === 'Resolvido').length
 
   // Calculate Sector distribution
@@ -326,7 +327,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             const colorClass = statusCol === 'Não Iniciado' ? 'bg-slate-400' : statusCol === 'Em Andamento' ? 'bg-blue-500' : statusCol === 'Em pausa' ? 'bg-red-500' : 'bg-green-500'
             
             return (
-              <div key={statusCol} className="flex-1 min-w-[260px] bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col h-[500px]">
+              <div key={statusCol} className="flex-1 min-w-[260px] bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col">
                 <div className="flex items-center justify-between mb-4 px-1">
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${colorClass}`}></div>
@@ -337,7 +338,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
                   </span>
                 </div>
                 
-                <div className="flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar flex-1">
+                <div className="flex flex-col gap-3 pr-1">
                   {colItems.length === 0 ? (
                     <div className="w-full py-8 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-xs font-bold text-slate-400">
                       Vazio
