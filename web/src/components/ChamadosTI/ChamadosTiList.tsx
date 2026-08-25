@@ -136,30 +136,22 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
               </h4>
             </div>
 
-            {/* Seletor de Período */}
-            <div className="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-2xs self-start sm:self-auto flex-wrap">
-              <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Período:</span>
-              {[
-                { id: '24h', label: '24 Horas' },
-                { id: '7d', label: '7 Dias' },
-                { id: '30d', label: '30 Dias' },
-                { id: '3m', label: '3 Meses' },
-                { id: '6m', label: '6 Meses' },
-                { id: 'todos', label: 'Tudo' }
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setMetricsPeriod(p.id as any)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    metricsPeriod === p.id 
-                      ? 'bg-[#1b497d] text-white shadow-2xs' 
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+            {/* Seletor de Período em Lista Suspensa com Ícone de Filtro */}
+            <div className="flex items-center gap-2 bg-white border border-slate-200 hover:border-[#1b497d]/50 px-3 py-1.5 rounded-xl shadow-2xs transition-all self-start sm:self-auto cursor-pointer">
+              <Filter size={14} className="text-[#1b497d] shrink-0" />
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Período:</span>
+              <select
+                value={metricsPeriod}
+                onChange={(e) => setMetricsPeriod(e.target.value as any)}
+                className="bg-transparent text-xs font-extrabold text-[#1b497d] outline-none cursor-pointer pr-1"
+              >
+                <option value="24h">Últimas 24 Horas</option>
+                <option value="7d">Últimos 7 Dias</option>
+                <option value="30d">Últimos 30 Dias</option>
+                <option value="3m">Últimos 3 Meses</option>
+                <option value="6m">Últimos 6 Meses</option>
+                <option value="todos">Todo o Período (Histórico Completo)</option>
+              </select>
             </div>
           </div>
 
