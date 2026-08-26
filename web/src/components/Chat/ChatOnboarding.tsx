@@ -1,6 +1,6 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Bell, X, Sparkles } from 'lucide-react'
 import { BrandLockup } from '../BrandLockup'
 
 interface ChatOnboardingProps {
@@ -20,6 +20,16 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenSolicitacaoMedica,
   onOpenChamadosTi
 }) => {
+  const [showNotification, setShowNotification] = useState(true)
+
+  useEffect(() => {
+    setShowNotification(true)
+    const timer = setTimeout(() => {
+      setShowNotification(false)
+    }, 10000)
+
+    return () => clearTimeout(timer)
+  }, [])
   const handlePortfolioClick = () => {
     if (onOpenPortfolio) {
       onOpenPortfolio()
@@ -130,6 +140,70 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     >
       <div className="w-full max-w-7xl flex flex-col items-center py-4 sm:py-6">
         
+        {/* Banner de Notificação Flutuante de 10s (Vindo de baixo para cima) */}
+        <AnimatePresence>
+          {showNotification && (
+            <motion.div
+              initial={{ opacity: 0, y: 60, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 60, scale: 0.92 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 max-w-2xl z-50 overflow-hidden bg-gradient-to-r from-[#1b497d] via-[#1d4ed8] to-[#0f766e] text-white rounded-2xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.3)] border border-white/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 backdrop-blur-md"
+            >
+              <div className="flex items-center gap-3 z-10">
+                <div className="relative flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-inner">
+                    <Bell size={20} className="animate-bounce" />
+                  </div>
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
+                </div>
+
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider flex items-center gap-1">
+                      <Sparkles size={10} /> Novo Procedimento
+                    </span>
+                    <span className="text-[10px] text-white/70 font-medium">Disponível no Chatbot</span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-white leading-snug">
+                    Novo Procedimento de Transferencia de faturamento Matriz já disponivel no chatbot
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center z-10 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={onStart}
+                  className="bg-white text-[#1b497d] hover:bg-emerald-50 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all shadow-xs hover:scale-105 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Ver no Chatbot</span>
+                  <ArrowRight size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNotification(false)}
+                  className="p-1.5 text-white/70 hover:text-white hover:bg-white/15 rounded-lg transition-colors cursor-pointer"
+                  title="Fechar notificação"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Barra de progresso do temporizador de 10 segundos */}
+              <motion.div
+                initial={{ width: '100%' }}
+                animate={{ width: '0%' }}
+                transition={{ duration: 10, ease: 'linear' }}
+                className="absolute bottom-0 left-0 h-1 bg-emerald-400/90"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 mb-3">

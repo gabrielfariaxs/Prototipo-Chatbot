@@ -17,25 +17,46 @@ export interface TiNotification {
   chamadoId?: string
 }
 
-const mapToChamadoTI = (data: any): ChamadoTI => ({
-  id: data.id,
-  code: data.code,
-  title: data.title,
-  priority: data.priority as any,
-  status: data.status as any,
-  description: data.description,
-  creatorName: data.creator_name,
-  creatorSector: data.creator_sector,
-  approverSector: data.approver_sector,
-  createdAt: data.created_at,
-  completedAt: data.completed_at || data.completedAt,
-  evidenceFiles: data.evidence_files,
-  comments: data.comments,
-  approvedBy: data.approved_by,
-  rejectionReason: data.rejection_reason,
-  resolutionNotes: data.resolution_notes,
-  assignedTech: data.assigned_tech
-})
+const mapToChamadoTI = (data: any): ChamadoTI => {
+  const comments = data.comments || []
+  let resolutionNotes = data.resolution_notes
+  let assignedTech = data.assigned_tech
+  let approvedBy = data.approved_by
+  let rejectionReason = data.rejection_reason
+
+  if (!resolutionNotes && comments.length > 0) {
+    const resMsg = [...comments].reverse().find((c: any) => c.text && c.text.includes('Devolutiva Técnica:'))
+    if (resMsg) {
+      resolutionNotes = resMsg.text.replace(/^✅ Devolutiva Técnica:\s*/, '')
+    }
+  }
+  if (!assignedTech && comments.length > 0) {
+    const techMsg = [...comments].reverse().find((c: any) => c.text && c.text.includes('Atendimento iniciado pelo técnico:'))
+    if (techMsg) {
+      assignedTech = techMsg.text.replace(/^🛠️ Atendimento iniciado pelo técnico:\s*/, '')
+    }
+  }
+
+  return {
+    id: data.id,
+    code: data.code,
+    title: data.title,
+    priority: data.priority as any,
+    status: data.status as any,
+    description: data.description,
+    creatorName: data.creator_name,
+    creatorSector: data.creator_sector,
+    approverSector: data.approver_sector,
+    createdAt: data.created_at,
+    completedAt: data.completed_at || data.completedAt,
+    evidenceFiles: data.evidence_files,
+    comments: comments,
+    approvedBy: approvedBy,
+    rejectionReason: rejectionReason,
+    resolutionNotes: resolutionNotes,
+    assignedTech: assignedTech
+  }
+}
 
 const mapToNotification = (data: any): TiNotification => ({
   id: data.id,
@@ -183,15 +204,6 @@ export const ChamadosTiPanel: React.FC = () => {
     const targetItem = chamados.find(c => c.id === id)
     if (!targetItem) return
 
-    let updatePayload: any = { status: newStatus }
-    if (newStatus === 'concluido' || newStatus === 'recusado') {
-      updatePayload.completed_at = new Date().toISOString()
-    }
-    if (payload?.approvalNotes) updatePayload.approved_by = userName
-    if (payload?.rejectionReason) updatePayload.rejection_reason = payload.rejectionReason
-    if (payload?.resolutionNotes) updatePayload.resolution_notes = payload.resolutionNotes
-    if (payload?.techName) updatePayload.assigned_tech = payload.techName
-
     let updatedComments = [...(targetItem.comments || [])]
 
     if (newStatus === 'concluido' && payload?.resolutionNotes) {
@@ -202,24 +214,87 @@ export const ChamadosTiPanel: React.FC = () => {
         text: `✅ Devolutiva Técnica:\n${payload.resolutionNotes}`,
         createdAt: new Date().toISOString()
       })
-      updatePayload.comments = updatedComments
-    }
-
-    const { data, error } = await supabase.from('ti_chamados').update(updatePayload).eq('id', id).select().single()
-    if (error) console.error(error)
-    
-    if (data) {
-      const updatedItem = mapToChamadoTI(data)
-      setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
-      if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
-
-      addNotification({
-        title: `Chamado ${newStatus === 'aprovado' ? 'Aprovado' : newStatus === 'recusado' ? 'Recusado' : newStatus === 'em_atendimento' ? 'Em Atendimento' : 'Concluído'}`,
-        message: `O status do chamado ${updatedItem.code} foi atualizado para "${newStatus.replace('_', ' ')}".`,
-        targetUser: updatedItem.creatorName,
-        chamadoId: id
+    } else if (newStatus === 'recusado' && payload?.rejectionReason) {
+      updatedComments.push({
+        id: Date.now().toString(),
+        authorName: userName,
+        authorSector: userSector || 'Aprovador',
+        text: `❌ Chamado Recusado. Motivo:\n${payload.rejectionReason}`,
+        createdAt: new Date().toISOString()
+      })
+    } else if (newStatus === 'aprovado' && payload?.approvalNotes) {
+      updatedComments.push({
+        id: Date.now().toString(),
+        authorName: userName,
+        authorSector: userSector || 'Aprovador',
+        text: `👍 Chamado Aprovado: ${payload.approvalNotes}`,
+        createdAt: new Date().toISOString()
+      })
+    } else if (newStatus === 'em_atendimento' && payload?.techName) {
+      updatedComments.push({
+        id: Date.now().toString(),
+        authorName: userName,
+        authorSector: 'T.I',
+        text: `🛠️ Atendimento iniciado pelo técnico: ${payload.techName}`,
+        createdAt: new Date().toISOString()
       })
     }
+
+    let fullPayload: any = { 
+      status: newStatus,
+      comments: updatedComments
+    }
+    if (newStatus === 'concluido' || newStatus === 'recusado') {
+      fullPayload.completed_at = new Date().toISOString()
+    }
+    if (payload?.approvalNotes) fullPayload.approved_by = userName
+    if (payload?.rejectionReason) fullPayload.rejection_reason = payload.rejectionReason
+    if (payload?.resolutionNotes) fullPayload.resolution_notes = payload.resolutionNotes
+    if (payload?.techName) fullPayload.assigned_tech = payload.techName
+
+    let data: any = null
+
+    // 1. Tenta atualizar com payload completo
+    const firstAttempt = await supabase.from('ti_chamados').update(fullPayload).eq('id', id).select()
+    if (!firstAttempt.error && firstAttempt.data && firstAttempt.data.length > 0) {
+      data = firstAttempt.data[0]
+    } else {
+      console.warn('Tentando fallback de atualização garantida no Supabase (status + comments)...', firstAttempt.error)
+      // 2. Fallback: Atualiza com status + comments (garantidos no banco de dados)
+      const fallbackPayload = {
+        status: newStatus,
+        comments: updatedComments
+      }
+      const fallbackAttempt = await supabase.from('ti_chamados').update(fallbackPayload).eq('id', id).select()
+      if (fallbackAttempt.data && fallbackAttempt.data.length > 0) {
+        data = fallbackAttempt.data[0]
+      } else {
+        console.error('Erro na atualização de status no Supabase:', fallbackAttempt.error || firstAttempt.error)
+      }
+    }
+
+    const updatedItem: ChamadoTI = data ? mapToChamadoTI(data) : {
+      ...targetItem,
+      status: newStatus,
+      completedAt: (newStatus === 'concluido' || newStatus === 'recusado') ? new Date().toISOString() : targetItem.completedAt,
+      approvedBy: payload?.approvalNotes ? userName : targetItem.approvedBy,
+      rejectionReason: payload?.rejectionReason || targetItem.rejectionReason,
+      resolutionNotes: payload?.resolutionNotes || targetItem.resolutionNotes,
+      assignedTech: payload?.techName || targetItem.assignedTech,
+      comments: updatedComments
+    }
+
+    setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
+    if (selectedChamado?.id === id) {
+      setSelectedChamado(updatedItem)
+    }
+
+    addNotification({
+      title: `Chamado ${newStatus === 'aprovado' ? 'Aprovado' : newStatus === 'recusado' ? 'Recusado' : newStatus === 'em_atendimento' ? 'Em Atendimento' : 'Concluído'}`,
+      message: `O status do chamado ${updatedItem.code} foi atualizado para "${newStatus.replace('_', ' ')}".`,
+      targetUser: updatedItem.creatorName,
+      chamadoId: id
+    })
   }
 
   const handleAddComment = async (id: string, commentText: string) => {
@@ -234,12 +309,12 @@ export const ChamadosTiPanel: React.FC = () => {
     }
     const updatedComments = [...(targetItem.comments || []), newComment]
     
-    const { data } = await supabase.from('ti_chamados').update({ comments: updatedComments }).eq('id', id).select().single()
-    if (data) {
-      const updatedItem = mapToChamadoTI(data)
-      setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
-      if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
-    }
+    const { data } = await supabase.from('ti_chamados').update({ comments: updatedComments }).eq('id', id).select()
+    const updatedData = data && data.length > 0 ? data[0] : null
+    
+    const updatedItem = updatedData ? mapToChamadoTI(updatedData) : { ...targetItem, comments: updatedComments }
+    setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
+    if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
   }
 
   const handleRedirectChamado = async (id: string, newApproverSector: string, reason?: string) => {
@@ -258,20 +333,25 @@ export const ChamadosTiPanel: React.FC = () => {
       approver_sector: newApproverSector, 
       status: 'pendente_aprovacao',
       comments: updatedComments
-    }).eq('id', id).select().single()
+    }).eq('id', id).select()
     
-    if (data) {
-      const updatedItem = mapToChamadoTI(data)
-      setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
-      if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
-
-      addNotification({
-        title: 'Chamado Redirecionado para Seu Setor',
-        message: `O chamado ${updatedItem.code} foi redirecionado pela T.I para aprovação do setor ${newApproverSector}.${reason ? ` Motivo: ${reason}` : ''}`,
-        targetSector: newApproverSector,
-        chamadoId: id
-      })
+    const updatedData = data && data.length > 0 ? data[0] : null
+    const updatedItem = updatedData ? mapToChamadoTI(updatedData) : {
+      ...targetItem,
+      approverSector: newApproverSector,
+      status: 'pendente_aprovacao' as const,
+      comments: updatedComments
     }
+
+    setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
+    if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
+
+    addNotification({
+      title: 'Chamado Redirecionado para Seu Setor',
+      message: `O chamado ${updatedItem.code} foi redirecionado pela T.I para aprovação do setor ${newApproverSector}.${reason ? ` Motivo: ${reason}` : ''}`,
+      targetSector: newApproverSector,
+      chamadoId: id
+    })
   }
 
   const handleEditChamado = async (id: string, updatedFields: { title: string; priority: ChamadoTI['priority']; description: string }) => {
@@ -291,13 +371,19 @@ export const ChamadosTiPanel: React.FC = () => {
       priority: updatedFields.priority,
       description: updatedFields.description,
       comments: updatedComments
-    }).eq('id', id).select().single()
+    }).eq('id', id).select()
     
-    if (data) {
-      const updatedItem = mapToChamadoTI(data)
-      setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
-      if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
+    const updatedData = data && data.length > 0 ? data[0] : null
+    const updatedItem = updatedData ? mapToChamadoTI(updatedData) : {
+      ...targetItem,
+      title: updatedFields.title,
+      priority: updatedFields.priority,
+      description: updatedFields.description,
+      comments: updatedComments
     }
+
+    setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
+    if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
   }
 
   const handleDeleteChamado = async (id: string) => {

@@ -72,6 +72,12 @@
         "conteudo": "Objetivo: Garantir o recebimento dos documentos e tratar possíveis divergências (glosas). Fluxo Passo a Passo: 1. Abrir o Portal Cassi. 2. Ir em Gestão de Documentos Eletrônicos. 3. Verificar pelo portal os documentos."
     },
     {
+        "processo": "Faturamento Matriz Emultec - Transferência Filial para Matriz",
+        "setor": "Faturamento",
+        "sistema": "Emultec",
+        "conteudo": "Objetivo: Transferência de procedimento e faturamento da Filial para a Matriz no sistema Emultec.\n\nPasso a Passo:\n1. Primeiro passo (No sistema da Filial): Após a 'baixa', localizar usando a tabela no ícone: Tabela de Preço -> Selecione a TRANSFERÊNCIA FILIAIS (custo). No ID cliente, colocar a unidade Matriz para a qual será transferido o procedimento.\n2. Segundo passo (Emissão de NF e Exportação): Emitir NF de transferência (NFe transf). Assim que emitir a nota de transferência, imprimir e repassar para o setor de compras, pois precisam dar entrada dessa NF na Matriz. Em seguida, na tela de NF filial, clicar em 'exportar cirurgia' (ainda no sistema da filial) para repassar as informações necessárias para a Matriz. Caso apareça algum campo em branco, ele será incluído manualmente quando for realizada a importação na Matriz.\n3. Terceiro passo (Importação na Matriz): Após o setor de compras realizar a entrada da NF na Matriz, realizar a importação no sistema da Matriz: Acessar Movimentos -> Cirurgias-Integrações/Parceiros -> Importar cirurgia parceiro -> Abrir arquivo modelo Emultec a ser importado (clicar no ícone para direcionar à pasta onde foi parar o XML no momento da exportação de cirurgia). Ao abrir todas as informações, clicar em 'Analisar dados p/ integração' -> Yes. Isso finaliza todo o processo de transferência com todos os dados e produtos do procedimento.\n\nOBS.: O status fica como 'RETORNO'. O setor de compras precisa dar o OK para o status ficar como FINALIZADO, e em seguida valorizar conforme a tabela do cliente de faturamento."
+    },
+    {
         "processo": "Orçamento Prévio",
         "setor": "Orçamento - Medic",
         "sistema": "WhatsApp / E-mail / Emultec / Gtplan",

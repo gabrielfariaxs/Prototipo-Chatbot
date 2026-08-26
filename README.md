@@ -1,80 +1,100 @@
-# 🤖 MedIA - Assistente Virtual Inteligente
+# 🤖 MedIA - Assistente Virtual & Plataforma Corporativa Inteligente
 
-> A fusão da inteligência Arthromed + Medic. Uma plataforma completa de automação, processos internos e extração de dados médicos.
+> A fusão da inteligência Arthromed + Medic. Uma plataforma completa de automação operacional, processos internos, suporte técnico T.I, gestão de chamados, módulo anti-glosa e consulta de materiais.
 
-O **MedIA** é muito mais que um chatbot; é o Assistente Virtual Corporativo definitivo da Arthromed, construído com as tecnologias web mais modernas e impulsionado pelo Claude 3.5 Sonnet (Anthropic).
-
----
-
-## ✨ Tudo que o MedIA Faz (Funcionalidades)
-
-### 🏥 1. Extração Inteligente de Pedidos Médicos (PDF/Imagens)
-- **Leitura Automática:** Arraste e solte o arquivo (PDF de exames, pedidos médicos ou imagens escaneadas) no chat.
-- **Processamento Multiplataforma:** 
-  - Na versão Desktop, usa `PyMuPDF` e `pypdf` + OCR melhorado com `Pillow` para PDFs difíceis.
-  - Na versão Web, usa a API Nativa (Client-side) para segurança e velocidade.
-- **Formatação em Cards:** A inteligência artificial mapeia as informações e devolve tudo formatado (Paciente, Médico, Hospital, Procedimentos, CID, Materiais e Data).
-- **Processamento em Lote:** Capacidade de leitura simultânea *(Em breve)*.
-
-### 📊 2. Dashboard Analytics Integrado & Feedback
-- **Métricas e Relatórios:** Acesse o painel de métricas no próprio cabeçalho do chat clicando no ícone do gráfico (Métricas e Analytics).
-- **Indicadores de Desempenho:** O MedIA rastreia e mostra as "Guias e Pedidos Processados", as "Horas Humanas Economizadas" e "Qualidade e Satisfação".
-- **Botões de Avaliação (Like/Dislike):** Toda extração médica finalizada possui botões 👍 e 👎. Avaliações negativas abrem uma caixa de comentário (feedback qualitativo) para evolução do sistema.
-
-### 🧠 3. RAG (Conhecimento Interno e Setores)
-- **Seleção de Contexto:** Antes de iniciar o chat, o usuário escolhe o seu setor (Orçamento, Assistente Corp, Materiais, etc).
-- **Inteligência Contextual:** A IA adapta as respostas e atua como uma consultora daquele setor específico.
-- **Upload Local de Conhecimento:** (Através da ferramenta `upload_knowledge.py`).
-
-### 🎙️ 4. Acessibilidade e Interação por Voz
-- **Transcrição de Áudio (Microfone):** O usuário pode gravar áudios explicando a pendência ou dúvida, e o MedIA converte a voz em texto automaticamente para pesquisa.
-- **Leitura em Voz Alta:** Um botão de alto-falante 🔈 no cabeçalho ativa/desativa a leitura das mensagens que o MedIA responde.
-
-### 💻 5. Modos Web e Desktop (Premium UI)
-- **Design de Alta Fidelidade (Wow Factor):** Construído do zero usando Tailwind CSS, Lucide Icons e Framer Motion. Tem animações dinâmicas, *glassmorphism* e *feedback visual* de interações.
-- **Modo Web (Nuvem):** Acessível de qualquer navegador, escalado globalmente via **Cloudflare Workers**.
-- **Modo Desktop Widget (Python):** Uma "bolha" de chat flutuante, discreta e premium no Windows. Se esconde, pode ser movida pelo usuário (Drag & Drop) e sobrepõe a tela para auxílio imediato.
+O **MedIA** é o ecossistema corporativo definitivo da **Arthromed & Medic**, combinando Inteligência Artificial de última geração, base de conhecimento RAG dinâmica, gestão de Não Conformidades (NOC), suporte a solicitações médicas (OPME) e central de chamados de T.I.
 
 ---
 
-## 🚀 Uso Simplificado (Para a Equipe)
+## 🎯 Módulos Corporativos Integrados
 
-1. **Acesso Diário (Desktop):** Basta dar um clique duplo no ícone **"MedIA - Assistente Virtual"** na sua Área de Trabalho. Um widget flutuante no formato do logo abrirá no canto inferior direito.
-2. **Acesso Web:** Use o link de acesso seguro fornecido pela equipe de TI.
-3. **Navegação:** Escolha o setor, clique no microfone para falar ou simplesmente arraste um arquivo PDF/Imagem para cima da caixa de texto para extrair os dados.
-4. **Limpar:** A qualquer momento, clique no ícone da Lixeira 🗑️ para resetar o histórico.
+### 💬 1. Assistente Chatbot (MedIA)
+- **Base de Conhecimento RAG:** Consulta automatizada a processos internos (Faturamento, Orçamentos, Estoque, Logística, Emultec, etc.).
+- **Novo Processo Integrado:** *Faturamento Matriz Emultec - Transferência Filial para Matriz* (passo a passo detalhado de exportação XML, nota de transferência e importação no Emultec).
+- **Extração Inteligente de Pedidos Médicos (PDF/Imagens):** Leitura de exames, pedidos médicos e cotações com formatação em cards interativos (Paciente, Médico, Hospital, Materiais e Data).
+- **Interação por Voz (TTS & STT):** Transcrição de áudio via microfone e leitura das respostas em voz alta.
+
+### 🖥️ 2. Suporte T.I (Gestão de Chamados Técnicos)
+- **Fluxo Completo de Atendimento:** Abertura de solicitação, aprovação pelo gestor do setor responsável, fila de atendimento técnico T.I e finalização.
+- **Histórico & Chat Interativo:** Troca de mensagens e evidências em tempo real diretamente dentro do chamado.
+- **Resolução & SLA:** Registro de devolutiva técnica, tempo decorrido em aberto e cálculo de tempo total de atendimento.
+- **Notificações:** Notificações em tempo real por setor e por usuário solicitante.
+
+### ⚠️ 3. NOC (Não Conformidades Operacionais)
+- Registro, acompanhamento e tratativas de Não Conformidades Operacionais (NCO).
+- Indicadores e controle de qualidade nos fluxos logísticos e comerciais.
+
+### 📄 4. Solicitação Médica (CFM / ANS Anti-Glosa)
+- Módulo especializado para emissão e revisão de documentação clínica padronizada anti-glosa.
+- Gerador de justificativas para OPME, solicitações cirúrgicas e recursos de negativa técnica.
+
+### 📚 5. Catálogos e Portfólios de Produtos
+- **Portfólio Arthromed:** Acesso rápido ao catálogo completo de implantes e produtos ortopédicos.
+- **Portfólio Medic:** Soluções e catálogo especializado do ecossistema Medic.
 
 ---
 
-## 🌐 Deploy e Servidor (Cloudflare)
+## 🔔 Sistema de Notificações e Avisos Rápidos
 
-O ambiente de produção do MedIA é totalmente *Serverless* com baixa latência:
-- Hospedado no **Cloudflare Workers** para respostas em tempo real.
-- **Deploy Automático:** Basta executar `npm run deploy` na pasta `web` (requer `npm` e `wrangler`).
-- **Comandos Úteis:**
-  - `npm run dev` - Rodar versão local na porta 3000.
-  - `npm run build` - Gera a compilação de arquivos estáticos.
+- **Aviso Flutuante na Tela Inicial:** Banner animado em overlay (*bottom-up*) avisando os usuários sobre novos procedimentos e atualizações operacionais (com temporizador regressivo de 10 segundos).
+- **Central de Notificações T.I:** Notificações instantâneas sobre aprovações pendentes, respostas de técnicos e conclusão de chamados.
 
 ---
 
-## 🛠️ Para Desenvolvedores
+## 🛠️ Tecnologias Utilizadas
 
-### Configuração do Ambiente
+- **Frontend Web:** React 19, TanStack Start / Router, Tailwind CSS 4, Framer Motion, Lucide Icons.
+- **Backend & Serverless:** Cloudflare Workers, Supabase (Autenticação, Database Postgres, Vector DB RAG).
+- **Desktop Application:** Python (`pywebview`, `Pillow`, `pypdf`, `pymupdf`).
+- **APIs de IA:** OpenRouter / OpenAI (`text-embedding-3-small` para RAG), Anthropic Claude 3.5 Sonnet.
+
+---
+
+## 🚀 Como Executar o Projeto
+
+### Pré-requisitos
+- Node.js (v18+)
+- Python 3.10+ (para a versão Desktop App)
+
+### 1. Iniciar a Aplicação Web
 
 ```bash
-# Ambiente Web (TanStack Start / React / Tailwind)
 cd web
 npm install
 npm run dev
+```
+Acesse no navegador: `http://localhost:3000`
 
-# Ambiente Desktop (Python Bridge)
+### 2. Rodar Testes
+
+```bash
+cd web
+npm run test
+```
+
+### 3. Deploy para Produção (Cloudflare Workers)
+
+```bash
+cd web
+npm run deploy
+```
+
+### 4. Executar a Aplicação Desktop (Windows Widget)
+
+```bash
 pip install requests pywebview pillow pypdf pymupdf
 python desktop_app.py --window
 ```
 
-### Segurança e Variáveis (`.dev.vars`)
-As senhas e API Keys agora ficam restritas ao arquivo `web/.dev.vars` para segurança e *NUNCA* são enviadas para o GitHub (Push Protection ativo):
-- `ANTHROPIC_API_KEY`: Chave segura para os modelos Claude (3.5 Sonnet).
+---
+
+## 🔒 Segurança e Variáveis de Ambiente (`.env` / `.dev.vars`)
+
+As credenciais do projeto são protegidas por variáveis de ambiente:
+- `VITE_SUPABASE_URL` / `SUPABASE_URL`: URL da instância Supabase.
+- `VITE_SUPABASE_KEY` / `SUPABASE_SERVICE_ROLE_KEY`: Chave de API Supabase.
+- `AI_GATEWAY_API_KEY`: Chave de acesso aos modelos de IA (OpenRouter / Anthropic).
 
 ---
+
 *Desenvolvido por Gabriel Farias para a Arthromed & Medic* 🚀
