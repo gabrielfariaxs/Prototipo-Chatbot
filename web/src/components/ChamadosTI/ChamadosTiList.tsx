@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Search, Filter, Plus, Clock, CheckCircle2, XCircle, Wrench, ShieldCheck, User, Calendar, Eye, Paperclip, LayoutGrid, List, MessageSquare, AlertTriangle, ChevronDown, ChevronUp, Timer, BarChart3, TrendingUp } from 'lucide-react'
 import type { ChamadoTI, ChamadoStatus, ChamadoPriority } from './types'
-import { getChamadoDurationMinutes, formatDurationShort } from './types'
+import { getChamadoDurationMinutes, formatDurationShort, getChamadoTimeBreakdown } from './types'
 
 interface ChamadosTiListProps {
   chamados: ChamadoTI[]
@@ -276,7 +276,7 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
             className="px-4 py-2 bg-[#1b497d] hover:bg-[#12345b] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
           >
             <Plus size={16} />
-            <span>Novo Chamado</span>
+            <span>Abrir Chamado</span>
           </button>
         </div>
 
@@ -384,23 +384,32 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                               <Calendar size={11} /> {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                             </span>
 
-                            {hasFullAccess && (
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 ${
-                                item.status === 'concluido' 
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                                  : item.status === 'recusado'
-                                    ? 'bg-red-50 text-red-700 border border-red-200'
-                                    : 'bg-amber-50 text-amber-800 border border-amber-200'
-                              }`}>
-                                <Timer size={10} />
-                                {item.status === 'concluido'
-                                  ? `Tempo: ${formatDurationShort(getChamadoDurationMinutes(item))}`
-                                  : item.status === 'recusado'
-                                    ? `Tempo: ${formatDurationShort(getChamadoDurationMinutes(item))}`
-                                    : `Há ${formatDurationShort(getChamadoDurationMinutes(item))}`
-                                }
-                              </span>
-                            )}
+                            {hasFullAccess && (() => {
+                              const bd = getChamadoTimeBreakdown(item)
+                              if (item.status === 'pendente_aprovacao') {
+                                return (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200" title={`Aguardando aprovação do setor ${item.approverSector}`}>
+                                    <Timer size={10} />
+                                    Aprov. ({item.approverSector}): {formatDurationShort(bd.sectorMinutes)}
+                                  </span>
+                                )
+                              }
+                              return (
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 ${
+                                  item.status === 'concluido' 
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                    : item.status === 'recusado'
+                                      ? 'bg-red-50 text-red-700 border border-red-200'
+                                      : 'bg-blue-50 text-blue-800 border border-blue-200'
+                                }`}>
+                                  <Timer size={10} />
+                                  {item.status === 'concluido'
+                                    ? `T.I: ${formatDurationShort(bd.tiMinutes)}`
+                                    : `T.I há ${formatDurationShort(bd.tiMinutes)}`
+                                  }
+                                </span>
+                              )
+                            })()}
 
                             <div className="flex items-center gap-2">
                               {item.comments && item.comments.length > 0 && (
@@ -496,23 +505,32 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
 
               {/* Status & Action */}
               <div className="flex items-center gap-3 shrink-0 self-end md:self-center w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                {hasFullAccess && (
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 ${
-                    item.status === 'concluido' 
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                      : item.status === 'recusado'
-                        ? 'bg-red-50 text-red-700 border border-red-200'
-                        : 'bg-amber-50 text-amber-800 border border-amber-200'
-                  }`}>
-                    <Timer size={11} />
-                    {item.status === 'concluido'
-                      ? `Resolvido em ${formatDurationShort(getChamadoDurationMinutes(item))}`
-                      : item.status === 'recusado'
-                        ? `Recusado em ${formatDurationShort(getChamadoDurationMinutes(item))}`
-                        : `Aberto há ${formatDurationShort(getChamadoDurationMinutes(item))}`
-                    }
-                  </span>
-                )}
+                {hasFullAccess && (() => {
+                  const bd = getChamadoTimeBreakdown(item)
+                  if (item.status === 'pendente_aprovacao') {
+                    return (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200">
+                        <Timer size={11} />
+                        Aprovação ({item.approverSector}): {formatDurationShort(bd.sectorMinutes)}
+                      </span>
+                    )
+                  }
+                  return (
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 ${
+                      item.status === 'concluido' 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : item.status === 'recusado'
+                          ? 'bg-red-50 text-red-700 border border-red-200'
+                          : 'bg-blue-50 text-blue-800 border border-blue-200'
+                    }`}>
+                      <Timer size={11} />
+                      {item.status === 'concluido'
+                        ? `Resolvido pela T.I em ${formatDurationShort(bd.tiMinutes)}`
+                        : `T.I há ${formatDurationShort(bd.tiMinutes)}`
+                      }
+                    </span>
+                  )
+                })()}
                 {getStatusBadge(item.status, item.approverSector)}
                 <div className="p-2 text-slate-400 group-hover:text-[#1b497d] group-hover:translate-x-0.5 transition-all">
                   <Eye size={18} />

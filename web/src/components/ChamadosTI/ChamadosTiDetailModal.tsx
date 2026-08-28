@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image, Timer } from 'lucide-react'
 import type { ChamadoTI } from './types'
-import { SETORES_APROVADORES, getChamadoDurationMinutes, formatDurationFull, getEffectiveCompletionDate } from './types'
+import { SETORES_APROVADORES, getChamadoDurationMinutes, formatDurationFull, getEffectiveCompletionDate, getChamadoTimeBreakdown } from './types'
 
 interface ChamadosTiDetailModalProps {
   chamado: ChamadoTI
@@ -130,26 +130,30 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
       <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="bg-[#1a2332] text-white px-6 py-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-extrabold bg-blue-500/30 border border-blue-400/40 text-blue-300 px-2.5 py-1 rounded-lg tracking-wider">
+        <div className="bg-[#1a2332] text-white p-4 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+            <span className="text-xs font-extrabold bg-blue-500/30 border border-blue-400/40 text-blue-300 px-2.5 py-1 rounded-lg tracking-wider whitespace-nowrap shrink-0">
               {chamado.code}
             </span>
-            <div>
-              <h3 className="font-bold text-base leading-tight truncate max-w-md">{chamado.title}</h3>
-              <p className="text-xs text-slate-300">Solicitado por {chamado.creatorName} ({chamado.creatorSector})</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold text-sm sm:text-base leading-tight text-white line-clamp-2 sm:truncate" title={chamado.title}>
+                {chamado.title}
+              </h3>
+              <p className="text-[11px] sm:text-xs text-slate-300 truncate mt-0.5">
+                Solicitado por {chamado.creatorName} ({chamado.creatorSector})
+              </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
             {canEdit && !isEditing && (
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
               >
                 <Edit size={14} />
-                Editar Chamado
+                <span>Editar Chamado</span>
               </button>
             )}
 
@@ -164,18 +168,18 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                     onClose()
                   }
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
                 title="Excluir Chamado"
               >
                 <Trash2 size={14} />
-                <span>Excluir</span>
+                <span className="whitespace-nowrap">Excluir</span>
               </button>
             )}
 
             <button 
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ml-1"
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ml-1 shrink-0"
             >
               <X size={20} />
             </button>
@@ -197,22 +201,21 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Métrica de Tempo / Ciclo de Vida (Visível apenas para T.I, Líder de Operações e Gestor/Diretoria) */}
+          {/* Métrica de Tempo / Ciclo de Vida (Visível para T.I, Líder de Operações e Gestor/Diretoria) */}
           {hasFullAccess && (() => {
-            const durationMinutes = getChamadoDurationMinutes(chamado)
-            const formattedDuration = formatDurationFull(durationMinutes)
+            const bd = getChamadoTimeBreakdown(chamado)
             const completionDateStr = getEffectiveCompletionDate(chamado)
             const isFinished = chamado.status === 'concluido' || chamado.status === 'recusado'
 
             return (
-              <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${
+              <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
                 chamado.status === 'concluido'
                   ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
                   : chamado.status === 'recusado'
                     ? 'bg-red-50/70 border-red-200 text-red-950'
                     : 'bg-amber-50/70 border-amber-200 text-amber-950'
               }`}>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold ${
                     chamado.status === 'concluido'
                       ? 'bg-emerald-100 text-emerald-700'
@@ -222,13 +225,34 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                   }`}>
                     <Timer size={20} />
                   </div>
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
-                      {isFinished ? 'Tempo Total de Atendimento (Resolução)' : 'Tempo Decorrido em Aberto'}
-                    </span>
-                    <span className="text-sm font-extrabold block">
-                      {formattedDuration}
-                    </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
+                        🛠️ Tempo do Suporte T.I
+                      </span>
+                      <span className="text-sm font-extrabold block text-blue-900">
+                        {formatDurationFull(bd.tiMinutes)}
+                      </span>
+                    </div>
+                    {bd.sectorMinutes > 0 || bd.isCurrentlyPendingSector ? (
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
+                          ⏳ Aprovação / Redirecionado ({bd.approverSector || 'Setor'})
+                        </span>
+                        <span className="text-sm font-extrabold block text-amber-900">
+                          {formatDurationFull(bd.sectorMinutes)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
+                          🕒 Tempo Total Corrido
+                        </span>
+                        <span className="text-sm font-extrabold block">
+                          {formatDurationFull(bd.totalMinutes)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

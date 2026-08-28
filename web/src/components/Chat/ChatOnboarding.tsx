@@ -28,6 +28,11 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     },
     {
       badge: "Manual EMULTEC — HELP 001",
+      title: "Passo a passo de Nota Fiscal de Devolução (Ref. Própria/Terceiro) e Transmissão SEFAZ",
+      tag: "Faturamento & NFe"
+    },
+    {
+      badge: "Manual EMULTEC — HELP 001",
       title: "Gerenciamento de Notas Fiscais NFe (Emissão, Devoluções, Boletos e Transmissão SEFAZ)",
       tag: "Faturamento"
     },
@@ -146,7 +151,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       tag: 'Suporte T.I',
       title: 'Chamados de T.I',
       description: 'Abertura e acompanhamento de suporte técnico com aprovação do gestor.',
-      actionText: 'Abrir Chamados',
+      actionText: 'Abrir Chamado',
       actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
       tagColor: 'text-[#6b5b95] bg-[#6b5b95]/10 border-[#6b5b95]/30',
       hoverTitle: 'group-hover:text-[#6b5b95]',

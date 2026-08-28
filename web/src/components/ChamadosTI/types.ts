@@ -67,15 +67,108 @@ export const getEffectiveCompletionDate = (chamado: ChamadoTI): string | undefin
   return undefined
 }
 
-export const getChamadoDurationMinutes = (chamado: ChamadoTI): number => {
-  const start = new Date(chamado.createdAt).getTime()
-  if (isNaN(start)) return 0
+export interface ChamadoTimeBreakdown {
+  totalMinutes: number
+  tiMinutes: number
+  sectorMinutes: number
+  approverSector: string
+  isCurrentlyPendingSector: boolean
+}
+
+export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdown => {
+  const startMs = new Date(chamado.createdAt).getTime()
+  if (isNaN(startMs)) {
+    return { totalMinutes: 0, tiMinutes: 0, sectorMinutes: 0, approverSector: chamado.approverSector, isCurrentlyPendingSector: false }
+  }
+
   const endDateStr = getEffectiveCompletionDate(chamado)
-  const end = (chamado.status === 'concluido' || chamado.status === 'recusado')
-    ? (endDateStr ? new Date(endDateStr).getTime() : start)
+  const endMs = (chamado.status === 'concluido' || chamado.status === 'recusado')
+    ? (endDateStr ? new Date(endDateStr).getTime() : startMs)
     : Date.now()
-  if (isNaN(end) || end < start) return 0
-  return Math.floor((end - start) / (1000 * 60))
+
+  const totalMinutes = Math.max(0, Math.floor((endMs - startMs) / (1000 * 60)))
+
+  const isDirectToTi = !chamado.approverSector || chamado.approverSector === 'none' || chamado.approverSector === 'Sem Aprovação (Direto T.I)'
+  const comments = chamado.comments || []
+
+  const hasRedirectionOrApproval = comments.some(c => 
+    (c.text && (c.text.includes('redirecionado para aprovação') || c.text.includes('Chamado Aprovado')))
+  )
+
+  if (isDirectToTi && !hasRedirectionOrApproval) {
+    return {
+      totalMinutes,
+      tiMinutes: totalMinutes,
+      sectorMinutes: 0,
+      approverSector: chamado.approverSector,
+      isCurrentlyPendingSector: false
+    }
+  }
+
+  // Linha do tempo dos comentários para separar tempos
+  const timelineEvents: { timestamp: number; type: 'redirection_or_pending' | 'approved' | 'in_service' }[] = []
+
+  comments.forEach(c => {
+    const cMs = new Date(c.createdAt).getTime()
+    if (isNaN(cMs)) return
+
+    if (c.text?.includes('redirecionado para aprovação')) {
+      timelineEvents.push({ timestamp: cMs, type: 'redirection_or_pending' })
+    } else if (c.text?.includes('Chamado Aprovado')) {
+      timelineEvents.push({ timestamp: cMs, type: 'approved' })
+    } else if (c.text?.includes('Atendimento iniciado pelo técnico')) {
+      timelineEvents.push({ timestamp: cMs, type: 'in_service' })
+    }
+  })
+
+  timelineEvents.sort((a, b) => a.timestamp - b.timestamp)
+
+  let currentOwner: 'sector' | 'ti' = (chamado.status === 'pendente_aprovacao' || !isDirectToTi) ? 'sector' : 'ti'
+  let lastMs = startMs
+  let accumulatedSectorMs = 0
+  let accumulatedTiMs = 0
+
+  timelineEvents.forEach(evt => {
+    if (evt.timestamp < lastMs) return
+    const elapsed = evt.timestamp - lastMs
+
+    if (currentOwner === 'sector') {
+      accumulatedSectorMs += elapsed
+    } else {
+      accumulatedTiMs += elapsed
+    }
+
+    if (evt.type === 'redirection_or_pending') {
+      currentOwner = 'sector'
+    } else if (evt.type === 'approved' || evt.type === 'in_service') {
+      currentOwner = 'ti'
+    }
+    lastMs = evt.timestamp
+  })
+
+  if (endMs > lastMs) {
+    const finalElapsed = endMs - lastMs
+    if (chamado.status === 'pendente_aprovacao') {
+      accumulatedSectorMs += finalElapsed
+    } else {
+      accumulatedTiMs += finalElapsed
+    }
+  }
+
+  const tiMinutes = Math.max(0, Math.floor(accumulatedTiMs / (1000 * 60)))
+  const sectorMinutes = Math.max(0, Math.floor(accumulatedSectorMs / (1000 * 60)))
+
+  return {
+    totalMinutes,
+    tiMinutes,
+    sectorMinutes,
+    approverSector: chamado.approverSector,
+    isCurrentlyPendingSector: chamado.status === 'pendente_aprovacao'
+  }
+}
+
+export const getChamadoDurationMinutes = (chamado: ChamadoTI): number => {
+  return getChamadoTimeBreakdown(chamado).tiMinutes
 }
 
 export const formatDurationShort = (minutes: number): string => {
