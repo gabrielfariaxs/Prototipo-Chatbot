@@ -69,6 +69,32 @@ const mapToNotification = (data: any): TiNotification => ({
   chamadoId: data.chamado_id
 })
 
+const normalizeSectorStr = (sec?: string): string => {
+  if (!sec) return ''
+  return sec
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim()
+}
+
+const isSameSector = (sec1?: string, sec2?: string): boolean => {
+  if (!sec1 || !sec2) return false
+  if (sec1 === sec2) return true
+  const n1 = normalizeSectorStr(sec1)
+  const n2 = normalizeSectorStr(sec2)
+  if (n1 === n2) return true
+  if (n1.includes('estoque') && n2.includes('estoque')) return true
+  if (n1.includes('comercial') && n2.includes('comercial')) return true
+  if (n1.includes('qualidade') && n2.includes('qualidade')) return true
+  if (n1.includes('financeiro') && n2.includes('financeiro')) return true
+  if (n1.includes('operac') && n2.includes('operac')) return true
+  if (n1.includes('gestor') && n2.includes('gestor')) return true
+  if (n1.includes('ti') && n2.includes('ti')) return true
+  return false
+}
+
 export const ChamadosTiPanel: React.FC = () => {
   const [chamados, setChamados] = useState<ChamadoTI[]>([])
   const [selectedChamado, setSelectedChamado] = useState<ChamadoTI | null>(null)
@@ -85,61 +111,94 @@ export const ChamadosTiPanel: React.FC = () => {
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false)
 
   const loadData = async () => {
-    const { data: chamadosData } = await supabase.from('ti_chamados').select('*').order('created_at', { ascending: false })
-    if (chamadosData) {
-      const mapped = chamadosData.map(mapToChamadoTI)
-      setChamados(mapped)
-      setSelectedChamado(prev => {
-        if (!prev) return null;
-        const fresh = mapped.find(c => c.id === prev.id)
-        return fresh || prev
+    try {
+      const { data: chamadosData, error: chamadosErr } = await supabase
+        .from('ti_chamados')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (chamadosErr) {
+        console.warn('Aviso: Falha temporária ao carregar chamados:', chamadosErr.message)
+      } else if (chamadosData) {
+        const mapped = chamadosData.map(mapToChamadoTI)
+        setChamados(mapped)
+        setSelectedChamado(prev => {
+          if (!prev) return null
+          const fresh = mapped.find(c => c.id === prev.id)
+          return fresh || prev
+        })
+      }
+
+      const { data: notifData, error: notifErr } = await supabase
+        .from('ti_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (!notifErr && notifData) {
+        setNotifications(notifData.map(mapToNotification))
+      }
+    } catch (err) {
+      console.error('Exceção na consulta de chamados T.I:', err)
+    }
+  }
+
+  // Carregar setor/nível e nome do usuário a partir do localStorage e sessão, com listener em tempo real
+  useEffect(() => {
+    const updateUserInfo = () => {
+      const savedSector = localStorage.getItem('userSector') || 'Geral'
+      const savedLevel = localStorage.getItem('userLevel') || 'lider'
+      setUserSector(savedSector)
+      setUserLevel(savedLevel)
+
+      const levelLabel =
+        savedLevel === 'coo' ? 'COO/Diretoria' :
+        savedLevel === 'lider' ? 'Líder de Setor' :
+        'Colaborador'
+
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const metaName = session.user.user_metadata?.full_name as string | undefined
+          const displayName = (metaName && metaName.trim())
+            ? metaName.trim()
+            : `${levelLabel} - ${savedSector}`
+          setUserName(displayName)
+          const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+          setUserInitials(initials)
+        } else {
+          const displayName = `${levelLabel} - ${savedSector}`
+          setUserName(displayName)
+          const initials = savedSector.substring(0, 2).toUpperCase()
+          setUserInitials(initials)
+        }
       })
     }
 
-    const { data: notifData } = await supabase.from('ti_notifications').select('*').order('created_at', { ascending: false })
-    if (notifData) setNotifications(notifData.map(mapToNotification))
-  }
-
-  // Carregar setor/nível e nome do usuário a partir do localStorage e sessão
-  useEffect(() => {
-    const savedSector = localStorage.getItem('userSector') || 'Geral'
-    const savedLevel = localStorage.getItem('userLevel') || 'lider'
-    setUserSector(savedSector)
-    setUserLevel(savedLevel)
-
-    // Mapeia o nível salvo para um rótulo legível
-    const levelLabel =
-      savedLevel === 'coo' ? 'COO/Diretoria' :
-      savedLevel === 'lider' ? 'Líder de Setor' :
-      'Colaborador'
-
-    // Deriva o nome de exibição combinando nível + setor
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const metaName = session.user.user_metadata?.full_name as string | undefined
-        const displayName = (metaName && metaName.trim())
-          ? metaName.trim()
-          : `${levelLabel} - ${savedSector}`
-        setUserName(displayName)
-        const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
-        setUserInitials(initials)
-      } else {
-        // Login via senha master (sem sessão Supabase)
-        const displayName = `${levelLabel} - ${savedSector}`
-        setUserName(displayName)
-        const initials = savedSector.substring(0, 2).toUpperCase()
-        setUserInitials(initials)
-      }
-    })
-
+    updateUserInfo()
     loadData()
 
-    // Polling a cada 10 segundos para manter a tela sempre atualizada
+    // Inscreve no Supabase Realtime para receber atualizações instantâneas no banco
+    const channel = supabase
+      .channel('ti_chamados_realtime_panel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ti_chamados' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ti_notifications' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    // Polling a cada 10 segundos como fallback
     const interval = setInterval(() => {
       loadData()
     }, 10000)
 
-    return () => clearInterval(interval)
+    window.addEventListener('storage', updateUserInfo)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('storage', updateUserInfo)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const addNotification = async (notif: Omit<TiNotification, 'id' | 'createdAt' | 'read'>) => {
@@ -392,17 +451,18 @@ export const ChamadosTiPanel: React.FC = () => {
     setSelectedChamado(null)
   }
 
-  const isOperationsLeader = (userSector === 'Operações' || userSector === 'Operacoes') && userLevel !== 'colaborador'
-  const isGestorOrDiretoria = userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || userLevel === 'coo'
-  const isTi = userSector === 'T.I'
+  const normalizedUserSec = normalizeSectorStr(userSector)
+  const isOperationsLeader = normalizedUserSec.includes('operac') && userLevel !== 'colaborador'
+  const isGestorOrDiretoria = normalizedUserSec.includes('gestor') || normalizedUserSec.includes('diretoria') || userLevel === 'coo'
+  const isTi = normalizedUserSec.includes('ti') || normalizedUserSec.includes('tecnologia')
   const hasFullAccess = isTi || isGestorOrDiretoria || isOperationsLeader
 
   // Notificações relevantes ao usuário logado
   const relevantNotifications = notifications.filter(n =>
     !n.targetSector ||
-    n.targetSector === userSector ||
+    isSameSector(n.targetSector, userSector) ||
     hasFullAccess ||
-    (n.targetUser && n.targetUser.toLowerCase() === userName.toLowerCase())
+    (n.targetUser && userName && n.targetUser.toLowerCase().includes(userName.toLowerCase()))
   )
 
   const unreadCount = relevantNotifications.filter(n => !n.read).length
@@ -425,28 +485,37 @@ export const ChamadosTiPanel: React.FC = () => {
     setNotifications(notifications.map(n => n.id === notifId ? { ...n, read: true } : n))
   }
 
-  // Filtragem baseada na aba
+  // Filtragem baseada na aba com suporte a normalização de setor
   const getTabChamados = () => {
     if (activeTab === 'aprovacoes') {
       return chamados.filter(c =>
         c.status === 'pendente_aprovacao' &&
-        (c.approverSector === userSector || hasFullAccess)
+        (isSameSector(c.approverSector, userSector) || hasFullAccess)
       )
     }
     if (activeTab === 'ti') {
       // Fila T.I / Geral vê tudo na fila
       return chamados
     }
-    // 'meus'
+    // 'meus' (Chamados do meu setor ou criados por mim)
     if (hasFullAccess) {
       return chamados
     }
-    return chamados.filter(c => c.creatorSector === userSector || c.creatorName.toLowerCase() === userName.toLowerCase())
+
+    const cleanUserName = (userName || '').toLowerCase().trim()
+
+    return chamados.filter(c => {
+      const matchSector = isSameSector(c.creatorSector, userSector) || isSameSector(c.approverSector, userSector)
+      const creatorLower = (c.creatorName || '').toLowerCase().trim()
+      const matchUser = cleanUserName && (creatorLower.includes(cleanUserName) || cleanUserName.includes(creatorLower))
+      const isGlobalFallback = !userSector || userSector === 'Geral'
+      return matchSector || matchUser || isGlobalFallback
+    })
   }
 
   // Contagem para badges
   const pendingApprovalsCount = chamados.filter(c =>
-    c.status === 'pendente_aprovacao' && (c.approverSector === userSector || hasFullAccess)
+    c.status === 'pendente_aprovacao' && (isSameSector(c.approverSector, userSector) || hasFullAccess)
   ).length
 
   return (

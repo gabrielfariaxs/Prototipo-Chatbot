@@ -27,9 +27,14 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({})
 
   const savedLevel = userLevel || localStorage.getItem('userLevel') || 'lider'
-  const isOperationsLeader = (userSector === 'Operações' || userSector === 'Operacoes') && savedLevel !== 'colaborador'
-  const isGestorOrDiretoria = userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || savedLevel === 'coo'
-  const isTiTeam = userSector === 'T.I'
+  const normalizedUserSec = (userSector || '')
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+  const isOperationsLeader = normalizedUserSec.includes('operac') && savedLevel !== 'colaborador'
+  const isGestorOrDiretoria = normalizedUserSec.includes('gestor') || normalizedUserSec.includes('diretoria') || savedLevel === 'coo'
+  const isTiTeam = normalizedUserSec.includes('ti') || normalizedUserSec.includes('tecnologia')
   const hasFullAccess = isTiTeam || isGestorOrDiretoria || isOperationsLeader
 
   // Filtragem por Período para os Cards de Métricas

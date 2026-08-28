@@ -96,24 +96,6 @@
         "conteudo": "1. Copiar o ID do paciente do sistema. 2. Ir em Cadastro > Cirurgia > Procura pelos dados do paciente(nome ou ID) e verificar se tem baixa. 3. Ir em 'Material Utilizado-Pós' se tiver a comanda pode-se valorizar. 4. Conferir comanda com a baixa. 5. Verificar os valores e apertar em Precificado. 6. Colocar no Porta do cliente, email."
     },
     {
-        "processo": "Fluxo de cadastro",
-        "setor": "Orçamento - Medic",
-        "sistema": "Vários",
-        "conteudo": "Objetivo: Garantir que hospitais, convênios e médicos estejam corretamente cadastrados no sistema. Cadastro de Hospital ou Convênio (Cliente): 1. Acessar: Cadastro > Clientes > Novo. 2. Inserir o CNPJ e clicar na bolinha de busca. 3. Conferir as informações. Se o cliente será faturado diretamente, marcar como Cliente Final. Se for hospital, é obrigatório vinculá-lo às cirurgias. Vinculação do Hospital às Cirurgias: 1. Acessar: Movimentos > Comercial. 2. Abrir qualquer cirurgia. 3. No cabeçalho, localizar o campo Hospital. 4. Clicar na lupa e importar o CNPJ. Cadastro apenas do Convênio: Convênios > Novo > Inserir nome e salvar. Cadastro de Médico: 1. Clicar na lupa ao lado do campo Médico. 2. Selecionar Novo. 3. Preencher obrigatoriamente: Nome, CRM, Cidade, Estado, Vendedor."
-    },
-    {
-        "processo": "Fluxo de agendamento de cirurgias",
-        "setor": "Orçamento - Medic",
-        "sistema": "Vários",
-        "conteudo": "Objetivo: Registrar corretamente todos os agendamentos. 1. Acessar: Movimentos > Comercial > Novo. 2. Inserir todas as informações recebidas (Data, Hora, Parte do corpo, Tipo de cirurgia, Médico, Hospital, Convênio, Representante). Cirurgia Eletiva: Conferir se o agendamento está de acordo com a autorização > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete para sincronização. Cirurgia de Urgência: Criar novo cadastro > Inserir informações > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete. Se o markup (margem) estiver baixo, solicitar aprovação da coordenação."
-    },
-    {
-        "processo": "Fluxo de visualização de Nota Fiscal",
-        "setor": "Orçamento - Medic",
-        "sistema": "Vários",
-        "conteudo": "Caminho 1 - Pela Visualização Geral: 1. Habilitar o servidor. 2. Acessar: Movimentos > Visualização. 3. Clicar em NF e inserir a numeração. 4. Abrir a nota com dois cliques. 5. Conectar ao servidor. 6. Visualizar DANFE ou PDF. Caminho 2 - Pela Cirurgia: 1. Acessar: Movimentos > Comercial > Visualização. 2. Abrir a cirurgia desejada. 3. Acessar a aba Nota Fiscal. 4. Clicar na nota. 5. Conectar ao servidor. 6. Gerar o DANFE."
-    },
-    {
         "processo": "Conferência de Cirurgias (Fluxo de Segunda-feira)",
         "setor": "Orçamento - Arthromed",
         "sistema": "Emultec / WhatsApp",
@@ -145,25 +127,25 @@
     },
     {
         "processo": "Fluxo de Cadastro",
-        "setor": "Orçamento - Arthromed",
+        "setor": "Orçamento",
         "sistema": "Emultec",
         "conteudo": "Objetivo: Garantir que hospitais, convênios e médicos estejam corretamente cadastrados no sistema. Cadastro de Hospital ou Convênio (Cliente): 1. Acessar: Cadastro > Clientes > Novo. 2. Inserir o CNPJ e clicar na bolinha de busca. 3. Conferir as informações. Se o cliente será faturado diretamente, marcar como Cliente Final. Se for hospital, é obrigatório vinculá-lo às cirurgias. Vinculação do Hospital às Cirurgias: 1. Acessar: Movimentos > Comercial. 2. Abrir qualquer cirurgia. 3. No cabeçalho, localizar o campo Hospital. 4. Clicar na lupa e importar o CNPJ. Cadastro apenas do Convênio: Convênios > Novo > Inserir nome e salvar. Cadastro de Médico: 1. Clicar na lupa ao lado do campo Médico. 2. Selecionar Novo. 3. Preencher obrigatoriamente: Nome, CRM, Cidade, Estado, Vendedor."
     },
     {
         "processo": "Fluxo de Agendamento de Cirurgias",
-        "setor": "Orçamento - Arthromed",
+        "setor": "Orçamento",
         "sistema": "Emultec",
         "conteudo": "Objetivo: Registrar corretamente todos os agendamentos. 1. Acessar: Movimentos > Comercial > Novo. 2. Inserir todas as informações recebidas (Data, Hora, Parte do corpo, Tipo de cirurgia, Médico, Hospital, Convênio, Representante). Cirurgia Eletiva: Conferir se o agendamento está de acordo com a autorização > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete para sincronização. Cirurgia de Urgência: Criar novo cadastro > Inserir informações > Marcar como Aprovado > Confirmar agendamento > Clicar no capacete. Se o markup (margem) estiver baixo, solicitar aprovação da coordenação."
     },
     {
         "processo": "Fluxo de Relatórios",
-        "setor": "Orçamento - Arthromed",
+        "setor": "Orçamento",
         "sistema": "Emultec",
         "conteudo": "Relatório de Faturamento: Relatórios > NF Emitidas > Filtrar por Saída, Data, Médico/Cliente, Tipo (Venda e Consignada). Relatório de Cirurgias Realizadas: Movimento > Visualização > Filtrar data > Clicar no ícone do Excel. Relatório de Todas as Cirurgias: Comercial > Relatórios > Orçamentos / Cotações Abertas. Relatório de Pendências: Movimento > Comercial > Cirurgias Finalizadas > Clicar em Relatório de Pendências > Aplicar filtros."
     },
     {
         "processo": "Fluxo de Visualização de Nota Fiscal",
-        "setor": "Orçamento - Arthromed",
+        "setor": "Orçamento",
         "sistema": "Emultec",
         "conteudo": "Caminho 1 - Pela Visualização Geral: 1. Habilitar o servidor. 2. Acessar: Movimentos > Visualização. 3. Clicar em NF e inserir a numeração. 4. Abrir a nota com dois cliques. 5. Conectar ao servidor. 6. Visualizar DANFE ou PDF. Caminho 2 - Pela Cirurgia: 1. Acessar: Movimentos > Comercial > Visualização. 2. Abrir a cirurgia desejada. 3. Acessar a aba Nota Fiscal. 4. Clicar na nota. 5. Conectar ao servidor. 6. Gerar o DANFE."
     },
@@ -184,5 +166,41 @@
         "setor": "Estoque/Logística",
         "sistema": "Sysweb (Emultec)",
         "conteudo": "1. Fazer a análise das cirurgias do mês (Detalhes > Imprimir Urgência).\n2. Informar para Genilson (atualmente responsável por fazer o processo de compras)."
+    },
+    {
+        "processo": "EMULTEC — HELP 001: Cadastro de Cirurgia e Guia Orçamento",
+        "setor": "Orçamento",
+        "sistema": "EMULTEC",
+        "conteudo": "No Menu Principal > Movimentos > Cirurgia.\nCirurgia é um processo gerencial para controlar orçamento, agendamento, envio de material, gasto e emissão de Nota Fiscal.\n\n1º Passo - Adicionar Novo Registro e Preencher Cadastro:\n- Id: gerado automaticamente pelo sistema.\n- Data Cirurgia: data prevista da cirurgia.\n- Hora cirurgia: hora prevista da cirurgia.\n- Parte corpo: informar parte do corpo (Ex: Crânio, Buco, Quadril, Pé, Ombro, etc.).\n- Subtipo: informar subtipo da cirurgia (Ex: Cervical, Neuroendoscopia, Biopsia, Artrodese, etc.).\n- Status: preenchido automaticamente (Ex: Orçamento, Aprovada, Separando, Retorno, Finalizada, Faturada).\n- Nome Paciente: paciente cadastrado no sistema.\n- Nome Cliente / Faturamento: cliente cadastrado no sistema.\n- Médico: selecionar médico responsável. Caso não apareça, clicar na lupa ao lado do campo para cadastrar.\n- Hospital: selecionar hospital. Caso não apareça, clicar na lupa ao lado do campo para cadastrar.\n- Convênio: selecionar convênio. Caso não apareça, clicar na lupa ao lado do campo para cadastrar.\n- Representante: selecionar vendedor (pode ser indicado no cadastro do médico).\n- Instrumentador (a): selecionar instrumentador(a).\n- Observação para Agenda da Cirurgia: observações referente à cirurgia.\n- Observação Instrumentador (a): observações para o instrumentador.\n- Dados Internos: observações para consulta interna.\n- Registro usuário: preenchido automaticamente (Data, Hora e Usuário da alteração de status).\n\n2º Passo - Guia Orçamento(s):\n- Adicionar novo registro clicando no botão verde para inserir uma nova proposta.\n- Inserir itens cotados usando os botões 'Produtos Avulsos' e 'Conjuntos'.\n- Importante: É possível inserir produtos avulsos e conjuntos no mesmo orçamento. O sistema destaca em verde as linhas dos produtos do conjunto e em branco os produtos avulsos. A composição do conjunto deve ser criada previamente no cadastro de conjuntos."
+    },
+    {
+        "processo": "EMULTEC — HELP 001: Precificação do Orçamento e Atalhos da Tela",
+        "setor": "Orçamento",
+        "sistema": "EMULTEC",
+        "conteudo": "3º Passo - Precificação do Orçamento:\nTipos de Precificação:\n- Valor Fechado: Ao clicar neste botão e colocar o valor fechado, o sistema distribui os valores baseado no preço de custo de cada item (Ex: se a cirurgia fechar em R$ 25.000 com 9 itens, o sistema distribui a quantia proporcionalmente para totalizar os R$ 25.000).\n- Valor Convênio (Valor de Parâmetros): Importa os valores dos itens cadastrados na tela de valores de produtos por convênio ao selecionar o convênio.\n- Valor Cheio / Manual: Dar duplo clique no campo valor e adicionar o valor manualmente item a item.\n  * IMPORTANTE ao lançar manualmente: Para não alterar o valor na lista de convênio, selecione a opção 'Não alterar valor na lista de convênio'.\n\nBotões e Atalhos da Tela de Orçamento:\n- Localiza por Referência os itens da lista\n- Pesquisa Produtos em Orçamentos Anteriores\n- Alterar Ordem dos Itens Listados (setas para cima/baixo) / Reordenar itens\n- Tecla de atalho F11: Lista histórico do item selecionado\n- Tecla de atalho F12: Lista histórico de todos os itens do orçamento\n- Desconto %: Aplicar desconto em % para todos os itens\n- Data Cobrança: Altera data de cobrança do orçamento\n- Duplicar: Duplica orçamento selecionado\n- Excel: Exportar Orçamento para Excel\n- Markup: Abre markup dos itens lançados\n- Ícones de Impressora / E-mail (Orçamento): Impressão do orçamento e envio por e-mail\n- Ícones de Impressora / E-mail (Instrumentadora): Impressão da observação da instrumentadora e envio por e-mail"
+    },
+    {
+        "processo": "EMULTEC — HELP 001: Aprovação de Orçamentos e Autorização para Separação de Material",
+        "setor": "Orçamento",
+        "sistema": "EMULTEC",
+        "conteudo": "Procedimento para Aprovação de Orçamentos:\n1. Após a aprovação da cirurgia pelo convênio do paciente, vá até a aba ORÇAMENTO(S).\n2. Clique com o botão direito do mouse sobre a situação da proposta (status 'PROPOSTA') e selecione 'Marcar como Aprovado'.\n3. Na janela de confirmação ('Deseja marcar este orçamento selecionado como APROVADO?'), clique em Yes.\n4. O campo na tabela ficará na cor AZUL.\n\nAutorização para Separação de Material (Estoque / Almoxarifado):\n1. Após a proposta ser aprovada, clique com o botão direito do mouse novamente sobre a proposta já aprovada e selecione 'Autorização OK'.\n2. Se não fizer o procedimento de autorização OK, os responsáveis do almoxarifado ou estoque NÃO receberão o pedido de separação.\n3. Ao selecionar 'Autorização OK', o almoxarife ou estoquista recebe uma mensagem em tempo real para a separação do(s) produto(s) ou caixa(s)."
+    },
+    {
+        "processo": "EMULTEC — HELP 001: Gerenciamento e Cadastro de Notas Fiscais (NFe)",
+        "setor": "Faturamento",
+        "sistema": "EMULTEC / Sys Personnalite",
+        "conteudo": "Manual NFe / Gerenciamento de Notas (EMULTEC / Sys Personnalite)\nConceito: A Nota Fiscal Eletrônica é o documento digital para fins fiscais. Guardar o arquivo por 5 anos (emissão e recebimento).\n\nAcesso ao Cadastro de Notas:\nNa tela inicial do Sys Personnalite, clique no botão OPERACIONAL. No Menu Principal superior > Movimentos > Gerenciamento de Notas.\n\nAba Notas Emitidas (Filtros de Pesquisa):\n- NFe: pesquisar nota pelo número.\n- Listar: visualizar todas as notas emitidas no sistema.\n- Id Cir.: localizar nota pelo Id da Cirurgia.\n- Id Avu.: localizar nota pelo Id do Vale Avulso.\n- Id Cons.: localizar nota pelo Id do Consignado.\n\nAba Cadastro - Dados do Cliente:\nIndicar o cliente de faturamento buscando por ID, Nome, Razão Social, CNPJ ou CPF (é possível cadastrar no momento da emissão).\nCampos: Id, Nome Fantasia, Razão Social, CNPJ, CPF, Telefone, E-mail, Consumidor Final (SIM/NÃO), Botão 'Transf. Contrato' (permite transferir nota a outro cliente antes da emissão) e Botão 'Markup' (analisa margem após autorização da nota de venda).\n\nAba Nota / Campos Gerais:\n- Id_Nota: código interno gerado automaticamente.\n- N° Nota: número sequencial (clicar em + gera o próximo sequencial).\n- Data Nota / Data Saída / Hora Saída: datas e hora da emissão.\n- Dados para Exportação: indicar a embarcação.\n- Vínculos Gerenciais: Id_Cirurgia (cirúrgico), Id_Avulsa (venda direta), Id_Consignado (vale consignado), Id_Empenho (empenho), Id_Empréstimo (empréstimo).\n- Tipo E/S: Entrada ou Saída.\n- Natureza de Operação: operação fiscal (venda, remessa, amostra, retorno, devolução, complemento, etc.).\n- Quantidade & Espécie: volume transportado (caixa, galão, etc.).\n- Frete: CIF (1), FOB (2), Terceiros (3), Transporte Próprio (9) + Val. Frete.\n- Transportador, Placa Veic. e UF.\n- Peso Bruto & Peso Líquido (botão 'P' calcula peso pelo cadastro de produtos).\n- Botão Dados Adicionais & Desp. Acessórias.\n\nPasso a Passo para Emissão de Nota Fiscal:\n1. Na aba Cadastro, clicar no botão 'Novo Registro' na área Gerencial.\n2. O campo 'N° Nota' estará liberado; preencher o número ou gerar sequencial, informando Data Nota, Data Saída e Hora Saída.\n3. Preencher o Id correspondente (Cirurgia, Avulsa, Consignado, Empenho ou Empréstimo).\n4. Especificar se é nota de Entrada ou Saída.\n5. Preencher a Natureza de Operação (obrigatório).\n6. Preencher Quantidade, Espécie, Frete (1, 2, 3 ou 9), Valor do Frete, Transportadora, Placa e UF conforme necessário."
+    },
+    {
+        "processo": "EMULTEC — HELP 001: Aba Produtos, Importação, Devolução e Precificação da NFe",
+        "setor": "Faturamento",
+        "sistema": "EMULTEC / Sys Personnalite",
+        "conteudo": "Campos de Produto na NFe:\nCFOP, Id_Produto, Código, Produto, Unidade, NCM, Lote, Qtdade, Valor, Total, Código SUS, Origem, CST, ICMS, ICMS Red, ICMS ST, CST IPI, IPI, Base IPI, CST PIS, PIS, CST Cofins, Consignado, Inf. Adicional de Produto, Importação (Valor Base, Desp. Aduaneiras, Valor II, Valor IOF).\n\nBotões de Inserção Automática de Produtos:\n- Importação DI -> p/ Produto Selecionado: Declaração de Importação.\n- Inserir Itens AGENDADOS da Cirurgia: Traz todos os itens do vale de saída para gerar nota de remessa (requer Id cirurgia).\n- Cirur AvulsConsigEmpe: Traz os itens utilizados da cirurgia/avulso/consignado/empenho (no consignado traz itens consignados).\n- Dev. Simb.: Pega os utilizados da cirurgia e referencia suas notas de remessa efetuando devolução simbólica.\n- Dev. Ref.: Informa a nota de origem para retornar todos os itens.\n- Ret.: Permite selecionar produtos retirados por não conformidade.\n- Empr.: Importa produtos recebidos por empréstimo.\n- SFP: Importa o gasto personalizado trazendo os kits.\n\nFunções Auxiliares da Aba Produtos:\n- Espelhar Produtos da NFe cadastrada: Traz produtos de nota anterior gerada.\n- Tributar Produtos que estão sem CFOP: Atribui tributações cadastradas na guia de Tributação Relacionada.\n- Tributar Produtos que estão sem CFOP (!!!): Cadastra tributação relacionada na própria nota sem abrir nova guia.\n- Alterar Valor do Produto ($): Precifica material através das tabelas cadastradas.\n- Aplicar Desconto Percentual (D): Especifica porcentagem de desconto distribuída no total da nota.\n- Iniciar Ordenação / Sobe Produto / Desce Produto: Reordena lista de produtos.\n- Rastrear Origem (F9): Retorna rastreabilidade de origem.\n- Localizar outras notas para Produto Selecionado (?): Mostra outras emissões para os produtos selecionados.\n- Importar de Planilha em Excel / XML: Importa produtos via Excel ou arquivo XML selecionado.\n- TC: Inserir valores na tabela de convênio."
+    },
+    {
+        "processo": "EMULTEC — HELP 001: Aba Parcelas, Boletos, SEFAZ (ACBr) e Resumo da NFe",
+        "setor": "Faturamento",
+        "sistema": "EMULTEC / Sys Personnalite",
+        "conteudo": "Aba Parcelas (Faturamento & Cobrança):\n- Parcelas: quantidade de parcelas do pagamento.\n- 1ª Data Venc. (botão ? calcula vencimento da 1ª parcela).\n- Intervalo da Parc.: intervalo em dias entre parcelas.\n- Desconto ($ ou %): aplicar desconto valor fixo ou porcentagem.\n- Botão Gerar & Desmembrar Par.: Gera parcelas ou quebra parcela única em múltiplas.\n- Nosso Número: ID numérico da parcela para consulta bancária.\n- Emissão e Envio de Boletos: Itaú, Bradesco, Santander, Banco do Brasil, Caixa, Depósito (gera boleto e permite envio direto por e-mail ao cliente).\n- Duplicata Mercantil & Recibo: Geração de modelo para descrição e recibo.\n\nAba Devolução - Ref. Nota Emitida:\n- Botões + / -: Relacionar ou remover vínculo da nota de origem com a devolução emitida.\n- Referência Nota Emissão Própria (Sys Personnalite) ou Terceiro (apenas informar os 44 números da chave de acesso).\n\nAba Kit de Produtos - Referencial & Observações Administrativas:\n- Inserir/remover kit de produtos e seus componentes.\n- Inserir observações administrativas pertinentes ao faturamento.\n\nAba NFe Gerenciamento (ACBr / SEFAZ):\n- Status da NFe: Cancelada, Autorizada, Arquivo ou Digitação.\n- Host & Porta: Conexão via IP e porta 3434 ou 3436.\n- Botões Conectar / Desconectar ACBr.\n- Consultar SEFAZ, Status Webservice & Consultar Eventos.\n- Criar XML -> Validar XML -> Transmitir XML.\n- Visualizar DANFE, PDF DANFE, Enviar e-Mail / Outlook (envia DANFE, XML e boleto).\n- Cancelar Nota / Inutilizar NFe / Carta de Correção (CCe).\n\nAba NFe Resumo:\n- Histórico completo: Status, Data/Hora Autorização, Chave (44 dígitos), Protocolo, DigVal, Data e Motivo de Cancelamento.\n- Confirmação de recebimento do cliente (botão 'Confirmar Recebimento do Cliente' registra data, hora e usuário que confirmou).\n- CCe (Carta de Correção): Impressão e envio do anexo por e-mail."
     }
 ]

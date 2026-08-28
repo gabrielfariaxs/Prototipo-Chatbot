@@ -20,15 +20,41 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenSolicitacaoMedica,
   onOpenChamadosTi
 }) => {
+  const PROCESS_NEWS = [
+    {
+      badge: "Manual EMULTEC — HELP 001",
+      title: "Novos procedimentos de Cirurgias & Orçamentos (Cadastro, Precificação, Aprovação e Separação)",
+      tag: "Orçamento & Estoque"
+    },
+    {
+      badge: "Manual EMULTEC — HELP 001",
+      title: "Gerenciamento de Notas Fiscais NFe (Emissão, Devoluções, Boletos e Transmissão SEFAZ)",
+      tag: "Faturamento"
+    },
+    {
+      badge: "Novo Procedimento",
+      title: "Transferência de Faturamento Filial para Matriz no Emultec passo a passo",
+      tag: "Faturamento Matriz"
+    }
+  ]
+
   const [showNotification, setShowNotification] = useState(true)
+  const [newsIndex, setNewsIndex] = useState(0)
 
   useEffect(() => {
     setShowNotification(true)
+    const newsInterval = setInterval(() => {
+      setNewsIndex((prev) => (prev + 1) % PROCESS_NEWS.length)
+    }, 4500)
+
     const timer = setTimeout(() => {
       setShowNotification(false)
-    }, 10000)
+    }, 14000)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearInterval(newsInterval)
+      clearTimeout(timer)
+    }
   }, [])
   const handlePortfolioClick = () => {
     if (onOpenPortfolio) {
@@ -161,16 +187,27 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
                   </span>
                 </div>
 
-                <div className="flex flex-col text-left">
+                <div className="flex flex-col text-left overflow-hidden min-h-[44px] justify-center">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider flex items-center gap-1">
-                      <Sparkles size={10} /> Novo Procedimento
+                      <Sparkles size={10} /> {PROCESS_NEWS[newsIndex].badge}
                     </span>
-                    <span className="text-[10px] text-white/70 font-medium">Disponível no Chatbot</span>
+                    <span className="text-[10px] text-white/70 font-medium font-mono">
+                      {newsIndex + 1}/{PROCESS_NEWS.length} &bull; {PROCESS_NEWS[newsIndex].tag}
+                    </span>
                   </div>
-                  <p className="text-xs sm:text-sm font-bold text-white leading-snug">
-                    Novo Procedimento de Transferencia de faturamento Matriz já disponivel no chatbot
-                  </p>
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={newsIndex}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2"
+                    >
+                      {PROCESS_NEWS[newsIndex].title}
+                    </motion.p>
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -193,11 +230,11 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
                 </button>
               </div>
 
-              {/* Barra de progresso do temporizador de 10 segundos */}
+              {/* Barra de progresso do temporizador */}
               <motion.div
                 initial={{ width: '100%' }}
                 animate={{ width: '0%' }}
-                transition={{ duration: 10, ease: 'linear' }}
+                transition={{ duration: 14, ease: 'linear' }}
                 className="absolute bottom-0 left-0 h-1 bg-emerald-400/90"
               />
             </motion.div>
