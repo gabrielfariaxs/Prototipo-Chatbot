@@ -88,11 +88,22 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
 
   const totalMinutes = Math.max(0, Math.floor((endMs - startMs) / (1000 * 60)))
 
+  // Se o chamado está aguardando aprovação, todo o tempo decorrido pertence ao setor de aprovação e NADA ao T.I
+  if (chamado.status === 'pendente_aprovacao') {
+    return {
+      totalMinutes,
+      tiMinutes: 0,
+      sectorMinutes: totalMinutes,
+      approverSector: chamado.approverSector,
+      isCurrentlyPendingSector: true
+    }
+  }
+
   const isDirectToTi = !chamado.approverSector || chamado.approverSector === 'none' || chamado.approverSector === 'Sem Aprovação (Direto T.I)'
   const comments = chamado.comments || []
 
   const hasRedirectionOrApproval = comments.some(c => 
-    (c.text && (c.text.includes('redirecionado para aprovação') || c.text.includes('Chamado Aprovado')))
+    (c.text && (c.text.includes('redirecionado para aprovação') || c.text.includes('Chamado Aprovado') || c.text.includes('Aprovado')))
   )
 
   if (isDirectToTi && !hasRedirectionOrApproval) {
@@ -114,16 +125,26 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
 
     if (c.text?.includes('redirecionado para aprovação')) {
       timelineEvents.push({ timestamp: cMs, type: 'redirection_or_pending' })
-    } else if (c.text?.includes('Chamado Aprovado')) {
+    } else if (c.text?.includes('Chamado Aprovado') || c.text?.includes('Aprovado pelo gestor') || c.text?.includes('Aprovado')) {
       timelineEvents.push({ timestamp: cMs, type: 'approved' })
     } else if (c.text?.includes('Atendimento iniciado pelo técnico')) {
       timelineEvents.push({ timestamp: cMs, type: 'in_service' })
     }
   })
 
+  // Se o chamado precisava de aprovação mas não possui comentário explícito de aprovação registrado:
+  if (!isDirectToTi && timelineEvents.length === 0) {
+    if (comments.length > 0) {
+      const firstCommentMs = new Date(comments[0].createdAt).getTime()
+      if (!isNaN(firstCommentMs) && firstCommentMs >= startMs && firstCommentMs <= endMs) {
+        timelineEvents.push({ timestamp: firstCommentMs, type: 'approved' })
+      }
+    }
+  }
+
   timelineEvents.sort((a, b) => a.timestamp - b.timestamp)
 
-  let currentOwner: 'sector' | 'ti' = (chamado.status === 'pendente_aprovacao' || !isDirectToTi) ? 'sector' : 'ti'
+  let currentOwner: 'sector' | 'ti' = (!isDirectToTi) ? 'sector' : 'ti'
   let lastMs = startMs
   let accumulatedSectorMs = 0
   let accumulatedTiMs = 0
@@ -148,7 +169,7 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
 
   if (endMs > lastMs) {
     const finalElapsed = endMs - lastMs
-    if (chamado.status === 'pendente_aprovacao') {
+    if (currentOwner === 'sector') {
       accumulatedSectorMs += finalElapsed
     } else {
       accumulatedTiMs += finalElapsed
@@ -163,7 +184,7 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
     tiMinutes,
     sectorMinutes,
     approverSector: chamado.approverSector,
-    isCurrentlyPendingSector: chamado.status === 'pendente_aprovacao'
+    isCurrentlyPendingSector: false
   }
 }
 

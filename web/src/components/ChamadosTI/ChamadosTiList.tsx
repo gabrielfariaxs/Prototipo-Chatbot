@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
-import { Search, Filter, Plus, Clock, CheckCircle2, XCircle, Wrench, ShieldCheck, User, Calendar, Eye, Paperclip, LayoutGrid, List, MessageSquare, AlertTriangle, ChevronDown, ChevronUp, Timer, BarChart3, TrendingUp } from 'lucide-react'
-import type { ChamadoTI, ChamadoStatus, ChamadoPriority } from './types'
+import { Search, Filter, Plus, Clock, CheckCircle2, XCircle, Wrench, ShieldCheck, User, Calendar, Eye, Paperclip, LayoutGrid, List, MessageSquare, ChevronDown, ChevronUp, Timer, BarChart3 } from 'lucide-react'
+import type { ChamadoTI, ChamadoStatus } from './types'
 import { getChamadoDurationMinutes, formatDurationShort, getChamadoTimeBreakdown } from './types'
 
 interface ChamadosTiListProps {
   chamados: ChamadoTI[]
   userSector: string
   userLevel?: string
-  userName: string
+  userName?: string
   onSelect: (chamado: ChamadoTI) => void
   onOpenCreateModal: () => void
 }
@@ -16,7 +16,6 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
   chamados,
   userSector,
   userLevel,
-  userName,
   onSelect,
   onOpenCreateModal
 }) => {
@@ -51,9 +50,12 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
     return true
   })
 
-  // Métricas de Tempo e Atendimento baseadas no período filtrado
-  const concludedChamados = periodChamados.filter(c => c.status === 'concluido')
-  const activeChamados = periodChamados.filter(c => c.status !== 'concluido' && c.status !== 'recusado')
+  // Chamados pertencentes à base de cálculo do T.I (exclui chamados aguardando aprovação do setor)
+  const tiBaseChamados = periodChamados.filter(c => c.status !== 'pendente_aprovacao')
+
+  // Métricas de Tempo e Atendimento baseadas na base do T.I
+  const concludedChamados = tiBaseChamados.filter(c => c.status === 'concluido')
+  const activeChamados = tiBaseChamados.filter(c => c.status !== 'concluido' && c.status !== 'recusado')
   
   const totalConcludedMinutes = concludedChamados.reduce((acc, c) => acc + getChamadoDurationMinutes(c), 0)
   const avgResolutionMinutes = concludedChamados.length > 0 ? Math.round(totalConcludedMinutes / concludedChamados.length) : 0
@@ -136,8 +138,9 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
               <BarChart3 size={15} className="text-[#1b497d]" />
-              <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-                Métricas de Atendimento
+              <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
+                Métricas de Atendimento T.I
+                <span className="text-[10px] font-normal text-slate-400 normal-case">(Exclui chamados/tempos em aprovação)</span>
               </h4>
             </div>
 
@@ -165,8 +168,8 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold shrink-0">
                 <Timer size={18} />
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Tempo Médio Solução</span>
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Tempo Médio de Solução</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {concludedChamados.length > 0 ? formatDurationShort(avgResolutionMinutes) : 'N/A'}
                 </span>
@@ -177,8 +180,8 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
               <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center font-bold shrink-0">
                 <Clock size={18} />
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Média Fila Ativa</span>
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Média Fila Ativa</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {activeChamados.length > 0 ? formatDurationShort(avgActiveMinutes) : 'N/A'}
                 </span>
@@ -189,22 +192,22 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
               <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-bold shrink-0">
                 <ShieldCheck size={18} />
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Concluídos</span>
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Concluídos (Base T.I)</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
-                  {concludedChamados.length} <span className="text-xs font-medium text-slate-400">/ {periodChamados.length}</span>
+                  {concludedChamados.length} <span className="text-xs font-medium text-slate-400">/ {tiBaseChamados.length}</span>
                 </span>
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-[#1b497d]/10 text-[#1b497d] border border-[#1b497d]/20 flex items-center justify-center font-bold shrink-0">
                 <BarChart3 size={18} />
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block truncate">Taxa de Conclusão</span>
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Taxa de Conclusão</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
-                  {periodChamados.length > 0 ? `${Math.round((concludedChamados.length / periodChamados.length) * 100)}%` : '0%'}
+                  {tiBaseChamados.length > 0 ? `${Math.round((concludedChamados.length / tiBaseChamados.length) * 100)}%` : '0%'}
                 </span>
               </div>
             </div>

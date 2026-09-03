@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, User, Calendar, Tag, AlertTriangle, ArrowRight, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image, Timer } from 'lucide-react'
+import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, AlertTriangle, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image, Timer } from 'lucide-react'
 import type { ChamadoTI } from './types'
-import { SETORES_APROVADORES, getChamadoDurationMinutes, formatDurationFull, getEffectiveCompletionDate, getChamadoTimeBreakdown } from './types'
+import { SETORES_APROVADORES, formatDurationFull, getEffectiveCompletionDate, getChamadoTimeBreakdown } from './types'
 
 interface ChamadosTiDetailModalProps {
   chamado: ChamadoTI
@@ -16,7 +16,16 @@ interface ChamadosTiDetailModalProps {
   ) => void
   onAddComment?: (id: string, commentText: string) => void
   onRedirect?: (id: string, newApproverSector: string, reason?: string) => void
-  onEditChamado?: (id: string, updatedFields: { title: string; priority: ChamadoTI['priority']; description: string }) => void
+  onEditChamado?: (
+    id: string, 
+    updatedFields: { 
+      title: string; 
+      priority: ChamadoTI['priority']; 
+      description: string;
+      approverSector?: string;
+      evidenceFiles?: ChamadoTI['evidenceFiles'];
+    }
+  ) => void
   onDeleteChamado?: (id: string) => void
 }
 
@@ -49,7 +58,35 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(chamado.title)
   const [editPriority, setEditPriority] = useState<ChamadoTI['priority']>(chamado.priority)
+  const [editApproverSector, setEditApproverSector] = useState(chamado.approverSector || 'Sem Aprovação (Direto T.I)')
   const [editDescription, setEditDescription] = useState(chamado.description)
+  const [editEvidenceFiles, setEditEvidenceFiles] = useState<{ name: string; base64: string; type: string }[]>(chamado.evidenceFiles || [])
+  // Handlers para anexos durante a edição
+  const handleFileUploadInEdit = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const base64Full = event.target?.result as string
+        const base64Data = base64Full.split(',')[1]
+        setEditEvidenceFiles((prev) => [
+          ...prev,
+          {
+            name: file.name,
+            base64: base64Data,
+            type: file.type
+          }
+        ])
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const removeEditEvidence = (index: number) => {
+    setEditEvidenceFiles((prev) => prev.filter((_, i) => i !== index))
+  }
 
   // Permissões de Ação
   const savedLevel = userLevel || localStorage.getItem('userLevel') || 'lider'
@@ -61,8 +98,9 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const canApprove = (userSector === chamado.approverSector || hasFullAccess) && chamado.status === 'pendente_aprovacao'
   const canRedirect = hasFullAccess || userSector === chamado.approverSector
   
-  // Pode editar se for o criador (ou do mesmo setor) E o chamado estiver pendente de aprovação (ainda não aprovado nem em atendimento pela TI)
-  const canEdit = chamado.status === 'pendente_aprovacao' && (
+  // Pode editar se for o criador (ou do mesmo setor) E o chamado ainda NÃO tiver sido assumido pela T.I (status 'pendente_aprovacao' ou 'aprovado')
+  const isBeforeTiAssumption = chamado.status === 'pendente_aprovacao' || chamado.status === 'aprovado'
+  const canEdit = isBeforeTiAssumption && (
     userSector === chamado.creatorSector || 
     hasFullAccess ||
     userName === chamado.creatorName
@@ -205,7 +243,6 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
           {hasFullAccess && (() => {
             const bd = getChamadoTimeBreakdown(chamado)
             const completionDateStr = getEffectiveCompletionDate(chamado)
-            const isFinished = chamado.status === 'concluido' || chamado.status === 'recusado'
 
             return (
               <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
@@ -278,38 +315,59 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
 
           {/* Form de Edição */}
           {isEditing ? (
-            <div className="p-5 bg-blue-50/50 border border-blue-200 rounded-xl space-y-4 animate-in fade-in">
-              <h4 className="text-sm font-extrabold text-blue-950 flex items-center gap-2">
-                <Edit size={16} className="text-blue-600" />
-                Editar Solicitação de Suporte
-              </h4>
+            <div className="p-5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-4 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-extrabold text-blue-950 flex items-center gap-2">
+                  <Edit size={16} className="text-blue-600" />
+                  Editar Solicitação (Antes do Atendimento T.I)
+                </h4>
+                <span className="text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full border border-blue-200">
+                  Edição liberada antes da T.I assumir
+                </span>
+              </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Título do Chamado</label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Título do Chamado *</label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Prioridade</label>
+                  <select
+                    value={editPriority}
+                    onChange={(e) => setEditPriority(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white"
+                  >
+                    <option value="baixa">Baixa (Dúvidas/Melhorias)</option>
+                    <option value="media">Média (Impacto pontual)</option>
+                    <option value="alta">Alta (Bloqueio total)</option>
+                    <option value="critica">Crítica (Urgência Total)</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Prioridade</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Setor Responsável pela Aprovação</label>
                 <select
-                  value={editPriority}
-                  onChange={(e) => setEditPriority(e.target.value as any)}
+                  value={editApproverSector}
+                  onChange={(e) => setEditApproverSector(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 bg-white"
                 >
-                  <option value="baixa">Baixa</option>
-                  <option value="media">Média</option>
-                  <option value="alta">Alta</option>
-                  <option value="critica">Crítica (Urgência Total)</option>
+                  <option value="Sem Aprovação (Direto T.I)">Sem Aprovação (Direto T.I)</option>
+                  {SETORES_APROVADORES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Descrição do Problema</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Descrição do Problema *</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -318,10 +376,53 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              {/* Gerenciamento de Anexos na Edição */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>Anexos e Evidências ({editEvidenceFiles.length})</span>
+                  <label className="text-blue-600 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                    <Paperclip size={13} />
+                    <span>+ Adicionar arquivo</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                      onChange={handleFileUploadInEdit}
+                      className="hidden"
+                    />
+                  </label>
+                </label>
+
+                {editEvidenceFiles.length > 0 && (
+                  <div className="space-y-1.5 bg-white p-2.5 rounded-xl border border-slate-200 max-h-40 overflow-y-auto">
+                    {editEvidenceFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                        <span className="truncate max-w-[80%] font-medium text-slate-700">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeEditEvidence(idx)}
+                          className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
+                          title="Remover anexo"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-blue-200/60">
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => {
+                    setIsEditing(false)
+                    setEditTitle(chamado.title)
+                    setEditPriority(chamado.priority)
+                    setEditApproverSector(chamado.approverSector || 'Sem Aprovação (Direto T.I)')
+                    setEditDescription(chamado.description)
+                    setEditEvidenceFiles(chamado.evidenceFiles || [])
+                  }}
                   className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-colors"
                 >
                   Cancelar
@@ -329,11 +430,14 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    if (!editTitle.trim() || !editDescription.trim()) return
                     if (onEditChamado) {
                       onEditChamado(chamado.id, {
                         title: editTitle.trim(),
                         priority: editPriority,
-                        description: editDescription.trim()
+                        approverSector: editApproverSector,
+                        description: editDescription.trim(),
+                        evidenceFiles: editEvidenceFiles
                       })
                     }
                     setIsEditing(false)

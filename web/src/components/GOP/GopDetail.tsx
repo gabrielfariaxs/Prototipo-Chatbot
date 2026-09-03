@@ -1,11 +1,31 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { ChevronLeft, File, FileText, Image as ImageIcon, Calendar, Loader2, Trash2, Edit, Save, X, Paperclip, Plus } from 'lucide-react'
+import { ChevronLeft, File, FileText, Image as ImageIcon, Calendar, Loader2, Trash2, Edit, Save, X, Paperclip, Plus, ArrowLeftRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+
+export const SETORES_GOP = [
+  'Operações',
+  'Qualidade / RT',
+  'Comercial',
+  'Financeiro',
+  'T.I',
+  'Estoque e logistica',
+  'Supply Chain',
+  'Compras',
+  'Gente Gestão',
+  'Instrumentação',
+  'Gestor/Diretoria'
+]
 
 export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string, onBack: () => void, userRole: string, onPreviewFile?: (file: any) => void }) => {
   const [gargalo, setGargalo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // Redirecionamento de Setor / Gestor
+  const [showRedirectForm, setShowRedirectForm] = useState(false)
+  const [redirectSector, setRedirectSector] = useState('')
+  const [redirectReason, setRedirectReason] = useState('')
+  const [redirecting, setRedirecting] = useState(false)
 
   // Tratativa form state
   const [decisao, setDecisao] = useState('')
@@ -47,6 +67,7 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
       .single()
     if (data) {
       setGargalo(data)
+      setRedirectSector(data.setor || SETORES_GOP[0])
       setDecisao(data.tratativa_decisao || '')
       setResponsavel(data.tratativa_responsavel || '')
       setPrazo(data.tratativa_prazo || '')
@@ -68,6 +89,44 @@ export const GopDetail = ({ id, onBack, userRole, onPreviewFile }: { id: string,
       console.error('Erro ao buscar gargalo:', error)
     }
     setLoading(false)
+  }
+
+  const handleConfirmRedirect = async () => {
+    if (!redirectSector) return
+    setRedirecting(true)
+
+    const currentUserSector = localStorage.getItem('userSector') || 'Setor'
+    const userName = localStorage.getItem('userName') || 'Usuário'
+
+    const timestamp = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    const redirectionNote = `\n\n[🔄 Redirecionado do setor "${gargalo.setor}" para "${redirectSector}" por ${userName} (${currentUserSector}) em ${timestamp}${redirectReason ? ` - Motivo: ${redirectReason}` : ''}]`
+
+    const updatedSugestao = (gargalo.sugestao_lider || '') + redirectionNote
+
+    const { error } = await supabase
+      .from('gargalos')
+      .update({
+        setor: redirectSector,
+        sugestao_lider: updatedSugestao,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+
+    setRedirecting(false)
+    if (!error) {
+      alert(`Não conformidade redirecionada com sucesso para o setor ${redirectSector}!`)
+      setGargalo((prev: any) => ({
+        ...prev,
+        setor: redirectSector,
+        sugestao_lider: updatedSugestao
+      }))
+      setEditSetor(redirectSector)
+      setShowRedirectForm(false)
+      setRedirectReason('')
+    } else {
+      alert('Erro ao redirecionar não conformidade.')
+      console.error(error)
+    }
   }
 
   const handleUploadNewEvidence = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,6 +306,15 @@ return (
       <div className="flex items-center gap-3">
         <button
           type="button"
+          onClick={() => setShowRedirectForm(!showRedirectForm)}
+          className="flex items-center gap-2 text-purple-700 hover:text-purple-900 hover:bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+        >
+          <ArrowLeftRight size={16} strokeWidth={2.5} />
+          <span>{showRedirectForm ? 'Fechar Redirecionamento' : 'Redirecionar Setor'}</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setIsEditingReport(!isEditingReport)}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-lg font-bold text-sm transition-colors cursor-pointer"
         >
@@ -263,6 +331,61 @@ return (
         </button>
       </div>
     </div>
+
+    {/* Painel de Redirecionamento de Setor */}
+    {showRedirectForm && (
+      <div className="bg-purple-50/90 border border-purple-200 rounded-[1.2rem] p-5 shadow-xs flex flex-col gap-4 animate-in fade-in duration-200">
+        <div className="flex items-center gap-2 text-purple-950 font-extrabold text-xs uppercase tracking-wider">
+          <ArrowLeftRight size={18} className="text-purple-600" />
+          <span>Redirecionar Não Conformidade para Novo Setor / Gestor</span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-bold text-purple-900 block mb-1.5">Novo Setor Responsável *</label>
+            <select
+              value={redirectSector}
+              onChange={(e) => setRedirectSector(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-purple-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-purple-600 shadow-2xs"
+            >
+              {SETORES_GOP.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-purple-900 block mb-1.5">Motivo do Redirecionamento (Opcional)</label>
+            <input
+              type="text"
+              value={redirectReason}
+              onChange={(e) => setRedirectReason(e.target.value)}
+              placeholder="Ex: Tratativa pertence ao setor de Estoque e Logística..."
+              className="w-full px-3.5 py-2.5 bg-white border border-purple-300 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-purple-600 shadow-2xs"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-1 border-t border-purple-200/60">
+          <button 
+            type="button"
+            onClick={() => setShowRedirectForm(false)} 
+            className="px-4 py-2 text-xs text-slate-600 font-bold hover:bg-purple-100/50 rounded-xl transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="button"
+            onClick={handleConfirmRedirect}
+            disabled={redirecting}
+            className="px-5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {redirecting ? <Loader2 size={15} className="animate-spin" /> : <ArrowLeftRight size={15} />}
+            <span>Confirmar Redirecionamento</span>
+          </button>
+        </div>
+      </div>
+    )}
 
     <div className="flex flex-col xl:grid xl:grid-cols-[1fr_450px] gap-8 items-start">
       {/* Left Column: Details or Edit Form */}

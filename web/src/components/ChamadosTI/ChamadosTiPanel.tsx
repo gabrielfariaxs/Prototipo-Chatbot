@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, LogOut, Monitor, Plus, CheckCircle, Clock, ShieldAlert, Check, X } from 'lucide-react'
+import { Bell, LogOut, Monitor, CheckCircle, X } from 'lucide-react'
 import type { ChamadoTI } from './types'
 import { ChamadosTiList } from './ChamadosTiList'
 import { ChamadosTiCreateModal } from './ChamadosTiCreateModal'
@@ -124,7 +124,7 @@ export const ChamadosTiPanel: React.FC = () => {
         setChamados(mapped)
         setSelectedChamado(prev => {
           if (!prev) return null
-          const fresh = mapped.find(c => c.id === prev.id)
+          const fresh = mapped.find((c: ChamadoTI) => c.id === prev.id)
           return fresh || prev
         })
       }
@@ -155,7 +155,7 @@ export const ChamadosTiPanel: React.FC = () => {
         savedLevel === 'lider' ? 'Líder de Setor' :
         'Colaborador'
 
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(({ data: { session } }: any) => {
         if (session?.user) {
           const metaName = session.user.user_metadata?.full_name as string | undefined
           const displayName = (metaName && metaName.trim())
@@ -281,12 +281,12 @@ export const ChamadosTiPanel: React.FC = () => {
         text: `❌ Chamado Recusado. Motivo:\n${payload.rejectionReason}`,
         createdAt: new Date().toISOString()
       })
-    } else if (newStatus === 'aprovado' && payload?.approvalNotes) {
+    } else if (newStatus === 'aprovado') {
       updatedComments.push({
         id: Date.now().toString(),
         authorName: userName,
         authorSector: userSector || 'Aprovador',
-        text: `👍 Chamado Aprovado: ${payload.approvalNotes}`,
+        text: payload?.approvalNotes ? `👍 Chamado Aprovado: ${payload.approvalNotes}` : `👍 Chamado Aprovado`,
         createdAt: new Date().toISOString()
       })
     } else if (newStatus === 'em_atendimento' && payload?.techName) {
@@ -413,36 +413,81 @@ export const ChamadosTiPanel: React.FC = () => {
     })
   }
 
-  const handleEditChamado = async (id: string, updatedFields: { title: string; priority: ChamadoTI['priority']; description: string }) => {
+  const handleEditChamado = async (
+    id: string, 
+    updatedFields: { 
+      title: string; 
+      priority: ChamadoTI['priority']; 
+      description: string;
+      approverSector?: string;
+      evidenceFiles?: ChamadoTI['evidenceFiles'];
+    }
+  ) => {
     const targetItem = chamados.find(c => c.id === id)
     if (!targetItem) return
     const newComment = {
       id: Date.now().toString(),
       authorName: userName,
       authorSector: userSector,
-      text: `✏️ Solicitação editada pelo criador/setor.`,
+      text: `✏️ Solicitação editada pelo criador/setor antes do atendimento T.I.`,
       createdAt: new Date().toISOString()
     }
     const updatedComments = [...(targetItem.comments || []), newComment]
 
-    const { data } = await supabase.from('ti_chamados').update({ 
+    const updatePayload: any = { 
       title: updatedFields.title,
       priority: updatedFields.priority,
       description: updatedFields.description,
       comments: updatedComments
-    }).eq('id', id).select()
-    
+    }
+
+    if (updatedFields.approverSector !== undefined) {
+      const isDirectToTi = !updatedFields.approverSector || updatedFields.approverSector === 'none' || updatedFields.approverSector === 'Sem Aprovação (Direto T.I)'
+      updatePayload.approver_sector = isDirectToTi ? 'Sem Aprovação (Direto T.I)' : updatedFields.approverSector
+      if (isDirectToTi) {
+        updatePayload.status = 'aprovado'
+      } else {
+        updatePayload.status = 'pendente_aprovacao'
+      }
+    }
+
+    if (updatedFields.evidenceFiles !== undefined) {
+      updatePayload.evidence_files = updatedFields.evidenceFiles
+    }
+
+    const { data, error } = await supabase.from('ti_chamados').update(updatePayload).eq('id', id).select()
+    if (error) {
+      console.error('Erro ao editar chamado no Supabase:', error)
+    }
+
     const updatedData = data && data.length > 0 ? data[0] : null
-    const updatedItem = updatedData ? mapToChamadoTI(updatedData) : {
+    const newApproverSector = updatedFields.approverSector !== undefined
+      ? (updatedFields.approverSector === 'none' || updatedFields.approverSector === 'Sem Aprovação (Direto T.I)' ? 'Sem Aprovação (Direto T.I)' : updatedFields.approverSector)
+      : targetItem.approverSector
+    const newStatus = updatedFields.approverSector !== undefined
+      ? (updatedFields.approverSector === 'none' || updatedFields.approverSector === 'Sem Aprovação (Direto T.I)' ? 'aprovado' : 'pendente_aprovacao')
+      : targetItem.status
+
+    const updatedItem: ChamadoTI = updatedData ? mapToChamadoTI(updatedData) : {
       ...targetItem,
       title: updatedFields.title,
       priority: updatedFields.priority,
       description: updatedFields.description,
+      approverSector: newApproverSector,
+      status: newStatus,
+      evidenceFiles: updatedFields.evidenceFiles !== undefined ? updatedFields.evidenceFiles : targetItem.evidenceFiles,
       comments: updatedComments
     }
 
     setChamados(prev => prev.map(c => c.id === id ? updatedItem : c))
     if (selectedChamado?.id === id) setSelectedChamado(updatedItem)
+
+    addNotification({
+      title: 'Chamado Editado',
+      message: `O chamado ${updatedItem.code} foi atualizado por ${userName}.`,
+      targetSector: 'T.I',
+      chamadoId: id
+    })
   }
 
   const handleDeleteChamado = async (id: string) => {
