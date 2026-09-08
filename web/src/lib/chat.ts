@@ -592,10 +592,10 @@ REGRAS DE CONTEÚDO:
       // o bloco `if (!apiKey)` acima já retorna antes de chegar neste ponto.
       if (!chatClient) throw new Error('chatClient não inicializado — chave de API ausente.')
 
-      // Modelos roteados via Vercel AI Gateway (formato: provider/model)
+      // Modelos roteados via OpenRouter (formato: provider/model)
       const MODELS = [
-        'google/gemini-2.5-flash',         // Rápido, barato e muito capaz
-        'openai/gpt-4o-mini',              // Fallback rápido da OpenAI
+        'openai/gpt-4o-mini',              // Modelo principal (GPT-4o Mini / MiniGPT 4.0)
+        'google/gemini-2.5-flash',         // Fallback rápido e capaz
         'anthropic/claude-3-5-haiku',      // Fallback equilibrado da Anthropic
         'openai/gpt-4o',                   // Fallback de alta qualidade
       ]

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd web && npm install && npm run build",
+  "outputDirectory": "web/.vercel/output",
+  "framework": null,
+  "alias": [
+    "media.q2medical.net"
+  ]
+}

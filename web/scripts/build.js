@@ -36,10 +36,8 @@ try {
     console.warn('Aviso: Não foi possível deletar wrangler.json:', e.message)
   }
 
-  if (process.env.VERCEL) {
-    console.log('--- Executando Vercel Postbuild ---')
-    execSync('node scripts/vercel-postbuild.js', { stdio: 'inherit' })
-  }
+  console.log('--- Executando Vercel Postbuild ---')
+  execSync('node scripts/vercel-postbuild.js', { stdio: 'inherit' })
 
 } catch (error) {
   console.error('Erro durante o build:', error)

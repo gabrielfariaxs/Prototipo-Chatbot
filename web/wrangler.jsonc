@@ -9,7 +9,7 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "VITE_SUPABASE_URL": "https://aucfklzbouqjfvrycdvb.supabase.co",
-    "VITE_SUPABASE_KEY": "sb_publishable_Uc72wj9rXElJQaPf2sWlWQ_8F_P5wIi"
+    "VITE_SUPABASE_URL": "https://espjmmzyrimglobetlzo.supabase.co",
+    "VITE_SUPABASE_KEY": "sb_publishable_MiUtB_XXXPCUMZqOamIF8g_wqL5HOaw"
   }
 }

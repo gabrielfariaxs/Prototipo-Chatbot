@@ -13,6 +13,9 @@ const isDev = process.argv.includes('dev') || process.env.NODE_ENV === 'developm
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   envPrefix: ['VITE_', 'SUPABASE_', 'AI_GATEWAY_'],
+  ssr: {
+    noExternal: true,
+  },
   plugins: [
     devtools(),
     !isVercel && !isDev && cloudflare({ viteEnvironment: { name: 'ssr' } }),

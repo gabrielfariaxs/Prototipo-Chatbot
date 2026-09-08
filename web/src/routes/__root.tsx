@@ -1,4 +1,4 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, Outlet } from '@tanstack/react-router'
 
 // Polyfill process.umask for edge/unenv runtimes (e.g. Cloudflare Workers)
 if (typeof process !== 'undefined' && typeof process.umask !== 'function') {
@@ -61,7 +61,7 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  shellComponent: RootDocument,
+  component: RootComponent,
   notFoundComponent: () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center font-sans">
@@ -74,6 +74,14 @@ export const Route = createRootRoute({
     )
   }
 })
+
+function RootComponent() {
+  return (
+    <RootDocument>
+      <Outlet />
+    </RootDocument>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (

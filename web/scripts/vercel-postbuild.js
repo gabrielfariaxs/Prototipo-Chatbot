@@ -53,7 +53,7 @@ console.log('Criando arquivos da Serverless Function __ssr.func (Runtime: Nodejs
 fs.writeFileSync(
   path.join(ssrFuncDir, '.vc-config.json'),
   JSON.stringify({
-    runtime: 'nodejs20.x',
+    runtime: 'nodejs22.x',
     handler: 'index.js',
     launcherType: 'Nodejs'
   }, null, 2)
@@ -68,15 +68,12 @@ export default async function handler(req, res) {
     // Normalize path from x-matched-path (Vercel rewrite original path) if present.
     // Also strip out /__ssr prefix if Vercel routes routed directly.
     let reqPath = req.url || '/';
-    if (req.headers['x-matched-path']) {
-      const matchedPath = req.headers['x-matched-path'];
-      const urlObj = new URL(reqPath, 'http://localhost');
-      urlObj.pathname = matchedPath;
-      reqPath = urlObj.pathname + urlObj.search;
-    } else if (reqPath.startsWith('/__ssr')) {
+    if (reqPath.startsWith('/__ssr')) {
       reqPath = reqPath.slice(6) || '/';
     }
     
+    const host = req.headers.host || 'localhost';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
     const url = new URL(reqPath, protocol + '://' + host);
     
     const headers = new Headers();
@@ -118,15 +115,8 @@ export default async function handler(req, res) {
       res.setHeader(key, value);
     });
 
-    if (webResponse.body) {
-      const reader = webResponse.body.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
-      }
-    }
-    res.end();
+    const arrayBuffer = await webResponse.arrayBuffer();
+    res.end(Buffer.from(arrayBuffer));
   } catch (error) {
     console.error('Erro na Node.js Function SSR:', error);
     if (!res.headersSent) {

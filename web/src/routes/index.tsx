@@ -14,9 +14,11 @@ type IndexSearch = {
 export const Route = createFileRoute('/')({ 
   component: App,
   validateSearch: (search: Record<string, unknown>): IndexSearch => {
+    const desktop = search.desktop === 'true' || search.desktop === true ? true : undefined
+    const extension = search.extension === 'true' || search.extension === true ? true : undefined
     return {
-      desktop: search.desktop === 'true' || search.desktop === true,
-      extension: search.extension === 'true' || search.extension === true,
+      ...(desktop ? { desktop } : {}),
+      ...(extension ? { extension } : {}),
     }
   },
 })

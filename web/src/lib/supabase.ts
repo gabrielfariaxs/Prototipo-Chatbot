@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Variáveis de ambiente com fallbacks públicos e seguros para garantir funcionamento universal
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://aucfklzbouqjfvrycdvb.supabase.co'
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_Uc72wj9rXElJQaPf2sWlWQ_8F_P5wIi'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://espjmmzyrimglobetlzo.supabase.co'
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_MiUtB_XXXPCUMZqOamIF8g_wqL5HOaw'
 
 const isConfigured = !!(supabaseUrl && supabaseKey)
 
@@ -27,5 +27,11 @@ const mockSupabase = {
 }
 
 export const supabase = isConfigured 
-  ? createClient(supabaseUrl, supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: typeof window !== 'undefined',
+        autoRefreshToken: typeof window !== 'undefined',
+        detectSessionInUrl: typeof window !== 'undefined',
+      }
+    }) 
   : (mockSupabase as any)

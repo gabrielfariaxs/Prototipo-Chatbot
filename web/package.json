@@ -10,7 +10,7 @@
     "build": "node scripts/build.js",
     "preview": "vite preview",
     "test": "vitest run",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "vercel --prod"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.26.0",
