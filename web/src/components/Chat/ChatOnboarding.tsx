@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Bell, X, Sparkles } from 'lucide-react'
-import { BrandLockup } from '../BrandLockup'
+import { BrandLockup } from '../common/BrandLockup'
 
 interface ChatOnboardingProps {
   onStart: () => void;

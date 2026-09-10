@@ -1,25 +1,140 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { 
   Stethoscope, FileText, Download, Copy, Sparkles, Send, Paperclip, X, Image as ImageIcon,
-  Loader2, Check, Eye, Code
+  Loader2, Check, Eye, Code, Mic, MicOff, Pencil, User
 } from 'lucide-react'
 import { generateResponse } from '../../lib/chat'
 import { processClinicalFile, type ProcessedFile } from '../../lib/pdf-reader'
 
 /**
- * Renderizador de Papel A4 com layout de Grade 2 Colunas e Linhas Inferiores (Fiel ao modelo InCore/Claude)
+ * Componente interativo para edição inline de campos entre colchetes [ ... ]
+ * Funciona tanto no PC (clique com mouse) quanto no Celular (toque na tela).
  */
-function ClinicalPaperDocument({ content }: { content: string }) {
+function EditablePlaceholder({ 
+  value, 
+  onSave 
+}: { 
+  value: string
+  onSave: (newValue: string) => void 
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const innerContent = value.replace(/^\[\s*/, '').replace(/\s*\]$/, '')
+  const [inputValue, setInputValue] = useState(innerContent)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setInputValue(value.replace(/^\[\s*/, '').replace(/\s*\]$/, ''))
+  }, [value])
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  const handleConfirm = () => {
+    const trimmed = inputValue.trim()
+    const newValue = trimmed ? `[${trimmed}]` : '[ ]'
+    onSave(newValue)
+    setIsEditing(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleConfirm()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setIsEditing(false)
+      setInputValue(innerContent)
+    }
+  }
+
+  const isUnfilled = value.includes('___') || innerContent.trim() === '' || innerContent.includes('...')
+
+  if (isEditing) {
+    return (
+      <span className="inline-flex items-center gap-1 bg-amber-50 border-2 border-amber-500 rounded-md p-1 mx-1 my-0.5 shadow-md z-20">
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="px-2 py-0.5 text-xs font-mono bg-white text-amber-950 font-bold border border-amber-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 min-w-[140px]"
+          placeholder="Digite o valor..."
+        />
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className="p-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded transition-colors cursor-pointer shrink-0"
+          title="Salvar alteração"
+        >
+          <Check size={13} />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsEditing(false)
+            setInputValue(innerContent)
+          }}
+          className="p-1 bg-slate-400 hover:bg-slate-500 active:scale-95 text-white rounded transition-colors cursor-pointer shrink-0"
+          title="Cancelar"
+        >
+          <X size={13} />
+        </button>
+      </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setIsEditing(true)}
+      title="Clique ou toque para editar este campo manualmente"
+      className={`inline-flex items-center gap-1 font-mono font-bold px-1.5 py-0.5 rounded text-[11px] mx-0.5 transition-all cursor-pointer select-none active:scale-95 group ${
+        isUnfilled
+          ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-2 border-dashed border-amber-400 shadow-xs animate-pulse hover:animate-none'
+          : 'bg-[#fff8e1] hover:bg-[#ffe082] text-[#7a4500] border border-[#ffe082]'
+      }`}
+    >
+      <span>{value}</span>
+      <Pencil size={10} className="opacity-60 group-hover:opacity-100 text-amber-800 shrink-0" />
+    </button>
+  )
+}
+
+/**
+ * Renderizador de Papel A4 com layout de Grade 2 Colunas e Linhas Inferiores (Fiel ao modelo InCore/Claude)
+ * Suporta edição inline interativa de todos os campos [ ... ] no celular e no PC.
+ */
+function ClinicalPaperDocument({ 
+  content,
+  onUpdateContent 
+}: { 
+  content: string
+  onUpdateContent?: (newContent: string) => void 
+}) {
   if (!content) return null
 
   const lines = content.split('\n')
   const elements: React.ReactNode[] = []
   let currentSectionTitle = ''
-  let sectionFields: { label: string; value: string }[] = []
-  let tableRows: string[][] = []
+  let sectionFields: { label: string; value: string; lineIdx: number }[] = []
+  let tableRows: { cells: string[]; lineIdx: number }[] = []
   let inTable = false
 
-  const processInline = (text: string) => {
+  const handleSavePlaceholder = (lineIdx: number, oldPart: string, newValue: string) => {
+    if (!onUpdateContent || lineIdx < 0 || lineIdx >= lines.length) return
+    const targetLine = lines[lineIdx]
+    const updatedLine = targetLine.replace(oldPart, newValue)
+    const updatedLines = [...lines]
+    updatedLines[lineIdx] = updatedLine
+    onUpdateContent(updatedLines.join('\n'))
+  }
+
+  const processInline = (text: string, lineIdx: number) => {
     const parts = text.split(/(\*\*.*?\*\*|\[.*?\])/g)
     return parts.map((part, idx) => {
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -27,9 +142,11 @@ function ClinicalPaperDocument({ content }: { content: string }) {
       }
       if (part.startsWith('[') && part.endsWith(']')) {
         return (
-          <span key={idx} className="inline-block bg-[#fff8e1] text-[#7a4500] font-mono font-bold px-1.5 py-0.5 rounded border border-[#ffe082] text-[11px] mx-0.5">
-            {part}
-          </span>
+          <EditablePlaceholder
+            key={`${lineIdx}-${idx}-${part}`}
+            value={part}
+            onSave={(newValue) => handleSavePlaceholder(lineIdx, part, newValue)}
+          />
         )
       }
       return part
@@ -47,7 +164,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
           <div key={fIdx} className="flex flex-col">
             <span className="text-[9px] font-bold tracking-wider text-slate-500 uppercase">{f.label}</span>
             <div className="text-[12px] font-semibold text-slate-900 border-b border-slate-300 pb-1 mt-0.5">
-              {processInline(f.value)}
+              {processInline(f.value, f.lineIdx)}
             </div>
           </div>
         ))}
@@ -57,8 +174,8 @@ function ClinicalPaperDocument({ content }: { content: string }) {
 
   const flushTable = (key: number | string) => {
     if (tableRows.length === 0) return null
-    const header = tableRows[0]
-    const rows = tableRows.slice(1).filter(r => !r.every(cell => cell.includes('---') || cell.includes(':')))
+    const headerItem = tableRows[0]
+    const rowItems = tableRows.slice(1).filter(r => !r.cells.every(cell => cell.includes('---') || cell.includes(':')))
     
     tableRows = []
     inTable = false
@@ -68,19 +185,19 @@ function ClinicalPaperDocument({ content }: { content: string }) {
         <table className="w-full text-left border-collapse text-[11px] font-sans">
           <thead>
             <tr className="bg-[#005f73] text-white font-bold border-b border-[#005f73]">
-              {header.map((col, cIdx) => (
+              {headerItem.cells.map((col, cIdx) => (
                 <th key={cIdx} className="p-2.5 border-r last:border-r-0 border-[#005f73] uppercase tracking-wider text-[10px]">
-                  {processInline(col.trim())}
+                  {processInline(col.trim(), headerItem.lineIdx)}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-slate-800">
-            {rows.map((row, rIdx) => (
+            {rowItems.map((rowItem, rIdx) => (
               <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-[#f7f7f7]'}>
-                {row.map((cell, cIdx) => (
+                {rowItem.cells.map((cell, cIdx) => (
                   <td key={cIdx} className="p-2.5 border-r last:border-r-0 border-slate-200 leading-relaxed">
-                    {processInline(cell.trim())}
+                    {processInline(cell.trim(), rowItem.lineIdx)}
                   </td>
                 ))}
               </tr>
@@ -97,7 +214,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
     if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
       inTable = true
       const cells = trimmed.split('|').slice(1, -1)
-      tableRows.push(cells)
+      tableRows.push({ cells, lineIdx: idx })
       return
     }
 
@@ -128,7 +245,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
           </div>
           <div className="text-right">
             <h2 className="text-sm font-bold text-slate-900 uppercase font-sans tracking-wide">
-              {processInline(trimmed.slice(2))}
+              {processInline(trimmed.slice(2), idx)}
             </h2>
           </div>
         </div>
@@ -145,7 +262,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
       currentSectionTitle = trimmed.slice(3).toUpperCase()
       elements.push(
         <h2 key={idx} className="text-xs font-bold text-[#005f73] font-sans uppercase tracking-wider border-b-2 border-[#005f73] pb-1 mt-6 mb-3">
-          {processInline(trimmed.slice(3))}
+          {processInline(trimmed.slice(3), idx)}
         </h2>
       )
       return
@@ -160,7 +277,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
         
         // Se estiver dentro de seções de identificação ou médico, guarda para renderizar em grade 2x2
         if (currentSectionTitle.includes('BENEFICIÁRIO') || currentSectionTitle.includes('IDENTIFICAÇÃO') || currentSectionTitle.includes('MÉDICO')) {
-          sectionFields.push({ label, value })
+          sectionFields.push({ label, value, lineIdx: idx })
           return
         }
       }
@@ -174,7 +291,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
     if (trimmed.startsWith('### ')) {
       elements.push(
         <h3 key={idx} className="text-xs font-bold text-slate-900 font-sans mt-4 mb-2">
-          {processInline(trimmed.slice(4))}
+          {processInline(trimmed.slice(4), idx)}
         </h3>
       )
       return
@@ -183,7 +300,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
     if (trimmed.startsWith('- **NATUREZA') || trimmed.startsWith('- **INDICAÇÃO') || trimmed.startsWith('- **DIFERENCIAL')) {
       elements.push(
         <div key={idx} className="border-l-3 border-[#005f73] bg-[#f8fafc] p-3 rounded-r-sm my-2 text-[11px] font-sans text-slate-800 leading-relaxed">
-          {processInline(trimmed.slice(2))}
+          {processInline(trimmed.slice(2), idx)}
         </div>
       )
       return
@@ -192,7 +309,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
     if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       elements.push(
         <li key={idx} className="ml-5 list-disc text-slate-800 text-[12px] font-serif my-1 leading-relaxed">
-          {processInline(trimmed.slice(2))}
+          {processInline(trimmed.slice(2), idx)}
         </li>
       )
       return
@@ -200,7 +317,7 @@ function ClinicalPaperDocument({ content }: { content: string }) {
 
     elements.push(
       <p key={idx} className="text-[12px] text-slate-800 font-serif my-2 leading-relaxed">
-        {processInline(trimmed)}
+        {processInline(trimmed, idx)}
       </p>
     )
   })
@@ -228,9 +345,122 @@ export function ClinicalDocPanel() {
   const [isLoading, setIsLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'formatted' | 'raw'>('formatted')
 
+  // Voice Recorder state
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const recognitionRef = useRef<any>(null)
+  const timerRef = useRef<any>(null)
+
   // Generated Markdown state & preview
   const [generatedDraft, setGeneratedDraft] = useState('')
   const [copied, setCopied] = useState(false)
+  const [activePatientIdx, setActivePatientIdx] = useState(0)
+
+  // Helper para analisar e separar documentos de múltiplos pacientes
+  const parsedDocs = React.useMemo(() => {
+    if (!generatedDraft) return []
+    const docBlocks = generatedDraft.split(/(?=# SOLICITAÇÃO DE PROCEDIMENTO)/gi).filter(b => b.trim().length > 0)
+    if (docBlocks.length <= 1) {
+      const match = generatedDraft.match(/NOME DO PACIENTE:\s*\*{0,2}(.*?)\*{0,2}(?:\n|$)/i)
+      const name = match && match[1] && !match[1].includes('___') ? match[1].replace(/\[|\]|\*/g, '').trim() : 'Paciente'
+      return [{ id: 1, patientName: name, content: generatedDraft }]
+    }
+    return docBlocks.map((block, idx) => {
+      const match = block.match(/NOME DO PACIENTE:\s*\*{0,2}(.*?)\*{0,2}(?:\n|$)/i) || block.match(/PACIENTE:\s*\*{0,2}(.*?)\*{0,2}(?:\n|$)/i)
+      const name = match && match[1] && !match[1].includes('___') ? match[1].replace(/\[|\]|\*/g, '').trim() : `Paciente ${idx + 1}`
+      return { id: idx + 1, patientName: name, content: block.trim() }
+    })
+  }, [generatedDraft])
+
+  const currentDoc = parsedDocs[activePatientIdx] || parsedDocs[0]
+
+  const handleUpdateCurrentDocContent = (newDocContent: string) => {
+    if (parsedDocs.length <= 1) {
+      setGeneratedDraft(newDocContent)
+    } else {
+      const docBlocks = generatedDraft.split(/(?=# SOLICITAÇÃO DE PROCEDIMENTO)/gi).filter(b => b.trim().length > 0)
+      if (docBlocks[activePatientIdx] !== undefined) {
+        docBlocks[activePatientIdx] = newDocContent
+        setGeneratedDraft(docBlocks.join('\n\n'))
+      } else {
+        setGeneratedDraft(newDocContent)
+      }
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop() } catch (e) {}
+      }
+    }
+  }, [])
+
+  const startVoiceRecording = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert("O seu navegador não possui suporte ao ditado por voz. Recomendamos utilizar o Google Chrome ou Microsoft Edge.")
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'pt-BR'
+      recognition.continuous = true
+      recognition.interimResults = true
+
+      let baseText = rawPrompt ? rawPrompt.trim() + ' ' : ''
+      let finalTranscript = ''
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = ''
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcriptText = event.results[i][0].transcript
+          if (event.results[i].isFinal) {
+            finalTranscript += transcriptText + ' '
+          } else {
+            interimTranscript += transcriptText
+          }
+        }
+        setRawPrompt(baseText + finalTranscript + interimTranscript)
+      }
+
+      recognition.onerror = (event: any) => {
+        console.error("Erro no reconhecimento de voz:", event.error)
+        stopVoiceRecording()
+      }
+
+      recognition.onend = () => {
+        setIsRecording(false)
+        if (timerRef.current) clearInterval(timerRef.current)
+      }
+
+      recognition.start()
+      recognitionRef.current = recognition
+      setIsRecording(true)
+      setRecordingTime(0)
+
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1)
+      }, 1000)
+    } catch (err) {
+      console.error("Não foi possível iniciar a gravação:", err)
+      alert("Não foi possível acessar o microfone. Verifique a permissão do seu navegador.")
+    }
+  }
+
+  const stopVoiceRecording = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (e) {}
+    }
+    setIsRecording(false)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+    }
+  }
 
   const samplePrompts = [
     {
@@ -269,9 +499,44 @@ export function ClinicalDocPanel() {
 Você é o Especialista em Documentação Clínica Médica da Arthromed/Medic atuando sob a Skill "Solicitação Médica — Documentação Clínica Padronizada".
 
 SEU OBJETIVO:
-Analisar com EXTREMA PRECISÃO os documentos/imagens anexados e o texto digitado pelo usuário para gerar o documento clínico completo em Markdown no PADRÃO ESTRUTURADO INSTITUCIONAL IDÊNTICO AO MODELO OFICIAL:
+Analise com EXTREMA PRECISÃO os documentos, fotos, PDFs e textos fornecidos para gerar a documentação clínica padronizada.
 
-ESTRUTURA OBRIGATÓRIA DO MARKDOWN GERADO:
+REGRAS CRÍTICAS DE AGRUPAMENTO DE PACIENTES E CONSOLIDAÇÃO DE COMANDAS:
+1. LEITURA E AGRUPAMENTO POR NOME DO PACIENTE:
+   - Identifique o NOME DO PACIENTE em cada documento ou comanda enviada.
+   - SE HOUVER 2 OU MAIS ARQUIVOS/PDFS DO MESMO PACIENTE (ex: 2 comandas ou exames do paciente "Gabriel"): VOCÊ DEVE UNIFICAR E COMBINAR todos os dados, laudos e materiais desse mesmo paciente em UMA ÚNICA SOLICITAÇÃO MÉDICA CONSOLIDADA para ele.
+2. PACIENTES DIFERENTES (EX: GABRIEL E LAURA):
+   - Se houver comandas de pacientes DIFERENTES (ex: "Gabriel" e "Laura"): VOCÊ DEVE GERAR UMA SOLICITAÇÃO MÉDICA ESTRUTURADA COMPLETA SEPARADA PARA CADA PACIENTE DISTINTO.
+   - Cada solicitação individual de paciente DEVE iniciar com o cabeçalho "# SOLICITAÇÃO DE PROCEDIMENTO".
+
+REGRAS CRÍTICAS DE RECOMENDAÇÃO DE MATERIAIS OPME — PORTFÓLIO MEDIC & ARTHROMED:
+1. CONSULTA OBRIGATÓRIA AO PORTFÓLIO MEDIC & ARTHROMED:
+   - Ao preencher e recomendar os materiais na tabela "## MATERIAIS E OPME" e nas justificativas técnicas, VOCÊ DEVE SE BASEAR RIGOROSAMENTE NO PORTFÓLIO DE PRODUTOS DA MEDIC DISTRIBUIDORA E DA ARTHROMED (catálogo Emultec/Medic).
+   - Utilize as nomenclaturas comerciais padronizadas, equivalentes de catálogo e especificações técnicas oficiais:
+     * Cirurgias de Ombro, Joelho e Artroscopia:
+       - Âncoras: Âncora FastFit 2.5 FFA, Âncora FastFit Knotless (Sem Nó em PEEK/UHMWPE), Âncora FastFit Razek 2.5 Ajustável, Âncora Metálica TI 5.0 Sinfix, SwiveLock / PushLock (Arthrex).
+       - Fixação Cortical: Botão Cortical Sinfix Button / Endobutton (Titânio + laço UHMWPE ajustável para enxertos LCA/LCP), FastFit Razek FAB Button.
+       - Suturas & Fitas: Fio de Sutura Trançada com 2 Agulhas Surtufix (UHMWPE de Alta Resistência), Fita UHMWPE 2.0mm com Agulha.
+       - Perfuração & Acesso: Broca Retrógrada Flexdrill (para túnel ósseo LCA/LCP), Fresas Shanon / Cilíndricas / Wedge, Cânula Artroscópica 8.5x90mm Razek, Passador de Sutura Sinpass Agulha, Fio Guia Canulado / Fio K.
+     * Cirurgias de Coluna & Ortopedia Geral:
+       - Agente Antiaderente e Hemostático: Betamix Gel 3.0ml (Gel estéril à base de ácido hialurônico, barreira física antifibrótica pós-operatória e hemostático) / Adhesion.
+       - Sistemas Pediculares & Hastes: Parafusos Pediculares Poliaxiais de Titânio, Hastes de Titânio, Cages Intersomáticos (PEEK/Titânio), Pinos e Placas de Fixação Óssea.
+     * Próteses e Artroplastia:
+       - Prótese Parcial para Cabeça de Rádio Modular 19x09 (Titânio).
+
+2. MARCAS / FABRICANTES RECOMENDADOS (MÍN. 3 MARCAS):
+   - Indique sempre no mínimo 3 marcas reconhecidas no mercado e integrantes do portfólio Medic/Arthromed na coluna "MARCAS (MÍN. 3)", tais como:
+     * [Razek / Sinfix / Arthrex]
+     * [Medtronic / Stryker / DePuy Synthes]
+     * [Smith & Nephew / Surtufix / Betamix]
+
+3. FORNECEDORES SUGERIDOS:
+   - Inclua obrigatoriamente a **Medic Distribuidora** e a **Arthromed** entre os fornecedores sugeridos na tabela "## FORNECEDORES SUGERIDOS", acompanhadas por distribuidores parceiros credenciados na região:
+     | FORNECEDOR SUGERIDO 1 | FORNECEDOR SUGERIDO 2 | FORNECEDOR SUGERIDO 3 |
+     | :--- | :--- | :--- |
+     | [Medic Distribuidora] | [Arthromed] | [Fornecedor Autorizado Região] |
+
+ESTRUTURA OBRIGATÓRIA DO MARKDOWN GERADO PARA CADA SOLICITAÇÃO:
 
 # SOLICITAÇÃO DE PROCEDIMENTO
 **Convênio:** [NOME DO CONVÊNIO] | **Data:** [ ___/___/______ ]
@@ -345,7 +610,7 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
 `
 
     try {
-      const formattedInputText = `[INSTRUÇÕES / DADOS DO PEDIDO DO USUÁRIO]:\n${rawPrompt || 'Analise os arquivos e fotos anexados para extrair todos os dados clínicos e gerar a solicitação médica completa.'}`
+      const formattedInputText = `[INSTRUÇÕES / DADOS DO PEDIDO DO USUÁRIO]:\n${rawPrompt || 'Analise os arquivos e fotos anexados para extrair todos os dados clínicos e gerar as solicitações médicas padronizadas para cada paciente.'}`
 
       const filesPayload = attachedFiles.map((file) => ({
         mimeType: file.type || 'image/png',
@@ -365,6 +630,7 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
 
       if (result) {
         setGeneratedDraft(typeof result === 'string' ? result : (result as any).text || String(result))
+        setActivePatientIdx(0)
       }
     } catch (err) {
       console.error('Erro ao processar solicitações clínicas:', err)
@@ -380,8 +646,10 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleDownloadDocx = () => {
-    if (!generatedDraft) return
+  const handleDownloadSingleDocx = (contentToDownload?: string, patientName?: string) => {
+    const targetContent = contentToDownload || (currentDoc ? currentDoc.content : generatedDraft)
+    const targetName = patientName || (currentDoc ? currentDoc.patientName : 'Paciente')
+    if (!targetContent) return
 
     const convertMarkdownToWordHtml = (markdown: string): string => {
       const lines = markdown.split('\n')
@@ -540,13 +808,13 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
       return bodyHtml
     }
 
-    const htmlBody = convertMarkdownToWordHtml(generatedDraft)
+    const htmlBody = convertMarkdownToWordHtml(targetContent)
 
     const htmlContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head>
         <meta charset='utf-8'>
-        <title>Solicitação Médica</title>
+        <title>Solicitação Médica - ${targetName}</title>
         <style>
           body { font-family: 'Georgia', serif; font-size: 11pt; color: #111111; line-height: 1.5; margin: 40px; }
           table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
@@ -569,51 +837,60 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `Solicitacao_Medica_${new Date().toISOString().slice(0, 10)}.doc`
+    const safeName = targetName.replace(/[^a-zA-Z0-9_]/g, '_')
+    a.download = `Solicitacao_Medica_${safeName}_${new Date().toISOString().slice(0, 10)}.doc`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
 
+  const handleDownloadAllDocx = () => {
+    parsedDocs.forEach((doc, idx) => {
+      setTimeout(() => {
+        handleDownloadSingleDocx(doc.content, doc.patientName)
+      }, idx * 600)
+    })
+  }
+
   return (
-    <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-y-auto p-4 sm:p-8 w-full max-w-[1300px] mx-auto">
-      
-      {/* Header Banner */}
-      <div className="mb-6 bg-white border border-[#e6e9f2] text-[#14161f] rounded-[16px] shadow-xs overflow-hidden">
-        <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#1f29de] text-white rounded-[11px] flex items-center justify-center shadow-xs shrink-0 font-extrabold">
+    <div className="w-full h-full bg-[#f8fafc] overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-5">
+        
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl shadow-md border border-slate-800 p-5 sm:p-6 overflow-hidden relative">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-xl flex items-center justify-center shadow-md shrink-0 font-extrabold mt-0.5">
               <Stethoscope size={24} />
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
-                <h2 className="font-display font-extrabold text-2xl tracking-tight text-[#14161f]">Solicitação Médica</h2>
-                <span className="bg-[#1f29de]/10 text-[#1f29de] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-[#1f29de]/20 uppercase">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-white">Solicitação Médica</h2>
+                <span className="bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase tracking-wide">
                   Metodologia Anti-Glosa
                 </span>
               </div>
-              <p className="text-xs text-[#5b6276] mt-1 max-w-[600px] leading-relaxed">
-                Central para vendedores, representantes e médicos. Envie fotos ou PDFs dos pedidos para a IA extrair dados e compilar a solicitação padronizada em Word (.docx).
+              <p className="text-xs text-slate-300 mt-1 max-w-[620px] leading-relaxed">
+                Central de documentação cirúrgica padronizada anti-glosa. Anexe fotos ou PDFs das comandas para extrair dados, unificar pacientes e compilar solicitações em Word (.docx).
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <span className="text-[11px] font-bold text-[#1f29de] bg-[#eef0fe] px-3 py-1.5 rounded-[11px] border border-[#c3c7fb] flex items-center gap-1.5">
-              <Sparkles size={14} />
+          <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0">
+            <span className="text-[11px] font-bold text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-amber-400" />
               Resolução CFM 2.318/2022
             </span>
-            <span className="text-[10px] text-[#9097aa] font-semibold">Normativas ANS & STF Atualizadas</span>
+            <span className="text-[10px] text-slate-400 font-medium">Portfólio Medic & Arthromed</span>
           </div>
         </div>
-        <div className="brand-filete-bar" />
       </div>
 
       {/* 3-Step Guided Workflow Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 font-black text-xs flex items-center justify-center shrink-0 border border-blue-100">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 font-extrabold text-xs flex items-center justify-center shrink-0 border border-amber-200/60">
             1
           </div>
           <div>
@@ -622,23 +899,23 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 font-black text-xs flex items-center justify-center shrink-0 border border-amber-100">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-800 font-extrabold text-xs flex items-center justify-center shrink-0 border border-blue-200/60">
             2
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-800">2. Análise Automática da IA</h4>
-            <p className="text-[10px] text-slate-500">Identifica CIDs, TUSS e regras anti-glosa</p>
+            <p className="text-[10px] text-slate-500">Agrupa pacientes e CIDs anti-glosa</p>
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 font-black text-xs flex items-center justify-center shrink-0 border border-emerald-100">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 font-extrabold text-xs flex items-center justify-center shrink-0 border border-emerald-200/60">
             3
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-800">3. Baixar em Word (.docx)</h4>
-            <p className="text-[10px] text-slate-500">Pronto no padrão Georgia institucional</p>
+            <p className="text-[10px] text-slate-500">Documento pronto editável no PC e Celular</p>
           </div>
         </div>
       </div>
@@ -732,15 +1009,49 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
               </div>
             </div>
 
-            {/* Text Input */}
+            {/* Text Input & Voice Recorder */}
             <div>
-              <h3 className="text-xs font-bold text-[#1a2332] uppercase tracking-wider mb-2 flex items-center gap-2">
-                <FileText size={15} className="text-amber-600" />
-                2. Instruções ou Observações Adicionais
-              </h3>
+              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                <h3 className="text-xs font-bold text-[#1a2332] uppercase tracking-wider flex items-center gap-2">
+                  <FileText size={15} className="text-amber-600" />
+                  2. Instruções ou Observações Adicionais
+                </h3>
+
+                {/* Botão Gravador de Voz */}
+                <button
+                  type="button"
+                  onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                    isRecording
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                      : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
+                  }`}
+                  title={isRecording ? "Clique para parar o ditado por voz" : "Clique para ditar suas observações por voz"}
+                >
+                  {isRecording ? (
+                    <>
+                      <MicOff size={14} className="animate-bounce" />
+                      <span>Gravando ({recordingTime}s) • Parar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic size={14} className="text-amber-800" />
+                      <span>Gravador de Voz</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {isRecording && (
+                <div className="mb-2 p-2 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-[11px] font-bold shadow-2xs animate-fade-in">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping shrink-0" />
+                  <span>Escutando seu microfone... Fale suas observações que a IA transcreverá automaticamente abaixo.</span>
+                </div>
+              )}
+
               <textarea
                 rows={4}
-                placeholder="Exemplo: Paciente com dor lombar refratária a fisioterapia. Cirurgia de coluna no Bradesco. Marcas indicadas: Medtronic, Stryker e DePuy."
+                placeholder="Exemplo: Paciente com dor lombar refratária a fisioterapia. Cirurgia de coluna no Bradesco. Marcas indicadas: Medtronic, Stryker e DePuy. (Ou clique em Gravador de Voz acima para ditar)"
                 value={rawPrompt}
                 onChange={(e) => setRawPrompt(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-900 focus:bg-white focus:border-amber-900 outline-none transition-all leading-relaxed font-sans"
@@ -815,43 +1126,81 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
             </div>
           </div>
 
+          {/* Patient Tabs (Quando houver múltiplos pacientes/comandas) */}
+          {generatedDraft && !isLoading && parsedDocs.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-2.5 mb-3 border-b border-slate-100 hide-scrollbar">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                <User size={12} />
+                Pacientes Identificados ({parsedDocs.length}):
+              </span>
+              {parsedDocs.map((doc, idx) => (
+                <button
+                  key={doc.id}
+                  type="button"
+                  onClick={() => setActivePatientIdx(idx)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all shrink-0 ${
+                    activePatientIdx === idx
+                      ? 'bg-amber-900 text-white shadow-2xs'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  <span>{doc.patientName}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* A4 Paper Document Preview Container */}
-          <div className="flex-1 bg-[#e2e8f0] p-4 sm:p-6 rounded-2xl overflow-y-auto max-h-[640px] flex justify-center items-start border border-slate-300">
+          <div className="flex-1 bg-[#e2e8f0] p-4 sm:p-6 rounded-2xl overflow-y-auto min-h-[500px] flex justify-center items-start border border-slate-300">
             {isLoading ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 py-28 space-y-3">
                 <Loader2 size={38} className="animate-spin text-amber-600" />
-                <p className="text-xs font-bold text-slate-700">Lendo exames e gerando a Folha A4 InCore...</p>
-                <span className="text-[10px] text-slate-500">Formatando diagnósticos CIDs, TUSS, Motor de 3 Blocos e Normativas</span>
+                <p className="text-xs font-bold text-slate-700">Lendo exames e agrupando comandas por paciente...</p>
+                <span className="text-[10px] text-slate-500">Consolidando laudos do mesmo paciente e gerando solicitações A4 separadas</span>
               </div>
             ) : generatedDraft ? (
               viewMode === 'formatted' ? (
-                <ClinicalPaperDocument content={generatedDraft} />
+                <ClinicalPaperDocument 
+                  content={currentDoc ? currentDoc.content : generatedDraft} 
+                  onUpdateContent={handleUpdateCurrentDocContent}
+                />
               ) : (
                 <pre className="w-full bg-[#1a2332] text-slate-200 p-5 rounded-xl font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
-                  {generatedDraft}
+                  {currentDoc ? currentDoc.content : generatedDraft}
                 </pre>
               )
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-center py-28 space-y-2">
                 <Stethoscope size={48} className="mb-2 opacity-25 text-amber-600" />
-                <p className="text-xs font-bold text-slate-700">Anexe as fotos ou PDFs dos laudos e clique em Gerar.</p>
+                <p className="text-xs font-bold text-slate-700">Anexe as fotos ou PDFs das comandas e clique em Gerar.</p>
                 <span className="text-[10px] text-slate-500 max-w-[320px] leading-relaxed">
-                  A IA lerá os exames e montará a folha impressa A4 exatamente igual ao modelo da clínica InCore para download em Word (.docx).
+                  Comandas do mesmo paciente serão unificadas em 1 solicitação. Pacientes diferentes (ex: Gabriel e Laura) gerarão solicitações A4 separadas.
                 </span>
               </div>
             )}
           </div>
 
-          {/* Download Button */}
+          {/* Download Buttons */}
           {generatedDraft && !isLoading && (
-            <div className="mt-4">
+            <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
               <button
-                onClick={handleDownloadDocx}
-                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+                onClick={() => handleDownloadSingleDocx(currentDoc?.content, currentDoc?.patientName)}
+                className="w-full flex-1 bg-emerald-700 hover:bg-emerald-800 text-white py-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
               >
                 <Download size={16} />
-                <span>Baixar Solicitação Pronta em Word (.docx)</span>
+                <span>Baixar Solicitação de {currentDoc?.patientName || 'Paciente'} (.docx)</span>
               </button>
+
+              {parsedDocs.length > 1 && (
+                <button
+                  onClick={handleDownloadAllDocx}
+                  className="w-full sm:w-auto bg-amber-900 hover:bg-amber-950 text-white py-4 px-5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer shrink-0"
+                  title="Baixar todas as solicitações cirúrgicas geradas em arquivos Word separados"
+                >
+                  <Download size={16} />
+                  <span>Baixar Todos ({parsedDocs.length} Pacientes)</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -860,5 +1209,6 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
       </div>
 
     </div>
-  )
+  </div>
+)
 }

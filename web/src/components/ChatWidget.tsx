@@ -9,7 +9,7 @@ import { ChatOnboarding } from './Chat/ChatOnboarding'
 import { ChatSectorSelect } from './Chat/ChatSectorSelect'
 import { ChatDashboard } from './Chat/ChatDashboard'
 import { FilePreviewModal } from './Chat/FilePreviewModal'
-import { LoginScreen } from './LoginScreen'
+import { LoginScreen } from './common/LoginScreen'
 import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
 import { supabase } from '../lib/supabase'
@@ -1003,20 +1003,20 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             )}
           >
             {/* Unified Corporate Header */}
-            <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2">
-              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar flex-1">
+            <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2 min-h-[56px]">
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 flex-wrap sm:flex-nowrap">
                 {step !== 'onboarding' && (
                   <button 
                     onClick={() => setStep('onboarding')}
-                    className="flex items-center gap-2 p-2 -ml-2 rounded-xl text-slate-600 hover:text-[#1a2332] hover:bg-slate-100 transition-all cursor-pointer shrink-0 font-bold text-xs"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-700 hover:text-[#1a2332] bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer shrink-0 font-bold text-xs shadow-2xs"
                     title="Voltar ao Menu Principal"
                   >
-                    <ArrowLeft size={18} />
+                    <ArrowLeft size={16} />
                     <span>Voltar ao Menu</span>
                   </button>
                 )}
                 {step === 'chat' && sector && (
-                  <div className="flex items-center gap-2 ml-2">
+                  <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Setor:</span>
                     <div className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-semibold border border-slate-200">
                       {sector}
@@ -1024,7 +1024,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   </div>
                 )}
                 {step === 'gop' && (
-                  <div className="flex items-center gap-2 ml-2">
+                  <div className="flex items-center gap-2">
                     <div className="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-bold border border-indigo-100 flex items-center gap-1.5">
                       <Layers size={14} />
                       <span>Módulo NOC (NCO)</span>
@@ -1032,10 +1032,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   </div>
                 )}
                 {step === 'doc_clinica' && (
-                  <div className="flex items-center gap-2 ml-2">
-                    <div className="bg-amber-50 text-amber-800 px-2.5 py-1 rounded-md text-xs font-bold border border-amber-200 flex items-center gap-1.5">
-                      <FileText size={14} />
-                      <span>Solicitação Médica</span>
+                  <div className="flex items-center gap-2">
+                    <div className="bg-amber-50 text-amber-800 px-2.5 py-1.5 rounded-lg text-xs font-bold border border-amber-200/80 flex items-center gap-1.5 shadow-2xs">
+                      <FileText size={14} className="text-amber-700" />
+                      <span>Solicitação Médica Padronizada</span>
                     </div>
                   </div>
                 )}

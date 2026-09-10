@@ -14,7 +14,8 @@ const config = defineConfig({
   resolve: { tsconfigPaths: true },
   envPrefix: ['VITE_', 'SUPABASE_', 'AI_GATEWAY_'],
   ssr: {
-    noExternal: true,
+    noExternal: isDev ? false : true,
+    ...(isDev ? { external: ['react', 'react-dom'] } : {}),
   },
   plugins: [
     devtools(),

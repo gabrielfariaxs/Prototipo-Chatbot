@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { Plus, Search, ChevronDown, ChevronRight, LayoutGrid, List, Loader2, CheckCircle2, Timer, BarChart3, Filter, Building2, PieChart, FileText, ShieldCheck } from 'lucide-react'
+import { Plus, Search, ChevronDown, ChevronUp, ChevronRight, LayoutGrid, List, Loader2, CheckCircle2, Timer, BarChart3, Filter, Building2, PieChart, FileText, ShieldCheck, User, Calendar } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { GopCreateModal } from './GopCreateModal'
 
@@ -62,7 +62,8 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
   const [filterUrgencia, setFilterUrgencia] = useState('Todas')
   const [filterStatus, setFilterStatus] = useState('Todos')
   const [metricsPeriod, setMetricsPeriod] = useState<'24h' | '7d' | '30d' | '3m' | '6m' | 'todos'>('todos')
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
+  const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({})
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   useEffect(() => {
@@ -91,19 +92,60 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return ''
     const d = new Date(dateString)
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
   }
 
+  const toggleExpandColumn = (colId: string) => {
+    setExpandedColumns((prev) => ({ ...prev, [colId]: !prev[colId] }))
+  }
+
   // Derive filter options from data
-  const setores = ['Todos', ...Array.from(new Set(gargalos.map(g => g.setor)))]
+  const setores = ['Todos', ...Array.from(new Set(gargalos.map(g => g.setor).filter(Boolean)))]
   const urgencias = ['Todas', 'Alta', 'Média', 'Baixa']
   const statusOptions = ['Todos', 'Não Iniciado', 'Em Andamento', 'Em pausa', 'Resolvido']
 
+  const KANBAN_COLUMNS: { id: string; label: string; bg: string; text: string; border: string; badgeBg: string }[] = [
+    {
+      id: 'Não Iniciado',
+      label: 'Não Iniciado',
+      bg: 'bg-amber-50/80',
+      text: 'text-amber-900',
+      border: 'border-amber-200',
+      badgeBg: 'bg-amber-500 text-white'
+    },
+    {
+      id: 'Em Andamento',
+      label: 'Em Tratativa',
+      bg: 'bg-blue-50/80',
+      text: 'text-blue-900',
+      border: 'border-blue-200',
+      badgeBg: 'bg-blue-600 text-white'
+    },
+    {
+      id: 'Em pausa',
+      label: 'Em Pausa',
+      bg: 'bg-purple-50/80',
+      text: 'text-purple-900',
+      border: 'border-purple-200',
+      badgeBg: 'bg-purple-600 text-white'
+    },
+    {
+      id: 'Resolvido',
+      label: 'Resolvido',
+      bg: 'bg-emerald-50/80',
+      text: 'text-emerald-900',
+      border: 'border-emerald-200',
+      badgeBg: 'bg-emerald-600 text-white'
+    }
+  ]
+
   // Filter the list
   const filteredGargalos = gargalos.filter(g => {
-    const matchesSearch = g.titulo.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          g.autor_nome.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = (g.titulo || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (g.autor_nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (g.descricao || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesSetor = filterSetor === 'Todos' || g.setor === filterSetor
     const matchesUrgencia = filterUrgencia === 'Todas' || g.urgencia === filterUrgencia
     const matchesStatus = filterStatus === 'Todos' || g.status === filterStatus
@@ -153,7 +195,9 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
 
   // Calculate Sector distribution
   const setorCounts = gargalos.reduce((acc: any, g) => {
-    acc[g.setor] = (acc[g.setor] || 0) + 1
+    if (g.setor) {
+      acc[g.setor] = (acc[g.setor] || 0) + 1
+    }
     return acc
   }, {})
   const maxSetorCount = Math.max(...Object.values(setorCounts) as number[], 1)
@@ -172,15 +216,15 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
   })()
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto p-8 flex flex-col gap-6">
+    <div className="p-3 sm:p-4 md:p-6 pb-20 space-y-5 w-full max-w-none">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           {userRole === 'coo' ? (
             <>
               <p className="text-indigo-600 font-bold text-xs uppercase tracking-widest mb-1">Fila de Revisão - COO</p>
               <h1 className="text-3xl font-extrabold text-[#1a2332] tracking-tight">Não Conformidades aguardando tratativa</h1>
-              <p className="text-slate-500 text-sm mt-1.5 font-medium">Selecione um gargalo para revisar as evidências e registrar a decisão da reunião.</p>
+              <p className="text-slate-500 text-sm mt-1.5 font-medium">Selecione um relato para revisar evidências e registrar tratativas operacionais.</p>
             </>
           ) : (
             <>
@@ -192,10 +236,11 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
         </div>
         {userRole === 'lider' && (
           <button 
+            type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center justify-center w-full md:w-auto gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer shrink-0"
+            className="bg-[#1b497d] hover:bg-[#12345b] text-white font-bold text-xs py-2.5 px-5 rounded-xl flex items-center justify-center w-full md:w-auto gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
           >
-            <Plus size={18} strokeWidth={2.5} />
+            <Plus size={16} strokeWidth={2.5} />
             Reportar Nova Não Conformidade
           </button>
         )}
@@ -204,7 +249,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
       {/* Stats Cards */}
       {userRole === 'coo' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1.5fr] gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[120px]">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between h-[120px]">
             <div className="flex items-center gap-2 text-slate-500 text-[13px] font-bold">
               <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
                 <Search size={12} strokeWidth={3} />
@@ -213,7 +258,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
             <span className="text-3xl font-extrabold text-[#1a2332]">{aguardandoTratativa}</span>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[120px]">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between h-[120px]">
             <div className="flex items-center gap-2 text-slate-500 text-[13px] font-bold">
               <div className="w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
                 <Search size={12} strokeWidth={3} />
@@ -222,7 +267,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
             <span className="text-3xl font-extrabold text-[#1a2332]">{altaUrgencia}</span>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[120px]">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between h-[120px]">
             <div className="flex items-center gap-2 text-slate-500 text-[13px] font-bold">
               <div className="w-6 h-6 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center">
                 <div className="w-3 h-3 rounded-full border-2 border-amber-500 flex items-center justify-center"><div className="w-4 h-0.5 bg-amber-500 rotate-45"></div></div>
@@ -231,7 +276,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
             <span className="text-3xl font-extrabold text-[#1a2332]">{bloqueados}</span>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[120px]">
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between h-[120px]">
             <div className="flex items-center gap-2 text-slate-500 text-[13px] font-bold">
               <div className="w-6 h-6 rounded-full bg-green-50 text-green-500 flex items-center justify-center">
                 <Search size={12} strokeWidth={3} />
@@ -259,31 +304,31 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'Total reportado', value: gargalos.length, color: 'bg-slate-400' },
             { label: 'Em andamento', value: gargalos.filter(g => g.status === 'Em Andamento').length, color: 'bg-blue-500' },
-            { label: 'Em pausa', value: gargalos.filter(g => g.status === 'Em pausa').length, color: 'bg-red-500' },
+            { label: 'Em pausa', value: gargalos.filter(g => g.status === 'Em pausa').length, color: 'bg-purple-500' },
             { label: 'Resolvido', value: resolvidos, color: 'bg-green-500' },
           ].map((stat, i) => (
-            <div key={i} className="bg-white rounded-[1.25rem] p-6 border border-slate-100 shadow-sm flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-2 rounded-full ${stat.color}`}></div>
-                <span className="text-[13px] font-bold text-slate-500 tracking-wide">{stat.label}</span>
+            <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-2.5 h-2.5 rounded-full ${stat.color}`}></div>
+                <span className="text-xs font-extrabold text-slate-500 tracking-wide uppercase">{stat.label}</span>
               </div>
-              <span className="text-[2.5rem] leading-none font-extrabold text-[#1a2332]">{stat.value}</span>
+              <span className="text-3xl font-extrabold text-[#1a2332]">{stat.value}</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Dashboard KPI Metrics (Apenas Visível para Líder de Operações, Qualidade e Gestor/COO/Diretoria) */}
+      {/* Dashboard KPI Metrics */}
       {hasMetricsAccess && (
-        <div className="space-y-3 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs mt-2">
+        <div className="space-y-3 bg-white p-4.5 rounded-2xl border border-slate-200 shadow-xs">
           {/* Header das Métricas com Filtro de Período */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-[#1b497d]/10 text-[#1b497d] border border-[#1b497d]/20 flex items-center justify-center font-bold">
                 <BarChart3 size={18} />
               </div>
               <div>
@@ -297,13 +342,13 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
 
             {/* Seletor de Período */}
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-indigo-500/40 px-3 py-1.5 rounded-xl transition-all self-start sm:self-auto cursor-pointer">
-              <Filter size={14} className="text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-[#1b497d]/40 px-3 py-1.5 rounded-xl transition-all self-start sm:self-auto cursor-pointer">
+              <Filter size={14} className="text-[#1b497d] shrink-0" />
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Período:</span>
               <select
                 value={metricsPeriod}
                 onChange={(e) => setMetricsPeriod(e.target.value as any)}
-                className="bg-transparent text-xs font-extrabold text-indigo-900 outline-none cursor-pointer pr-1"
+                className="bg-transparent text-xs font-extrabold text-[#1b497d] outline-none cursor-pointer pr-1"
               >
                 <option value="24h">Últimas 24 Horas</option>
                 <option value="7d">Últimos 7 Dias</option>
@@ -318,9 +363,9 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
           {/* Grade de 5 Cards Principais */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 pt-1">
             {/* Card 1: Tempo Médio de Solução */}
-            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold shrink-0">
-                <Timer size={20} />
+            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold shrink-0">
+                <Timer size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Tempo Médio de Solução</span>
@@ -331,12 +376,12 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
 
             {/* Card 2: Total de Não Conformidades */}
-            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-bold shrink-0">
-                <FileText size={20} />
+            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-bold shrink-0">
+                <FileText size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Total de Não Conformidades</span>
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Total de NCOs</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {totalNcoCount}
                 </span>
@@ -344,12 +389,12 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
 
             {/* Card 3: Resolvidos Sem Diretoria */}
-            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-green-50 text-green-600 border border-green-100 flex items-center justify-center font-bold shrink-0">
-                <CheckCircle2 size={20} />
+            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-green-50 text-green-600 border border-green-100 flex items-center justify-center font-bold shrink-0">
+                <CheckCircle2 size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Resolvidos sem Diretoria</span>
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Resolvidos s/ Diretoria</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {resolvidosSemDiretoria.length} <span className="text-xs font-medium text-slate-400">/ {totalResolvidos.length}</span>
                 </span>
@@ -357,12 +402,12 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
 
             {/* Card 4: Resolvidos Com Diretoria */}
-            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center font-bold shrink-0">
-                <Building2 size={20} />
+            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center font-bold shrink-0">
+                <Building2 size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Resolvidos com Diretoria</span>
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Resolvidos c/ Diretoria</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {resolvidosComDiretoria.length} <span className="text-xs font-medium text-slate-400">/ {totalResolvidos.length}</span>
                 </span>
@@ -370,12 +415,12 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </div>
 
             {/* Card 5: % Resolvidos Sem Diretoria */}
-            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold shrink-0">
-                <PieChart size={20} />
+            <div className="bg-slate-50/80 hover:bg-slate-100/80 p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold shrink-0">
+                <PieChart size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">% Solução sem Diretoria</span>
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">% Solução s/ Diretoria</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {percentSemDiretoria}%
                 </span>
@@ -386,202 +431,237 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
       )}
 
       {/* Toolbar Unificada de Busca e Filtros */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5">
-        {/* Lado Esquerdo: Alternador de Visualização & Campo de Busca */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-          {/* Toggle View Mode */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        {/* Lado Esquerdo: Busca por texto */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input 
+            type="text" 
+            placeholder="Buscar por título, autor ou descrição da não conformidade..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1b497d] transition-all"
+          />
+        </div>
+
+        {/* Lado Direito: View Switcher & Filtros */}
+        <div className="flex items-center gap-3 overflow-x-auto pb-1 md:pb-0">
+          {/* Alternador Quadro Kanban / Lista */}
           <div className="bg-[#fafbfe] border border-[#e6e9f2] p-1 rounded-xl flex items-center shrink-0">
             <button 
               type="button"
-              onClick={() => setViewMode('list')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${viewMode === 'list' ? 'bg-[#1a2332] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+              onClick={() => setViewMode('kanban')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${viewMode === 'kanban' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
             >
-              <List size={14} /> <span>{userRole === 'coo' ? 'Cards' : 'Tabela'}</span>
+              <LayoutGrid size={14} />
+              <span>Quadro Kanban</span>
             </button>
             <button 
               type="button"
-              onClick={() => setViewMode('kanban')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${viewMode === 'kanban' ? 'bg-[#1a2332] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${viewMode === 'list' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
             >
-              <LayoutGrid size={14} /> <span>{userRole === 'coo' ? 'Lista' : 'Kanban'}</span>
+              <List size={14} />
+              <span>Lista</span>
             </button>
           </div>
-          
-          {/* Input de Busca */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder="Buscar não conformidade..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-indigo-500 transition-all"
-            />
-          </div>
-        </div>
 
-        {/* Lado Direito: Seletores de Filtro e Contador de Resultados */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="w-px h-6 bg-slate-200 hidden md:block" />
+
           {/* Select Setor */}
-          <div className="relative flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Filter size={14} className="text-slate-400" />
             <select 
               value={filterSetor}
               onChange={(e) => setFilterSetor(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-2 w-full bg-slate-50 hover:bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer"
             >
               {setores.map(s => <option key={s} value={s}>{s === 'Todos' ? 'Todos os setores' : s}</option>)}
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
           </div>
 
           {/* Select Urgência */}
-          <div className="relative flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1.5 shrink-0">
             <select 
               value={filterUrgencia}
               onChange={(e) => setFilterUrgencia(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-2 w-full bg-slate-50 hover:bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer"
             >
-              {urgencias.map(u => <option key={u} value={u}>{u === 'Todas' ? 'Toda urgência' : u}</option>)}
+              {urgencias.map(u => <option key={u} value={u}>{u === 'Todas' ? 'Todas as urgências' : `Urgência ${u}`}</option>)}
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
           </div>
 
           {/* Select Status */}
-          <div className="relative flex-1 sm:flex-initial">
+          <div className="flex items-center gap-1.5 shrink-0">
             <select 
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-2 w-full bg-slate-50 hover:bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer"
             >
-              {statusOptions.map(s => <option key={s} value={s}>{s === 'Todos' ? 'Todo status' : s}</option>)}
+              {statusOptions.map(s => <option key={s} value={s}>{s === 'Todos' ? 'Todos os status' : s}</option>)}
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.5} />
           </div>
 
-          {/* Badge de Contador de Resultados */}
+          {/* Badge de Contador */}
           <span className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-extrabold shrink-0 border border-slate-200/60">
-            {filteredGargalos.length} resultado(s)
+            {filteredGargalos.length} relato(s)
           </span>
         </div>
       </div>
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-12 text-slate-400 bg-white rounded-2xl shadow-sm border border-slate-100 mt-2">
-          <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-500" />
+        <div className="flex flex-col items-center justify-center p-12 text-slate-400 bg-white rounded-2xl shadow-xs border border-slate-200">
+          <Loader2 className="w-8 h-8 animate-spin mb-4 text-[#1b497d]" />
           <span className="text-sm font-bold">Carregando não conformidades...</span>
         </div>
       ) : filteredGargalos.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 text-slate-400 bg-white rounded-2xl shadow-sm border border-slate-100 mt-2">
-          <span className="text-sm font-bold">Nenhuma não conformidade encontrada para os filtros selecionados.</span>
-        </div>
-      ) : userRole === 'coo' ? (
-        /* COO Card Grid View */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
-          {filteredGargalos.map((item) => (
-            <div 
-              key={item.id} 
-              onClick={() => onSelect(item.id)}
-              className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group"
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+            <Search size={24} />
+          </div>
+          <h4 className="font-bold text-slate-700 text-sm">Nenhuma não conformidade encontrada</h4>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm">
+            Tente ajustar os termos da busca ou selecione outros filtros de setor/urgência.
+          </p>
+          {userRole === 'lider' && (
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="mt-4 px-4 py-2 bg-[#1b497d] text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs"
             >
-              {/* Top Tags */}
-              <div className="flex items-center justify-between mb-4 gap-2">
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-[0.4rem] text-[11px] font-bold uppercase tracking-wider shrink-0 whitespace-nowrap
-                  ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : 
-                    item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 
-                    'bg-green-50 text-green-600'}`}>
-                  {item.urgencia}
-                </span>
-                <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-bold shrink-0 whitespace-nowrap
-                  ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
-                    item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
-                    item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 
-                    item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
-                    'bg-slate-100 text-slate-500'}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${
-                    item.status === 'Em Andamento' ? 'bg-blue-500' : 
-                    item.status === 'Não Iniciado' ? 'bg-slate-400' : 
-                    item.status === 'Em pausa' ? 'bg-red-500' : 
-                    item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
-                  }`}></div>
-                  {item.status}
-                </span>
-              </div>
-              
-              {/* Title & Desc */}
-              <h3 className="text-[17px] font-bold text-[#1a2332] mb-2 leading-tight group-hover:text-indigo-600 transition-colors">{item.titulo}</h3>
-              <p className="text-slate-500 text-[13px] leading-relaxed line-clamp-2 flex-1 mb-2">{item.descricao}</p>
-              
-              {(item.tratativa_autor_badge || item.tratativa_decisao || item.status === 'Resolvido' || item.status === 'Em Andamento') && (
-                <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md mt-1 w-max block">
-                  ✓ {item.tratativa_autor_badge || 'Respondido pelo Gestor de Operações'}
-                </span>
-              )}
-              
-              {/* Footer */}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
-                <div className="flex items-center gap-2 text-[12px] font-bold text-slate-400">
-                  <span>{item.setor}</span>
-                  <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-                  <span>{formatDate(item.data_registro)}</span>
-                </div>
-                <span className="text-[13px] font-bold text-indigo-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Revisar <ChevronRight size={14} strokeWidth={3} />
-                </span>
-              </div>
-            </div>
-          ))}
+              <Plus size={14} />
+              <span>Reportar Nova Não Conformidade</span>
+            </button>
+          )}
         </div>
       ) : viewMode === 'kanban' ? (
-        /* Kanban View */
-        <div className="flex gap-4 mt-2 overflow-x-auto pb-4 custom-scrollbar">
-          {statusOptions.filter(s => s !== 'Todos').map(statusCol => {
-            const colItems = filteredGargalos.filter(g => g.status === statusCol)
-            const colorClass = statusCol === 'Não Iniciado' ? 'bg-slate-400' : statusCol === 'Em Andamento' ? 'bg-blue-500' : statusCol === 'Em pausa' ? 'bg-red-500' : 'bg-green-500'
-            
+        /* QUADRO KANBAN (4 Colunas Fluidas 100% Largura) */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 w-full">
+          {KANBAN_COLUMNS.map((col) => {
+            const columnItems = filteredGargalos.filter((g) => g.status === col.id)
+            const isResolvido = col.id === 'Resolvido'
+            const isExpanded = !!expandedColumns[col.id]
+            const displayedItems = isResolvido
+              ? columnItems.slice(0, 3)
+              : isExpanded
+              ? columnItems
+              : columnItems.slice(0, 3)
+            const hasMore = !isResolvido && columnItems.length > 3
+
             return (
-              <div key={statusCol} className="flex-1 min-w-[260px] bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col">
-                <div className="flex items-center justify-between mb-4 px-1">
+              <div 
+                key={col.id}
+                className="bg-white rounded-2xl border border-[#e2e8f0] p-3 md:p-3.5 flex flex-col gap-3 min-h-[400px] shadow-xs w-full min-w-0"
+              >
+                {/* Header da Coluna */}
+                <div className={`p-3 rounded-xl border ${col.bg} ${col.border} flex items-center justify-between`}>
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${colorClass}`}></div>
-                    <span className="text-[13px] font-extrabold text-[#1a2332]">{statusCol}</span>
+                    <span className={`w-2.5 h-2.5 rounded-full ${col.badgeBg}`} />
+                    <h3 className={`font-display font-extrabold text-xs tracking-tight ${col.text}`}>
+                      {col.label}
+                    </h3>
                   </div>
-                  <span className="w-5 h-5 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-500 flex items-center justify-center shadow-sm">
-                    {colItems.length}
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-white ${col.text} border ${col.border}`}>
+                    {columnItems.length}
                   </span>
                 </div>
-                
-                <div className="flex flex-col gap-3 pr-1">
-                  {colItems.length === 0 ? (
-                    <div className="w-full py-8 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-xs font-bold text-slate-400">
-                      Vazio
+
+                {/* Cards da Coluna */}
+                <div className="flex flex-col gap-3 flex-1">
+                  {columnItems.length === 0 ? (
+                    <div className="p-6 border border-dashed border-slate-200 rounded-xl text-center flex flex-col items-center justify-center my-auto text-slate-400">
+                      <span className="text-xs font-medium">Vazio</span>
                     </div>
                   ) : (
-                    colItems.map(item => (
-                      <div 
-                        key={item.id} 
-                        onClick={() => onSelect(item.id)}
-                        className={`bg-white rounded-xl p-5 border-l-2 shadow-sm cursor-pointer hover:shadow-md transition-all flex flex-col gap-3
-                          ${item.status === 'Não Iniciado' ? 'border-l-amber-500' : item.status === 'Em Andamento' ? 'border-l-red-500' : item.status === 'Em pausa' ? 'border-l-slate-200' : 'border-l-green-500'}
-                        `}
-                      >
-                        <h4 className="font-bold text-[#1a2332] text-[13px] leading-snug group-hover:text-indigo-600 transition-colors">{item.titulo}</h4>
-                        {item.tratativa_decisao && (
-                          <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-md w-fit flex items-center gap-1.5 shadow-sm">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Respondido
+                    displayedItems.map((item) => {
+                      const durMinutes = getGargaloDurationMinutes(item)
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => onSelect(item.id)}
+                          className="bg-white hover:bg-slate-50 border border-[#e2e8f0] hover:border-[#1b497d]/40 rounded-xl p-4 shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+                        >
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className={`px-2 py-0.5 text-[9px] font-bold rounded flex items-center gap-1 w-max ${
+                              item.urgencia === 'Alta' ? 'bg-red-100 text-red-800' :
+                              item.urgencia === 'Média' ? 'bg-amber-100 text-amber-800' :
+                              'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              Urgência {item.urgencia}
+                            </span>
+
+                            {(item.tratativa_autor_badge || item.tratativa_decisao || item.status === 'Resolvido' || item.status === 'Em Andamento') && (
+                              <span className="px-2 py-0.5 text-[9px] font-extrabold rounded flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <CheckCircle2 size={10} /> Respondido
+                              </span>
+                            )}
                           </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold
-                            ${item.urgencia === 'Alta' ? 'bg-red-50 text-red-600' : item.urgencia === 'Média' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}
-                          `}>
-                            {item.urgencia}
-                          </span>
-                          <span className="text-[11px] font-semibold text-slate-400 truncate">{item.setor}</span>
+
+                          <div>
+                            <h4 className="font-display font-bold text-sm text-[#1e293b] group-hover:text-[#1b497d] transition-colors leading-snug line-clamp-2">
+                              {item.titulo}
+                            </h4>
+                            {item.descricao && (
+                              <p className="text-xs text-[#475569] leading-relaxed line-clamp-2 mt-1">
+                                {item.descricao}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-[#475569]">
+                              <span className="flex items-center gap-1 font-semibold truncate max-w-[140px]">
+                                <User size={12} /> {item.autor_nome || 'Anônimo'}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium">
+                                {item.setor}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 flex-wrap gap-1">
+                              <span className="flex items-center gap-1">
+                                <Calendar size={11} /> {formatDate(item.data_registro || item.created_at)}
+                              </span>
+
+                              {durMinutes > 0 && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                  <Timer size={10} /> {formatDurationShort(durMinutes)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
+                  )}
+
+                  {/* Indicador para a coluna Resolvido se houver mais de 3 */}
+                  {isResolvido && columnItems.length > 3 && (
+                    <span className="text-[10px] text-slate-400 text-center font-semibold pt-1">
+                      Exibindo os 3 mais recentes
+                    </span>
+                  )}
+
+                  {/* Botão Ver mais / Ver menos para outras colunas */}
+                  {hasMore && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandColumn(col.id)}
+                      className="mt-1 w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-[#1b497d] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <span>Ver menos</span>
+                          <ChevronUp size={14} />
+                        </>
+                      ) : (
+                        <>
+                          <span>Ver mais ({columnItems.length - 3} restantes)</span>
+                          <ChevronDown size={14} />
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
@@ -589,8 +669,8 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
           })}
         </div>
       ) : (
-        /* Lider Table View */
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mt-2">
+        /* Modo Lista / Tabela Operacional */
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
           <div className="hidden md:grid grid-cols-[2fr_1.5fr_1.2fr_1fr_1.2fr_auto] gap-4 px-6 py-4 border-b border-slate-100 bg-slate-50/50">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Nome da Não Conformidade</div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Setor</div>
@@ -611,7 +691,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
                   <div className="flex items-center gap-3">
                     <span className="text-[12px] font-semibold text-slate-400">{item.autor_nome}</span>
                     {item.tratativa_decisao && (
-                      <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
+                      <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
                         <CheckCircle2 className="w-3 h-3" />
                         <span className="hidden md:inline">Respondido pelo COO</span>
                         <span className="md:hidden">Respondido</span>
@@ -622,14 +702,14 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
                 
                 <div className="flex md:hidden items-center justify-between text-xs mt-2 border-t border-slate-50 pt-3">
                   <span className="font-bold text-slate-600">{item.setor}</span>
-                  <span className="font-semibold text-slate-400">{formatDate(item.data_registro)}</span>
+                  <span className="font-semibold text-slate-400">{formatDate(item.data_registro || item.created_at)}</span>
                 </div>
 
                 <div className="hidden md:flex items-center text-sm font-bold text-slate-600">
                   {item.setor}
                 </div>
                 <div className="hidden md:flex items-center text-sm font-semibold text-slate-500">
-                  {formatDate(item.data_registro)}
+                  {formatDate(item.data_registro || item.created_at)}
                 </div>
 
                 <div className="flex items-center justify-between md:justify-start gap-4 md:gap-0 mt-3 md:mt-0">
@@ -646,14 +726,14 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
                     <span className="md:hidden text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right md:text-left">Status</span>
                     <span className={`inline-flex items-center gap-2 px-3 md:px-3.5 py-1.5 rounded-full text-[12px] font-bold w-fit ml-auto md:ml-0 shrink-0 whitespace-nowrap
                       ${item.status === 'Em Andamento' ? 'bg-blue-50 text-blue-600' : 
-                        item.status === 'Não Iniciado' ? 'bg-slate-100 text-slate-600' : 
-                        item.status === 'Em pausa' ? 'bg-red-50 text-red-600' : 
+                        item.status === 'Não Iniciado' ? 'bg-amber-50 text-amber-700' : 
+                        item.status === 'Em pausa' ? 'bg-purple-50 text-purple-600' : 
                         item.status === 'Resolvido' ? 'bg-green-50 text-green-600' :
                         'bg-slate-100 text-slate-500'}`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${
                         item.status === 'Em Andamento' ? 'bg-blue-500' : 
-                        item.status === 'Não Iniciado' ? 'bg-slate-400' : 
-                        item.status === 'Em pausa' ? 'bg-red-500' : 
+                        item.status === 'Não Iniciado' ? 'bg-amber-500' : 
+                        item.status === 'Em pausa' ? 'bg-purple-500' : 
                         item.status === 'Resolvido' ? 'bg-green-500' : 'bg-slate-400'
                       }`}></div>
                       {item.status}

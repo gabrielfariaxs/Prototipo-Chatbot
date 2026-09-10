@@ -3,7 +3,7 @@ import { ChatWidget } from '../components/ChatWidget'
 import { MessageCircle, ArrowRight, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { LoginScreen } from '../components/LoginScreen'
+import { LoginScreen } from '../components/common/LoginScreen'
 import type { Session } from '@supabase/supabase-js'
 
 type IndexSearch = {

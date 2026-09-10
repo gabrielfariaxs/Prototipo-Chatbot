@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../../lib/supabase'
 import { Mail, Lock, ArrowRight, ShieldAlert, X, Eye, EyeOff, Loader2, ArrowLeft, Send, User } from 'lucide-react'
 import { BrandLockup } from './BrandLockup'
 

@@ -9,7 +9,7 @@ console.log('--- Preparando ambiente para build ---')
 
 // 1. Comenta a linha do main no wrangler.jsonc
 const commentedWrangler = wranglerContent.replace(
-  /"main":\s*"dist\/server\/server.js",/,
+  /(\/\/\s*)?"main":\s*"dist\/server\/server.js",/,
   '// "main": "dist/server/server.js",'
 )
 fs.writeFileSync(wranglerPath, commentedWrangler)

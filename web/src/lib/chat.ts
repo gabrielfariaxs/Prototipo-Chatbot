@@ -78,6 +78,101 @@ async function queryRpcMatchDocuments(queryEmbedding: number[], sector: string):
   return filteredDocs.map((doc: any) => doc.content).join('\n\n')
 }
 
+/**
+ * Realiza busca em tempo real nos Catálogos Online Oficiais da Arthromed e Medic e na Web.
+ * Catalogo Arthromed: https://portifolioarthromed-medic.vercel.app/
+ * Catalogo Medic: https://medic-portfolio.vercel.app/
+ */
+export async function fetchWebSearchRealtime(queryText: string): Promise<string> {
+  if (!queryText || queryText.trim().length < 3) return ''
+
+  const cleanTerm = queryText.replace(/\[.*?\]/g, '').replace(/https?:\/\/\S+/g, '').trim().slice(0, 150)
+  if (!cleanTerm) return ''
+
+  try {
+    // 1. Busca direta nos catálogos Vercel da Arthromed e Medic em tempo real
+    const catalogUrls = [
+      'https://portifolioarthromed-medic.vercel.app/',
+      'https://medic-portfolio.vercel.app/'
+    ]
+
+    const catalogPromises = catalogUrls.map(async (url) => {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'Accept': 'text/html'
+          }
+        })
+        if (!res.ok) return []
+        const html = await res.text()
+        
+        const cardMatches = html.match(/<div class="cbody">[\s\S]*?<\/div><\/div>/gi) || []
+        const normTerm = cleanTerm.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        
+        const matchedItems: string[] = []
+        for (const card of cardMatches) {
+          const normCard = card.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          if (normCard.includes(normTerm) || normTerm.split(/\s+/).some(w => w.length >= 3 && normCard.includes(w))) {
+            const titleMatch = card.match(/<h3>(.*?)<\/h3>/i)
+            const tagMatch = card.match(/<p class="tag">(.*?)<\/p>/i)
+            const brandMatch = card.match(/<span class="brand-l">(.*?)<\/span>/i)
+            const specMatch = card.match(/<span class="spec-line">(.*?)<\/span>/i)
+
+            if (titleMatch && titleMatch[1]) {
+              const title = titleMatch[1].replace(/<[^>]+>/g, '').trim()
+              const tag = tagMatch ? tagMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+              const brand = brandMatch ? brandMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+              const spec = specMatch ? specMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+              
+              matchedItems.push(`- **${title}** (${spec}${brand ? ' · Fabricante/Marca: ' + brand : ''}): ${tag}`)
+            }
+          }
+        }
+        return matchedItems
+      } catch (e) {
+        return []
+      }
+    })
+
+    const catalogResults = (await Promise.all(catalogPromises)).flat()
+    const uniqueCatalogResults = Array.from(new Set(catalogResults)).slice(0, 8)
+
+    // 2. Busca suplementar na web (DuckDuckGo)
+    let webSnippetText = ''
+    try {
+      const encodedQuery = encodeURIComponent(`"Medic" OR "Arthromed" OPME ortopedia ${cleanTerm}`)
+      const ddgRes = await fetch(`https://html.duckduckgo.com/html/?q=${encodedQuery}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          'Accept': 'text/html'
+        }
+      })
+      if (ddgRes.ok) {
+        const html = await ddgRes.text()
+        const snippets = html.match(/<a class="result__snippet[^>]*>(.*?)<\/a>/gi) || []
+        const cleanSnippets = snippets.map(m => m.replace(/<[^>]+>/g, '').trim()).filter(Boolean).slice(0, 3)
+        if (cleanSnippets.length > 0) {
+          webSnippetText = cleanSnippets.map(s => `• ${s}`).join('\n')
+        }
+      }
+    } catch (e) {}
+
+    const parts: string[] = []
+    if (uniqueCatalogResults.length > 0) {
+      parts.push(`[CATÁLOGOS ONLINE EM TEMPO REAL - ARTHROMED & MEDIC (portifolioarthromed-medic.vercel.app / medic-portfolio.vercel.app)]:\n` + uniqueCatalogResults.join('\n'))
+    }
+    if (webSnippetText) {
+      parts.push(`[BUSCA WEB ADICIONAL]:\n` + webSnippetText)
+    }
+
+    return parts.join('\n\n')
+  } catch (err) {
+    console.warn('Erro ao realizar busca web nos catálogos Arthromed/Medic:', err)
+    return ''
+  }
+}
+
 export const getContext = createServerFn({ method: 'GET' })
   .inputValidator(z.object({
     text: z.string(),
@@ -88,6 +183,9 @@ export const getContext = createServerFn({ method: 'GET' })
     const { text, sector, history = '' } = data
 
     try {
+      // Dispara a busca em tempo real na web em paralelo
+      const webRealtimePromise = fetchWebSearchRealtime(text)
+
       // 1. Busca vetorial no Supabase (se configurado) - Rodando em PARALELO para não travar a CPU
       let vectorContextPromise = Promise.resolve('')
       try {
@@ -193,18 +291,13 @@ export const getContext = createServerFn({ method: 'GET' })
 
       let localContext = ''
       if (matchedDocs.length > 0) {
-        // Prioriza correspondências do mesmo setor primeiro.
-        // Se tivermos correspondências no setor alvo, usamos elas.
-        // Caso contrário, usamos todas as correspondências como fallback.
         const targetSectorMatches = matchedDocs.filter(item => item.isTargetSector)
         const docsToUse = targetSectorMatches.length > 0 ? targetSectorMatches : matchedDocs
 
-        // Ordenar por pontuação (score) decrescente
         const sortedDocs = docsToUse
           .sort((a, b) => b.score - a.score)
           .map(item => item.doc)
 
-        // Pegar até os 6 documentos mais relevantes
         const contexts = sortedDocs
           .slice(0, 6)
           .map((doc: any) => `[SETOR: ${doc.setor}] [PROCESSO: ${doc.processo}]\n${doc.conteudo}`)
@@ -212,14 +305,41 @@ export const getContext = createServerFn({ method: 'GET' })
         localContext = contexts.join('\n\n---\n\n')
       }
 
-      // Aguarda o resultado da busca vetorial que rodou em paralelo
-      const vectorContext = await vectorContextPromise
+      // Busca no Catálogo de Produtos / OPME da Medic e Arthromed (produtos_emultec.json)
+      let productContext = ''
+      if (Array.isArray(produtosEmultec) && produtosEmultec.length > 0) {
+        const matchedProducts = produtosEmultec.filter((p: any) => {
+          const desc = normalizeString(p.descricao_solicitacao || '')
+          const eq = normalizeString(p.semelhante_emultec || '')
+          const obs = normalizeString(p.observacao || '')
+          const ref = normalizeString(p.referencia || '')
+          const combined = `${desc} ${eq} ${ref} ${obs}`
 
-      if (vectorContext) {
-        return `[INFORMAÇÕES VETORIAIS DO SUPABASE (MANUAIS)]:\n${vectorContext}\n\n---\n\n[PROCESSOS INTERNOS LOCAIS]:\n${localContext || 'Nenhuma informação correspondente no arquivo de processos locais.'}`
+          if (searchTerm && combined.includes(searchTerm)) return true
+          return filteredSearchWords.some(w => w.length >= 3 && combined.includes(w))
+        }).slice(0, 5)
+
+        if (matchedProducts.length > 0) {
+          productContext = `[PORTFÓLIO DE PRODUTOS/OPME MEDIC E ARTHROMED (BASE LOCAL)]:\n` + 
+            matchedProducts.map((p: any) => 
+              `- Item/Material: ${p.descricao_solicitacao}\n  * Equivalente Portfólio Medic/Arthromed (Emultec): ${p.semelhante_emultec}\n  * Código/Ref: ${p.referencia}\n  * Descrição Técnica e Aplicação: ${p.observacao}`
+            ).join('\n\n')
+        }
       }
 
-      return localContext || 'Nenhuma informação específica encontrada para este setor.'
+      // Aguarda os resultados em tempo real da web e do Supabase
+      const [vectorContext, webRealtimeContext] = await Promise.all([
+        vectorContextPromise,
+        webRealtimePromise
+      ])
+
+      const finalParts: string[] = []
+      if (productContext) finalParts.push(productContext)
+      if (webRealtimeContext) finalParts.push(webRealtimeContext)
+      if (vectorContext) finalParts.push(`[INFORMAÇÕES VETORIAIS DO SUPABASE (MANUAIS)]:\n${vectorContext}`)
+      if (localContext) finalParts.push(`[PROCESSOS INTERNOS LOCAIS]:\n${localContext}`)
+
+      return finalParts.length > 0 ? finalParts.join('\n\n---\n\n') : 'Nenhuma informação específica encontrada para este setor.'
     } catch (e) {
       console.error('Erro ao buscar contexto:', e)
       return 'Erro ao buscar informações na base de dados local.'
@@ -459,6 +579,12 @@ export const generateResponse = createServerFn({ method: 'POST' })
         produtosContext = `\n\n[PRODUTOS EMULTEC CORRESPONDENTES ENCONTRADOS NA SOLICITAÇÃO]:\n` + 
           matchedProducts.map((p: any) => `- O termo "${p.descricao_solicitacao}" (na solicitação) corresponde ao nosso produto (Emultec): **"${p.semelhante_emultec}"** (Referência/Código: ${p.referencia}). Resumo/Observação: ${p.observacao}`).join('\n') + 
           `\n\nATENÇÃO: Inclua essa informação de cotação de forma natural, clara e estruturada na sua resposta quando listar os materiais, dizendo qual produto nós cotamos no lugar do solicitado.`
+      }
+
+      // Dispara busca web em tempo real sobre os materiais/termos da solicitação
+      const webRealtimeResults = await fetchWebSearchRealtime(text + ' ' + (finalDocText ? finalDocText.slice(0, 150) : ''))
+      if (webRealtimeResults) {
+        produtosContext += `\n\n${webRealtimeResults}`
       }
       
       const isDocumentExtraction = text.includes('[CONTEÚDO DO DOCUMENTO EXTRAÍDO]') || !!finalDocText
