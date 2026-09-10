@@ -16,3 +16,6 @@ web/.dev.vars
 .vscode/
 .idea/
 .DS_Store
+
+.vercel
+.env*

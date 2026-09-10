@@ -48,10 +48,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
           .from('evidencias')
           .upload(fileName, file)
           
-        if (uploadError) {
-          console.error("Erro no upload do arquivo:", file.name, uploadError)
-          alert(`Erro ao fazer upload da evidência: ${uploadError.message}. Verifique se o Bucket 'evidencias' existe no Supabase Storage.`)
-        } else if (uploadData) {
+        if (uploadData) {
           const { data: publicUrlData } = supabase.storage
             .from('evidencias')
             .getPublicUrl(fileName)
@@ -60,6 +57,19 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
             name: file.name,
             type: file.type,
             url: publicUrlData.publicUrl
+          })
+        } else {
+          console.warn("Upload no Supabase Storage falhou, utilizando fallback Base64 Data URL:", file.name, uploadError)
+          const base64Url = await new Promise<string>((resolve) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.readAsDataURL(file)
+          })
+
+          evidenciasUrls.push({
+            name: file.name,
+            type: file.type,
+            url: base64Url
           })
         }
       }

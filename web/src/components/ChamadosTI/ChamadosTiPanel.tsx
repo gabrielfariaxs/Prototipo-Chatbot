@@ -498,7 +498,12 @@ export const ChamadosTiPanel: React.FC = () => {
 
   const normalizedUserSec = normalizeSectorStr(userSector)
   const isOperationsLeader = normalizedUserSec.includes('operac') && userLevel !== 'colaborador'
-  const isGestorOrDiretoria = normalizedUserSec.includes('gestor') || normalizedUserSec.includes('diretoria') || userLevel === 'coo'
+  const isGestorOrDiretoria = 
+    normalizedUserSec.includes('gestor') || 
+    normalizedUserSec.includes('diretor') || 
+    userSector.toLowerCase().includes('gestor') ||
+    userSector.toLowerCase().includes('diretoria') ||
+    userLevel === 'coo'
   const isTi = normalizedUserSec.includes('ti') || normalizedUserSec.includes('tecnologia')
   const hasFullAccess = isTi || isGestorOrDiretoria || isOperationsLeader
 
@@ -542,7 +547,10 @@ export const ChamadosTiPanel: React.FC = () => {
       // Fila T.I / Geral vê tudo na fila
       return chamados
     }
-    // 'meus' (Chamados do meu setor ou criados por mim)
+    if (activeTab === 'historico') {
+      return chamados.filter(c => c.status === 'concluido' || c.status === 'recusado')
+    }
+    // 'meus' (Chamados do meu setor ou criados por mim - se hasFullAccess, vê todos sem restrições)
     if (hasFullAccess) {
       return chamados
     }

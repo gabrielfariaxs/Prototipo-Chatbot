@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Bot, Layers, ArrowLeft, ArrowRight, TrendingUp, FileText, CreditCard, Calculator, Briefcase, Paperclip, Shield, Clock, Zap, ChevronLeft, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, DollarSign, Mic, MicOff, Volume2, VolumeX, BarChart2, MessageSquare, Trash2, Truck, FileSpreadsheet, Bell } from 'lucide-react'
+import { MessageCircle, X, Send, User, Layers, ArrowLeft, FileText, Paperclip, Shield, Clock, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, Volume2, VolumeX, BarChart2, Trash2, FileSpreadsheet, Plus, Edit3, Image as ImageIcon, Maximize2, History } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getContext, generateResponse, getSectors, transcribeAudio } from '../lib/chat'
+import { getContext, generateResponse, getSectors } from '../lib/chat'
 import { cn } from '../lib/utils'
 import { FatureIA } from './FatureIA'
 import { GopPanel } from './GOP/GopPanel'
@@ -9,6 +9,9 @@ import { ChatOnboarding } from './Chat/ChatOnboarding'
 import { ChatSectorSelect } from './Chat/ChatSectorSelect'
 import { ChatDashboard } from './Chat/ChatDashboard'
 import { FilePreviewModal } from './Chat/FilePreviewModal'
+import { ProcedureManageModal } from './Chat/ProcedureManageModal'
+import { ProcedureHistoryModal } from './Chat/ProcedureHistoryModal'
+import { getCustomProcedures, canAccessProcedureHistory, type ProcedureItem } from '../lib/procedures-service'
 import { LoginScreen } from './common/LoginScreen'
 import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
@@ -32,7 +35,7 @@ type Message = {
 
 export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDesktop?: boolean, hideToggle?: boolean }) => {
   const [isOpen, setIsOpen] = useState(isDesktop)
-  const [previewFile, setPreviewFile] = useState<{ name: string; base64: string; type: string; originalPdfBase64?: string } | null>(null)
+  const [previewFile, setPreviewFile] = useState<{ name: string; base64: string; type: string; originalPdfBase64?: string; url?: string } | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [imgZoom, setImgZoom] = useState<number>(1)
 
@@ -195,7 +198,77 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [attachedFiles, setAttachedFiles] = useState<{ name: string; base64: string; type: string; extractedText?: string; originalPdfBase64?: string }[]>([])
   const [sessionContext, setSessionContext] = useState<string>('')
 
+  // Estados para Gestão de Procedimentos com Fotos & Histórico
+  const [isProcedureModalOpen, setIsProcedureModalOpen] = useState(false)
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [procedureModalMode, setProcedureModalMode] = useState<'create' | 'edit' | 'delete'>('create')
+  const [procedureModalData, setProcedureModalData] = useState<Partial<ProcedureItem> | null>(null)
+  const [customProcedures, setCustomProcedures] = useState<ProcedureItem[]>([])
 
+  const canShowHistoryButton = () => {
+    const userSec = sector || localStorage.getItem('userSector') || ''
+    const userRole = localStorage.getItem('userRole') || ''
+    return canAccessProcedureHistory(userSec, userRole)
+  }
+
+  const loadProcedures = async (sec?: string) => {
+    try {
+      const procs = await getCustomProcedures(sec)
+      setCustomProcedures(procs)
+    } catch (e) {
+      console.warn('Erro ao carregar procedimentos customizados:', e)
+    }
+  }
+
+  useEffect(() => {
+    loadProcedures(sector || undefined)
+  }, [sector])
+
+  const hasProcedureContent = (txt: string) => {
+    if (!txt) return false
+    return /^\s*\d+[\.)\-]\s+/m.test(txt) || 
+      txt.toLowerCase().includes('passo a passo') || 
+      txt.toLowerCase().includes('procedimento') ||
+      txt.toLowerCase().includes('acesse o sistema') ||
+      txt.includes('![')
+  }
+
+  const handleOpenEditProcedure = (botText: string) => {
+    const match = customProcedures.find(p => 
+      botText.toLowerCase().includes(p.processo.toLowerCase()) || 
+      p.processo.toLowerCase().includes(botText.slice(0, 30).toLowerCase())
+    )
+
+    if (match) {
+      setProcedureModalData(match)
+    } else {
+      const firstHeading = botText.match(/###?\s*(.*)/)?.[1] || 
+        botText.match(/Procedimento:\s*(.*)/i)?.[1] ||
+        botText.split('\n')[0].replace(/^#+\s*/, '').slice(0, 50)
+
+      setProcedureModalData({
+        processo: firstHeading || 'Procedimento',
+        setor: sector || 'Orçamento',
+        sistema: 'Emultec',
+        conteudo: botText
+      })
+    }
+    setProcedureModalMode('edit')
+    setIsProcedureModalOpen(true)
+  }
+
+  const handleOpenDeleteProcedure = (botText: string) => {
+    const match = customProcedures.find(p => 
+      botText.toLowerCase().includes(p.processo.toLowerCase())
+    )
+    const firstHeading = botText.match(/###?\s*(.*)/)?.[1] || botText.split('\n')[0].replace(/^#+\s*/, '').slice(0, 50)
+    setProcedureModalData(match || {
+      processo: firstHeading || 'Procedimento',
+      setor: sector || 'Orçamento'
+    })
+    setProcedureModalMode('delete')
+    setIsProcedureModalOpen(true)
+  }
 
   // TTS (Text-to-Speech) states
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(false)
@@ -304,7 +377,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       if (sectors && sectors.length > 0) {
         setAvailableSectors(sectors)
       } else {
-        setAvailableSectors(['Comercial', 'Estoque/Logística', 'Faturamento', 'Financeiro', 'Orçamento - Arthromed', 'Orçamento - Medic'])
+        setAvailableSectors(['Comercial', 'Estoque/Logística', 'Faturamento', 'Financeiro', 'Orçamento'])
       }
     }
     fetchSectors()
@@ -374,29 +447,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setStepSession(null)
   }
 
-  const handleStepYes = () => {
-    if (!stepSession) return
-    const next = stepSession.current + 1
-    if (next >= stepSession.steps.length) {
-      setStepSession(null)
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: 'bot',
-        text: '✅ Processo concluído! Posso te ajudar com mais alguma coisa?',
-        timestamp: new Date(),
-      }])
-    } else {
-      setStepSession(prev => prev ? { ...prev, current: next } : null)
-    }
-  }
 
-  const handleStepNo = () => {
-    if (!stepSession) return
-    const stepNum = stepSession.current + 1
-    const stepText = stepSession.steps[stepSession.current].replace(/^\d+[\.)\-]\s*/, '')
-    setStepSession(null)
-    setInput(`Não entendi o passo ${stepNum}. Pode explicar melhor: "${stepText}"?`)
-  }
 
   // Suporte a Ctrl+V para colar imagens
   useEffect(() => {
@@ -474,6 +525,12 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
           text: textToSend,
           sector: sector || 'Geral',
           history: sessionContext, // Passa o contexto extraído anteriormente
+          customProcedures: customProcedures.map(p => ({
+            processo: p.processo,
+            setor: p.setor,
+            sistema: p.sistema,
+            conteudo: p.conteudo
+          }))
         }
       })
 
@@ -490,8 +547,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
         }
       })
 
-      const parsed = parseSteps(botResponse || '')
-      
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'bot',
@@ -504,27 +559,9 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
         speakResponseText(botResponse)
       }
 
-      if (parsed) {
-        // Só ativa o assistente interativo se for um processo acionável (não apenas materiais ou lista estática)
-        const textLower = (botResponse || '').toLowerCase()
-        const isInteractiveProcess = 
-          !textLower.includes('material') && 
-          !textLower.includes('materiais') && 
-          !textLower.includes('lista de') &&
-          !textLower.includes('produtos')
-        
-        if (isInteractiveProcess) {
-          setStepSession({ ...parsed, current: 0 })
-        } else {
-          setStepSession(null)
-        }
-      } else {
-        setStepSession(null)
-        
-        // Se a resposta parece ser uma extração de dados, salvamos no contexto da sessão
-        if (botResponse?.includes('Paciente:') || botResponse?.includes('Médico:')) {
-          setSessionContext((prev) => prev + '\n\n' + botResponse)
-        }
+      setStepSession(null)
+      if (botResponse?.includes('Paciente:') || botResponse?.includes('Médico:')) {
+        setSessionContext((prev) => prev + '\n\n' + botResponse)
       }
     } catch (error) {
       console.error(error)
@@ -747,6 +784,31 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
         return
       }
 
+      // Imagens Markdown em linha ou isoladas: ![alt](url_ou_data)
+      const imgRegex = /!\[(.*?)\]\((.*?)\)/g
+      if (line.includes('![') && line.includes('](')) {
+        flushList()
+        let lastIndex = 0
+        let match: RegExpExecArray | null
+        while ((match = imgRegex.exec(line)) !== null) {
+          const before = line.slice(lastIndex, match.index).trim()
+          if (before) {
+            blocks.push({ type: 'paragraph', content: before })
+          }
+          blocks.push({
+            type: 'image',
+            content: match[2],
+            items: [match[1] || 'Foto do Passo a Passo']
+          })
+          lastIndex = imgRegex.lastIndex
+        }
+        const after = line.slice(lastIndex).trim()
+        if (after) {
+          blocks.push({ type: 'paragraph', content: after })
+        }
+        return
+      }
+
       // Headings
       if (trimmed.startsWith('###')) {
         flushList()
@@ -818,6 +880,42 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       })
     }
 
+    const renderItemContent = (itemText: string) => {
+      const match = itemText.match(/!\[(.*?)\]\((.*?)\)/)
+      if (!match) {
+        return renderTextWithFormatting(itemText)
+      }
+      const before = itemText.slice(0, match.index).trim()
+      const alt = match[1] || 'Foto do Passo'
+      const src = match[2]
+      const after = itemText.slice(match.index! + match[0].length).trim()
+      const isBase64 = src.startsWith('data:')
+      const base64Data = isBase64 ? src.split(',')[1] : ''
+
+      return (
+        <div className="space-y-2 w-full">
+          {before && <div>{renderTextWithFormatting(before)}</div>}
+          <div 
+            onClick={() => setPreviewFile({
+              name: alt,
+              base64: base64Data,
+              type: 'image/png',
+              url: !isBase64 ? src : undefined
+            })}
+            className="my-2 rounded-xl overflow-hidden border border-slate-200 bg-slate-900/5 max-h-[300px] flex items-center justify-center cursor-pointer group relative shadow-2xs"
+          >
+            <img src={src} alt={alt} className="w-full max-h-[300px] object-contain group-hover:scale-[1.01] transition-transform" />
+            <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <span className="px-3 py-1.5 bg-slate-900/90 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-md">
+                <Maximize2 size={12} /> Clique para ampliar
+              </span>
+            </div>
+          </div>
+          {after && <div>{renderTextWithFormatting(after)}</div>}
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-2 text-sm text-slate-700">
         {blocks.map((block, i) => {
@@ -830,11 +928,55 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
               return <h3 key={i} className="font-semibold text-base text-[#1a2332] mt-2 mb-1">{renderTextWithFormatting(block.content || '')}</h3>
             case 'blockquote':
               return <blockquote key={i} className="border-l-4 border-slate-200 pl-3.5 italic my-2.5 text-slate-500 bg-slate-50/50 p-2.5 rounded-r-xl">{renderTextWithFormatting(block.content || '')}</blockquote>
+            case 'image': {
+              const src = block.content || ''
+              const alt = block.items?.[0] || 'Foto do Passo a Passo'
+              const isBase64 = src.startsWith('data:')
+              const base64Data = isBase64 ? src.split(',')[1] : ''
+
+              return (
+                <div key={i} className="my-3 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-50/60 shadow-xs group">
+                  <div 
+                    onClick={() => setPreviewFile({
+                      name: alt,
+                      base64: base64Data,
+                      type: 'image/png',
+                      url: !isBase64 ? src : undefined
+                    })}
+                    className="relative cursor-pointer overflow-hidden bg-slate-900/5 flex items-center justify-center max-h-[380px]"
+                  >
+                    <img 
+                      src={src} 
+                      alt={alt} 
+                      className="w-full max-h-[380px] object-contain transition-transform duration-200 group-hover:scale-[1.01]" 
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="px-3.5 py-1.5 bg-slate-900/90 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-xs">
+                        <Maximize2 size={13} />
+                        <span>Clique para ampliar foto</span>
+                      </span>
+                    </div>
+                  </div>
+                  {alt && (
+                    <div className="px-3.5 py-2 bg-white border-t border-slate-100 flex items-center justify-between text-xs text-slate-700">
+                      <span className="font-semibold flex items-center gap-1.5 truncate">
+                        <ImageIcon size={14} className="text-blue-600 shrink-0" />
+                        <span>{alt}</span>
+                      </span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md shrink-0">
+                        Passo a Passo
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            }
             case 'bullet_list':
               return (
                 <ul key={i} className="list-disc pl-5 space-y-1.5 my-2">
                   {block.items?.map((item, idx) => (
-                    <li key={idx} className="leading-relaxed">{renderTextWithFormatting(item)}</li>
+                    <li key={idx} className="leading-relaxed">{renderItemContent(item)}</li>
                   ))}
                 </ul>
               )
@@ -842,7 +984,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
               return (
                 <ol key={i} className="list-decimal pl-5 space-y-1.5 my-2">
                   {block.items?.map((item, idx) => (
-                    <li key={idx} className="leading-relaxed">{renderTextWithFormatting(item)}</li>
+                    <li key={idx} className="leading-relaxed">{renderItemContent(item)}</li>
                   ))}
                 </ol>
               )
@@ -1043,6 +1185,28 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {step === 'chat' && (
                   <>
+                    {canShowHistoryButton() && (
+                      <button
+                        onClick={() => setIsHistoryModalOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-100 border border-indigo-700/60 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                        title="Histórico de adições, edições e exclusões de procedimentos (Gestor/Operações/TI)"
+                      >
+                        <History size={14} className="text-indigo-300" />
+                        <span className="hidden sm:inline">Histórico</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setProcedureModalData(null)
+                        setProcedureModalMode('create')
+                        setIsProcedureModalOpen(true)
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2332] hover:bg-[#253043] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                      title="Adicionar ou cadastrar novo procedimento com fotos de passo a passo"
+                    >
+                      <Plus size={14} />
+                      <span className="hidden sm:inline">Adicionar Procedimento</span>
+                    </button>
                     <button
                       onClick={toggleSpeech}
                       className={cn(
@@ -1208,15 +1372,39 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                               )}
                             </div>
                             {msg.role !== 'user' && (
-                              <div className="flex items-center gap-3 px-1">
-                                <span className="font-mono text-[12.5px] text-[#9097aa]">
-                                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsUp size={12} /></button>
-                                  <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsDown size={12} /></button>
-                                  <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><Copy size={12} /></button>
+                              <div className="flex items-center justify-between gap-3 px-1 pt-0.5">
+                                <div className="flex items-center gap-3">
+                                  <span className="font-mono text-[12.5px] text-[#9097aa]">
+                                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsUp size={12} /></button>
+                                    <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsDown size={12} /></button>
+                                    <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><Copy size={12} /></button>
+                                  </div>
                                 </div>
+
+                                {hasProcedureContent(msg.text) && (
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEditProcedure(msg.text)}
+                                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 border border-slate-200 transition-colors cursor-pointer"
+                                      title="Editar ou atualizar este procedimento com fotos e passos"
+                                    >
+                                      <Edit3 size={11} />
+                                      <span>Editar Procedimento</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenDeleteProcedure(msg.text)}
+                                      className="flex items-center gap-1 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                      title="Excluir procedimento"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
                             {msg.role === 'user' && (
@@ -1241,67 +1429,21 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       )}
                     </div>
 
-                    {stepSession && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mx-6 mb-4 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden p-6"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[11px] font-bold text-slate-500 tracking-wider">
-                            PASSO {stepSession.current + 1} DE {stepSession.steps.length}
-                          </span>
-                          <span className="text-[11px] font-semibold text-slate-500">
-                            {Math.round(((stepSession.current + 1) / stepSession.steps.length) * 100)}% concluído
-                          </span>
-                        </div>
-                        <div className="mb-6">
-                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-[#1a2332] transition-all duration-500 rounded-full"
-                              style={{ width: `${((stepSession.current + 1) / stepSession.steps.length) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="pb-2">
-                          <h3 className="text-lg font-bold text-[#1a2332] mb-6">
-                            {stepSession.steps[stepSession.current].replace(/^\d+[\.)\-]\s*/, '')}
-                          </h3>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={handleStepYes}
-                              className="flex-1 bg-[#1a2332] hover:bg-[#253043] text-white py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
-                            >
-                              <span>✓ Concluído</span>
-                            </button>
-                            <button
-                              onClick={handleStepNo}
-                              className="flex-1 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-                            >
-                              <span>✕ Preciso de Ajuda</span>
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
                     <div className="p-5 bg-white border-t border-slate-200">
-                      {!stepSession && (
-                        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                          {(attachedFiles.length > 0 
-                             ? ["Resumir Pedido", "Checar Autorização", "Extrair apenas CID", "Extrair Materiais"]
-                             : messages.length < 3 ? ["Análise de Pendências", "Emissão de Nota Fiscal", "Consultar Glosas", "Status de Orçamento"] : []
-                          ).map((sug) => (
-                            <button
-                              key={sug}
-                              onClick={() => { setInput(''); handleSend(sug) }}
-                              className="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-medium hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
-                            >
-                              {sug}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+                        {(attachedFiles.length > 0 
+                           ? ["Resumir Pedido", "Checar Autorização", "Extrair apenas CID", "Extrair Materiais"]
+                           : messages.length < 3 ? ["Análise de Pendências", "Emissão de Nota Fiscal", "Consultar Glosas", "Status de Orçamento"] : []
+                        ).map((sug) => (
+                          <button
+                            key={sug}
+                            onClick={() => { setInput(''); handleSend(sug) }}
+                            className="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-medium hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+                          >
+                            {sug}
+                          </button>
+                        ))}
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-[52px] bg-[#ffffff] border border-[#e6e9f2] rounded-[11px] flex items-center px-3 focus-within:border-[#1f29de] focus-within:ring-2 focus-within:ring-[#1f29de]/16 transition-all">
                           <button 
@@ -1382,6 +1524,49 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Modal de Gestão de Procedimentos com Fotos */}
+      <ProcedureManageModal
+        isOpen={isProcedureModalOpen}
+        mode={procedureModalMode}
+        initialData={procedureModalData || undefined}
+        currentSector={sector || 'Orçamento'}
+        onClose={() => setIsProcedureModalOpen(false)}
+        onSaveSuccess={(item, action) => {
+          loadProcedures(sector || undefined)
+          const procTitle = (item as any)?.processo || 'Procedimento'
+          if (action === 'created') {
+            setMessages(prev => [...prev, {
+              id: Date.now().toString(),
+              role: 'bot',
+              text: `✅ **Procedimento Cadastrado com Sucesso!**\nO procedimento **"${procTitle}"** com fotos passo a passo foi salvo e está ativo para consultas imediatas no chat.`,
+              timestamp: new Date()
+            }])
+          } else if (action === 'updated') {
+            setMessages(prev => [...prev, {
+              id: Date.now().toString(),
+              role: 'bot',
+              text: `✏️ **Procedimento Atualizado!**\nAs alterações e fotos de **"${procTitle}"** foram gravadas com sucesso.`,
+              timestamp: new Date()
+            }])
+          } else if (action === 'deleted') {
+            setMessages(prev => [...prev, {
+              id: Date.now().toString(),
+              role: 'bot',
+              text: `🗑️ **Procedimento Removido!**\nO procedimento foi desativado das consultas.`,
+              timestamp: new Date()
+            }])
+          }
+        }}
+      />
+
+      {/* Modal de Histórico de Procedimentos */}
+      {isHistoryModalOpen && (
+        <ProcedureHistoryModal
+          onClose={() => setIsHistoryModalOpen(false)}
+          userSector={sector || localStorage.getItem('userSector') || undefined}
+        />
+      )}
 
       {/* Modal de Pré-visualização Premium */}
       <FilePreviewModal 

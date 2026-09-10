@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Paperclip, X } from 'lucide-react'
 
 interface FilePreviewModalProps {
-  previewFile: { name: string; base64: string; type: string; originalPdfBase64?: string } | null;
+  previewFile: { name: string; base64: string; type: string; originalPdfBase64?: string; url?: string } | null;
   previewUrl: string | null;
   imgZoom: number;
   setImgZoom: React.Dispatch<React.SetStateAction<number>>;

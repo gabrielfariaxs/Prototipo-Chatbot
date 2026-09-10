@@ -77,7 +77,14 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
       .select('*')
       .order('data_registro', { ascending: false })
 
-    if (userRole === 'lider' && userSector) {
+    const sectorLower = (userSector || '').toLowerCase()
+    const isGestorOrDiretoria = 
+      sectorLower.includes('gestor') || 
+      sectorLower.includes('diretoria') || 
+      userRole === 'coo' || 
+      sectorLower.includes('operac')
+
+    if (userRole === 'lider' && userSector && !isGestorOrDiretoria) {
       query = query.eq('setor', userSector)
     }
 

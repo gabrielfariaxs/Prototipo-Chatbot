@@ -27,17 +27,20 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
       .select('*')
       .order('data_criacao', { ascending: false })
 
-    if (userRole !== 'coo' && userSector) {
+    const sectorLower = (userSector || '').toLowerCase()
+    const isGestorOrDiretoria = sectorLower.includes('gestor') || sectorLower.includes('diretoria') || userRole === 'coo'
+
+    if (userRole !== 'coo' && userSector && !isGestorOrDiretoria) {
       query = query.eq('setor', userSector)
     }
 
-    const { data, error } = await query
+    const { data } = await query
     if (data) {
       // Auto-lock logic on fetch
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
-      const processedData = data.map((d) => {
+      const processedData = data.map((d: any) => {
         if (d.status !== 'Feito' && new Date(d.prazo) < today && d.status !== 'Não concluído') {
           // Update DB if we are fetching and notice it's expired (do not await to avoid blocking UI)
           supabase.from('demandas').update({ status: 'Não concluído' }).eq('id', d.id).then()

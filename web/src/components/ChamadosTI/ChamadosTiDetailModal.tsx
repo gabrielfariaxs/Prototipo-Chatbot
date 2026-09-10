@@ -90,9 +90,15 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
 
   // Permissões de Ação
   const savedLevel = userLevel || localStorage.getItem('userLevel') || 'lider'
-  const isOperationsLeader = (userSector === 'Operações' || userSector === 'Operacoes') && savedLevel !== 'colaborador'
-  const isGestorOrDiretoria = userSector === 'Gestor/Diretoria' || userSector === 'Gestor (Diogo)' || savedLevel === 'coo'
-  const isTiTeam = userSector === 'T.I'
+  const normalizedUserSec = (userSector || '').toLowerCase()
+  const isOperationsLeader = (normalizedUserSec.includes('operac')) && savedLevel !== 'colaborador'
+  const isGestorOrDiretoria = 
+    normalizedUserSec.includes('gestor') || 
+    normalizedUserSec.includes('diretor') || 
+    userSector === 'Gestor/Diretoria' || 
+    userSector === 'Gestor (Diogo)' || 
+    savedLevel === 'coo'
+  const isTiTeam = normalizedUserSec.includes('ti') || normalizedUserSec.includes('tecnologia')
   const hasFullAccess = isTiTeam || isGestorOrDiretoria || isOperationsLeader
 
   const canApprove = (userSector === chamado.approverSector || hasFullAccess) && chamado.status === 'pendente_aprovacao'
@@ -136,16 +142,28 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
     }
   }
 
+  const getCleanDataUrl = (file?: { base64?: string; type?: string }) => {
+    if (!file || !file.base64) return ''
+    const b64 = file.base64.trim()
+    if (b64.startsWith('data:')) {
+      return b64
+    }
+    const mimeType = file.type || 'image/png'
+    return `data:${mimeType};base64,${b64}`
+  }
+
   const downloadFile = (file: { name: string; base64: string; type: string }) => {
     try {
+      const dataUrl = getCleanDataUrl(file)
+      if (!dataUrl) return
       const link = document.createElement('a')
-      link.href = `data:${file.type};base64,${file.base64}`
-      link.download = file.name
+      link.href = dataUrl
+      link.download = file.name || 'anexo'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
     } catch (e) {
-      console.error(e)
+      console.error('Erro ao baixar arquivo:', e)
     }
   }
 
@@ -498,7 +516,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                       title={`Visualizar: ${file.name}`}
                     >
                       <img
-                        src={`data:${file.type};base64,${file.base64}`}
+                        src={getCleanDataUrl(file)}
                         alt={file.name}
                         className="w-full h-full object-cover"
                       />
@@ -882,14 +900,14 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
           >
             {previewFile.type.startsWith('image/') ? (
               <img
-                src={`data:${previewFile.type};base64,${previewFile.base64}`}
+                src={getCleanDataUrl(previewFile)}
                 alt={previewFile.name}
                 className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
                 style={{ maxHeight: 'calc(100vh - 120px)' }}
               />
             ) : previewFile.type === 'application/pdf' ? (
               <iframe
-                src={`data:application/pdf;base64,${previewFile.base64}`}
+                src={getCleanDataUrl(previewFile)}
                 className="w-full rounded-xl shadow-2xl bg-white"
                 style={{ height: 'calc(100vh - 120px)' }}
                 title={previewFile.name}

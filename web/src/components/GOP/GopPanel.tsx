@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { GopList } from './GopList'
 import { GopDetail } from './GopDetail'
 import { DemandasList } from './DemandasList'
@@ -26,7 +26,7 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: any) => {
       if (session?.user) {
         const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuário'
         setUserName(name)
@@ -76,7 +76,15 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
                   Líder de Setor
                 </button>
               )}
-              {userLevel !== 'colaborador' && (userSector === 'Operações' || userSector === 'Gestor (Diogo)' || userSector.toLowerCase().includes('qualidade')) && (
+              {userLevel !== 'colaborador' && (
+                userSector === 'Operações' || 
+                userSector === 'Gestor (Diogo)' || 
+                userSector === 'Gestor/Diretoria' ||
+                userSector.toLowerCase().includes('gestor') ||
+                userSector.toLowerCase().includes('diretoria') ||
+                userSector.toLowerCase().includes('qualidade') ||
+                userLevel === 'coo'
+              ) && (
                 <button 
                   type="button"
                   onClick={() => { setActiveTab('coo'); setSelectedId(null); }}
@@ -100,7 +108,7 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
               <div className="text-right flex flex-col justify-center">
                 <span className="text-xs font-bold text-[#14161f] leading-tight">{userName}</span>
                 <span className="text-[10px] text-[#5b6276] font-semibold leading-tight">
-                  {userLevel === 'colaborador' ? 'Colaborador' : activeTab === 'coo' ? 'Diretor de Operações' : 'Líder de Setor'}
+                  {userLevel === 'colaborador' ? 'Colaborador' : (activeTab === 'coo' || userSector.toLowerCase().includes('gestor') || userSector.toLowerCase().includes('diretoria')) ? 'Diretor de Operações / Gestor' : 'Líder de Setor'}
                 </span>
               </div>
               <div className="w-8 h-8 rounded-full bg-[#1f29de] text-white flex items-center justify-center text-xs font-bold shadow-xs">
@@ -139,14 +147,22 @@ export const GopPanel = ({ onPreviewFile }: { onPreviewFile?: (file: any) => voi
               <div className={activeTab === 'lider' ? 'block' : 'hidden'}>
                 <GopList onSelect={setSelectedId} userRole="lider" userSector={userSector} />
               </div>
-              {(userSector === 'Operações' || userSector === 'Gestor (Diogo)' || userSector.toLowerCase().includes('qualidade')) && (
+              {(
+                userSector === 'Operações' || 
+                userSector === 'Gestor (Diogo)' || 
+                userSector === 'Gestor/Diretoria' ||
+                userSector.toLowerCase().includes('gestor') ||
+                userSector.toLowerCase().includes('diretoria') ||
+                userSector.toLowerCase().includes('qualidade') ||
+                userLevel === 'coo'
+              ) && (
                 <div className={activeTab === 'coo' ? 'block' : 'hidden'}>
                   <GopList onSelect={setSelectedId} userRole="coo" userSector={userSector} />
                 </div>
               )}
               {/* Demandas tab - always mounted, hidden when not active */}
               <div className={activeTab === 'demandas' ? 'block' : 'hidden'}>
-                <DemandasList userSector={userSector} userRole={userLevel === 'coo' ? 'coo' : 'lider'} />
+                <DemandasList userSector={userSector} userRole={(userLevel === 'coo' || userSector.toLowerCase().includes('gestor') || userSector.toLowerCase().includes('diretoria')) ? 'coo' : 'lider'} />
               </div>
             </>
           )}

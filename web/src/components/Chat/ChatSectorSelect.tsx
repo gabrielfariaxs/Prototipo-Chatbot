@@ -38,12 +38,9 @@ export const ChatSectorSelect: React.FC<ChatSectorSelectProps> = ({ availableSec
             } else if (s.toLowerCase().includes('financeiro')) {
               Icon = Landmark;
               desc = "Contas a pagar, receber e tesouraria geral.";
-            } else if (s.toLowerCase().includes('orçamento - arthromed')) {
+            } else if (s.toLowerCase().includes('orçamento') || s.toLowerCase().includes('orcamento')) {
               Icon = Calculator;
-              desc = "Planejamento e controle de custos Arthromed.";
-            } else if (s.toLowerCase().includes('orçamento - medic')) {
-              Icon = Activity;
-              desc = "Planejamento e controle de custos Medic.";
+              desc = "Gestão de orçamentos, cotações e controle de custos gerais.";
             } else if (s.toLowerCase().includes('estoque') || s.toLowerCase().includes('logística') || s.toLowerCase().includes('logistica')) {
               Icon = Truck;
               desc = "Processos de transporte e análise de compras.";
