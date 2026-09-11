@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { X, Upload, AlertTriangle, Send, Loader2 } from 'lucide-react'
+import { X, Upload, AlertTriangle, Send, Loader2, FileText, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 interface GopCreateModalProps {
@@ -20,6 +20,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
   const [causa, setCausa] = useState('')
   const [arquivos, setArquivos] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -27,6 +28,31 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
     if (e.target.files) {
       setArquivos(prev => [...prev, ...Array.from(e.target.files!)])
     }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setArquivos(prev => [...prev, ...Array.from(e.dataTransfer.files)])
+    }
+  }
+
+  const removeArquivo = (index: number) => {
+    setArquivos(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async () => {
@@ -220,7 +246,15 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
               </div>
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 hover:bg-slate-50 hover:border-blue-300 transition-colors p-10 flex flex-col items-center justify-center text-center cursor-pointer group"
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl transition-all p-8 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer group ${
+                  isDragging 
+                    ? 'border-blue-500 bg-blue-50/80 ring-4 ring-blue-100 scale-[1.01]' 
+                    : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-blue-300'
+                }`}
               >
                 <input 
                   type="file" 
@@ -229,26 +263,65 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
                 />
-                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all ${
+                  isDragging ? 'bg-blue-600 text-white scale-110' : 'bg-blue-50 text-blue-600 group-hover:scale-110'
+                }`}>
                   <Upload size={28} />
                 </div>
-                {arquivos.length > 0 ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <p className="text-green-600 font-bold text-base mb-1">
-                      {arquivos.length} {arquivos.length === 1 ? 'arquivo anexado' : 'arquivos anexados'} com sucesso!
-                    </p>
-                    <p className="text-slate-500 text-sm font-medium line-clamp-2 px-4">
-                      {arquivos.map(f => f.name).join(', ')}
-                    </p>
-                    <p className="text-blue-600 text-xs mt-2 font-bold hover:underline">Clique para adicionar mais</p>
-                  </div>
+                {isDragging ? (
+                  <p className="text-blue-600 font-bold text-base mb-1.5 animate-pulse">
+                    Solte os arquivos aqui para anexar
+                  </p>
                 ) : (
                   <>
-                    <p className="text-[#1a2332] font-bold text-base mb-1.5">Arraste arquivos aqui ou <span className="text-blue-600">clique para selecionar</span></p>
+                    <p className="text-[#1a2332] font-bold text-base mb-1.5">
+                      Arraste arquivos aqui ou <span className="text-blue-600">clique para selecionar</span>
+                    </p>
                     <p className="text-slate-400 text-sm font-medium">PNG, JPG, PDF - prints, planilhas e documentos</p>
                   </>
                 )}
               </div>
+
+              {/* Lista de Arquivos Anexados */}
+              {arquivos.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
+                    <span>Arquivos Anexados ({arquivos.length})</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setArquivos([])
+                      }}
+                      className="text-red-500 hover:text-red-700 cursor-pointer text-[11px]"
+                    >
+                      Remover todos
+                    </button>
+                  </div>
+                  {arquivos.map((file, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                      <div className="flex items-center gap-2.5 truncate">
+                        <FileText size={18} className="text-blue-600 shrink-0" />
+                        <span className="font-semibold text-slate-700 truncate">{file.name}</span>
+                        <span className="text-xs text-slate-400 font-medium shrink-0">
+                          ({(file.size / 1024).toFixed(0)} KB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeArquivo(idx)
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Remover arquivo"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
 

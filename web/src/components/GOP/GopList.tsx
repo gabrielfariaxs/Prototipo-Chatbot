@@ -88,7 +88,7 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
       query = query.eq('setor', userSector)
     }
 
-    const { data, error } = await query
+    const { data, error } = await query.limit(150)
     
     if (data) {
       setGargalos(data)

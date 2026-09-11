@@ -211,28 +211,26 @@ export const getContext = createServerFn({ method: 'GET' })
         console.warn('Erro ao importar chatClient:', err)
       }
 
-      // 2. Busca direta na tabela documentos_arthromed do Supabase
+      // 2. Busca direta na tabela documentos_arthromed do Supabase (filtrada no banco para alta performance)
       let supabaseProcsPromise: Promise<string> = Promise.resolve('')
       if (supabase) {
         supabaseProcsPromise = (async () => {
           try {
-            const { data: dbData } = await supabase
+            const cleanText = text.trim()
+            let query = supabase
               .from('documentos_arthromed')
-              .select('id, processo, setor, sistema, conteudo')
-              .limit(50)
-            if (dbData && dbData.length > 0) {
-              const matchedDb = dbData.filter((d: any) => {
-                const normProc = normalizeString(d.processo || '')
-                const normCont = normalizeString(d.conteudo || '')
-                const normSearch = normalizeString(text)
-                return normProc.includes(normSearch) || normCont.includes(normSearch)
-              }).slice(0, 3)
+              .select('id, processo, setor, sistema, subtipo, materiais, conteudo')
 
-              if (matchedDb.length > 0) {
-                return matchedDb.map((d: any) => 
-                  `[PROCEDIMENTO BANCO DE DADOS - SETOR: ${d.setor}] [PROCESSO: ${d.processo}] [SISTEMA: ${d.sistema || 'Emultec'}]\n${d.conteudo}`
-                ).join('\n\n---\n\n')
-              }
+            if (cleanText.length >= 3) {
+              query = query.or(`processo.ilike.%${cleanText}%,conteudo.ilike.%${cleanText}%,subtipo.ilike.%${cleanText}%,materiais.ilike.%${cleanText}%`)
+            }
+
+            const { data: dbData } = await query.limit(15)
+            if (dbData && dbData.length > 0) {
+              const matchedDb = dbData.slice(0, 4)
+              return matchedDb.map((d: any) => 
+                `[PROCEDIMENTO BANCO DE DADOS - SETOR: ${d.setor}] [PROCESSO: ${d.processo}] [SISTEMA: ${d.sistema || 'Emultec'}]\n${d.conteudo}`
+              ).join('\n\n---\n\n')
             }
           } catch (e) {
             console.warn('Aviso ao consultar documentos_arthromed:', e)

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { X, Send, AlertCircle, ShieldAlert, Monitor, Paperclip, FileText, Trash2, User } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { X, Send, AlertCircle, ShieldAlert, Monitor, Paperclip, FileText, Trash2, User, Upload } from 'lucide-react'
 import { SETORES_APROVADORES } from './types'
 import type { ChamadoPriority, ChamadoTI, ChamadoEvidenceFile } from './types'
 import { supabase } from '../../lib/supabase'
@@ -19,18 +19,18 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 }) => {
   const defaultSector = userSector === 'T.I' ? 'none' : 'none'
   const [title, setTitle] = useState('')
-  const [requesterName, setRequesterName] = useState('')
+  const [requesterName, setRequesterName] = useState(userName || '')
   const [priority, setPriority] = useState<ChamadoPriority>('media')
   const [approverSector, setApproverSector] = useState(defaultSector)
   const [description, setDescription] = useState('')
   const [evidenceFiles, setEvidenceFiles] = useState<ChamadoEvidenceFile[]>([])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const processFiles = (files: FileList | File[]) => {
     Array.from(files).forEach((file) => {
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -47,6 +47,33 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
       }
       reader.readAsDataURL(file)
     })
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      processFiles(e.target.files)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files)
+    }
   }
 
   const removeEvidence = (index: number) => {
@@ -104,11 +131,11 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="bg-[#1a2332] text-white px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#1a2332] text-white px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400">
               <Monitor size={20} />
@@ -128,7 +155,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1 text-slate-800">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 flex-1 text-slate-800">
           
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-center gap-2">
@@ -243,40 +270,74 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
             />
           </div>
 
-          {/* Evidence Files Upload Section */}
+          {/* Evidence Files Upload Section (com suporte a Arrastar e Soltar) */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Evidências / Anexos (Fotos, Prints, PDFs)
               </label>
-              <label 
-                htmlFor="evidence-upload"
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
-              >
-                <Paperclip size={14} />
-                <span>Anexar Arquivos</span>
-              </label>
-              <input 
-                type="file"
-                id="evidence-upload"
-                multiple
-                accept="image/*,.pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+              {evidenceFiles.length > 0 && (
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
+                >
+                  <Paperclip size={14} />
+                  <span>+ Adicionar mais</span>
+                </button>
+              )}
             </div>
 
-            {evidenceFiles.length === 0 ? (
-              <div 
-                onClick={() => document.getElementById('evidence-upload')?.click()}
-                className="p-4 border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl bg-slate-50/50 hover:bg-slate-50 text-center cursor-pointer transition-all flex flex-col items-center gap-1"
-              >
-                <Paperclip size={20} className="text-slate-400" />
-                <span className="text-xs font-medium text-slate-500">Clique para selecionar fotos de erro ou comprovantes</span>
-                <span className="text-[10px] text-slate-400">PNG, JPG, PDF (até 5MB)</span>
+            <input 
+              type="file"
+              ref={fileInputRef}
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-2xl transition-all p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer group ${
+                isDragging 
+                  ? 'border-blue-500 bg-blue-50/80 ring-4 ring-blue-100 scale-[1.01]' 
+                  : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-blue-300'
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all ${
+                isDragging ? 'bg-blue-600 text-white scale-110' : 'bg-blue-50 text-blue-600 group-hover:scale-110'
+              }`}>
+                <Upload size={24} />
               </div>
-            ) : (
-              <div className="space-y-2">
+              
+              <p className="text-[#1a2332] font-bold text-sm mb-1">
+                {isDragging ? (
+                  <span className="text-blue-600 font-bold animate-pulse">Solte os arquivos aqui para anexar</span>
+                ) : (
+                  <>Arraste arquivos aqui ou <span className="text-blue-600">clique para selecionar</span></>
+                )}
+              </p>
+              <p className="text-slate-400 text-xs font-medium">PNG, JPG, PDF - prints, planilhas e documentos</p>
+            </div>
+
+            {/* Lista de Arquivos Anexados */}
+            {evidenceFiles.length > 0 && (
+              <div className="space-y-2 mt-3">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
+                  <span>Arquivos Anexados ({evidenceFiles.length})</span>
+                  <button
+                    type="button"
+                    onClick={() => setEvidenceFiles([])}
+                    className="text-red-500 hover:text-red-700 cursor-pointer text-[11px]"
+                  >
+                    Remover todos
+                  </button>
+                </div>
                 {evidenceFiles.map((file, idx) => (
                   <div key={idx} className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                     <div className="flex items-center gap-2 truncate">
@@ -285,8 +346,11 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeEvidence(idx)}
-                      className="p-1 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeEvidence(idx)
+                      }}
+                      className="p-1 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                       title="Remover arquivo"
                     >
                       <Trash2 size={14} />

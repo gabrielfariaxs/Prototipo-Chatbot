@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Bell, X, Sparkles } from 'lucide-react'
 import { BrandLockup } from '../common/BrandLockup'
+import { supabase } from '../../lib/supabase'
 
 interface ChatOnboardingProps {
   onStart: () => void;
@@ -61,6 +62,54 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       clearTimeout(timer)
     }
   }, [])
+
+  const [unreadTi, setUnreadTi] = useState(false)
+  const [unreadGop, setUnreadGop] = useState(false)
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const userSector = (localStorage.getItem('userSector') || '').toLowerCase().trim()
+        const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().trim()
+        
+        const isTi = userSector.includes('ti') || userSector.includes('tecnologia')
+        const hasFullAccess = isTi || userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
+
+        // Verifica T.I
+        const { data: tiData } = await supabase.from('ti_notifications').select('target_sector, target_user').eq('read', false)
+        if (tiData && tiData.length > 0) {
+          const hasRelevantTi = tiData.some((n: any) => 
+            hasFullAccess || 
+            !n.target_sector || 
+            (n.target_sector || '').toLowerCase() === userSector ||
+            (n.target_user && localStorage.getItem('userName')?.toLowerCase().includes(n.target_user.toLowerCase()))
+          )
+          setUnreadTi(hasRelevantTi)
+        } else {
+          setUnreadTi(false)
+        }
+
+        // Verifica GOP
+        const { data: gopData } = await supabase.from('gop_notifications').select('target_sector').eq('read', false)
+        if (gopData && gopData.length > 0) {
+          const hasRelevantGop = gopData.some((n: any) => 
+            hasFullAccess || 
+            !n.target_sector || 
+            (n.target_sector || '').toLowerCase() === userSector
+          )
+          setUnreadGop(hasRelevantGop)
+        } else {
+          setUnreadGop(false)
+        }
+      } catch (e) {
+        // fail silently
+      }
+    }
+
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 60000) // 1 minuto
+    return () => clearInterval(interval)
+  }, [])
   const handlePortfolioClick = () => {
     if (onOpenPortfolio) {
       onOpenPortfolio()
@@ -104,6 +153,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       tagColor: 'text-[#1b497d] bg-[#1b497d]/10 border-[#1b497d]/30',
       hoverTitle: 'group-hover:text-[#1b497d]',
       btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      hasBadge: unreadGop,
       action: () => { if (onOpenNoc) onOpenNoc() }
     },
     {
@@ -117,6 +167,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       tagColor: 'text-[#17a398] bg-[#17a398]/10 border-[#17a398]/30',
       hoverTitle: 'group-hover:text-[#17a398]',
       btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      hasBadge: false,
       action: handlePortfolioClick
     },
     {
@@ -130,6 +181,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       tagColor: 'text-[#0284c7] bg-[#0284c7]/10 border-[#0284c7]/30',
       hoverTitle: 'group-hover:text-[#0284c7]',
       btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      hasBadge: false,
       action: handleMedicPortfolioClick
     },
     {
@@ -143,6 +195,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       tagColor: 'text-[#e05263] bg-[#e05263]/10 border-[#e05263]/30',
       hoverTitle: 'group-hover:text-[#e05263]',
       btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      hasBadge: false,
       action: () => { if (onOpenSolicitacaoMedica) onOpenSolicitacaoMedica() }
     },
     {
@@ -156,6 +209,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       tagColor: 'text-[#6b5b95] bg-[#6b5b95]/10 border-[#6b5b95]/30',
       hoverTitle: 'group-hover:text-[#6b5b95]',
       btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      hasBadge: unreadTi,
       action: () => { if (onOpenChamadosTi) onOpenChamadosTi() }
     }
   ]
@@ -276,8 +330,14 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
                 <span className={`eyebrow text-[9px] px-2 py-0.5 rounded-[6px] border inline-block mb-2 ${card.tagColor}`}>
                   {card.tag}
                 </span>
-                <h2 className={`font-display font-extrabold text-base text-[#1e293b] mb-1.5 leading-snug ${card.hoverTitle} transition-colors`}>
-                  {card.title}
+                <h2 className={`font-display font-extrabold text-base text-[#1e293b] mb-1.5 leading-snug ${card.hoverTitle} transition-colors flex items-center justify-between`}>
+                  <span>{card.title}</span>
+                  {(card as any).hasBadge && (
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    </span>
+                  )}
                 </h2>
                 <p className="text-[11px] text-[#475569] leading-relaxed mb-4">
                   {card.description}

@@ -177,3 +177,13 @@ body {
   padding: 20px;
   box-shadow: var(--sh-sm);
 }
+
+/* Ocultar barra de rolagem mantendo scroll funcional */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

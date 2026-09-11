@@ -16,6 +16,7 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
   chamados,
   userSector,
   userLevel,
+  userName,
   onSelect,
   onOpenCreateModal
 }) => {
@@ -33,7 +34,11 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
     .replace(/[^a-z0-9]/g, "")
   const isOperationsLeader = normalizedUserSec.includes('operac') && savedLevel !== 'colaborador'
   const isGestorOrDiretoria = normalizedUserSec.includes('gestor') || normalizedUserSec.includes('diretoria') || savedLevel === 'coo'
-  const isTiTeam = normalizedUserSec.includes('ti') || normalizedUserSec.includes('tecnologia')
+  const isTiTeam = 
+    normalizedUserSec.includes('ti') || 
+    normalizedUserSec.includes('tecnologia') ||
+    (userName || '').toLowerCase().includes('t.i') ||
+    (userName || '').toLowerCase().includes('ti')
   const hasFullAccess = isTiTeam || isGestorOrDiretoria || isOperationsLeader
 
   // Filtragem por Período para os Cards de Métricas
@@ -140,25 +145,27 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
               <BarChart3 size={15} className="text-[#1b497d]" />
               <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
                 Métricas de Atendimento T.I
-                <span className="text-[10px] font-normal text-slate-400 normal-case">(Exclui chamados/tempos em aprovação)</span>
+                <span className="text-[10px] font-normal text-slate-400 normal-case">(Horário comercial 08h-18h seg a sex, exceto feriados • Exclui aprovações)</span>
               </h4>
             </div>
 
             {/* Seletor de Período em Lista Suspensa com Ícone de Filtro */}
-            <div className="flex items-center gap-2 bg-white border border-slate-200 hover:border-[#1b497d]/50 px-3 py-1.5 rounded-xl shadow-2xs transition-all self-start sm:self-auto cursor-pointer">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 hover:border-[#1b497d]/50 px-3 py-1.5 rounded-xl shadow-2xs transition-all w-full sm:w-auto cursor-pointer">
               <Filter size={14} className="text-[#1b497d] shrink-0" />
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Período:</span>
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap shrink-0">
+                Período:
+              </span>
               <select
                 value={metricsPeriod}
                 onChange={(e) => setMetricsPeriod(e.target.value as any)}
-                className="bg-transparent text-xs font-extrabold text-[#1b497d] outline-none cursor-pointer pr-1"
+                className="bg-transparent text-xs font-extrabold text-[#1b497d] outline-none cursor-pointer flex-1 min-w-0 truncate"
               >
                 <option value="24h">Últimas 24 Horas</option>
                 <option value="7d">Últimos 7 Dias</option>
                 <option value="30d">Últimos 30 Dias</option>
                 <option value="3m">Últimos 3 Meses</option>
                 <option value="6m">Últimos 6 Meses</option>
-                <option value="todos">Todo o Período (Histórico Completo)</option>
+                <option value="todos">Todo o Período</option>
               </select>
             </div>
           </div>
@@ -216,10 +223,10 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
       )}
 
       {/* Controls & Actions Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#e2e8f0] shadow-xs">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4 bg-white p-3.5 sm:p-4 rounded-2xl border border-[#e2e8f0] shadow-xs">
         
         {/* Search */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input 
             type="text"
@@ -230,38 +237,35 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
           />
         </div>
 
-        {/* View Switcher & Filters */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-1 md:pb-0">
+        {/* View Switcher, Filters & Action Button */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
           
           {/* Toggle View Mode */}
           <div className="bg-[#fafbfe] border border-[#e6e9f2] p-1 rounded-xl flex items-center shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'kanban' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'kanban' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
             >
               <LayoutGrid size={14} />
-              <span>Quadro Kanban</span>
+              <span>Kanban</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'list' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'list' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
             >
               <List size={14} />
               <span>Lista</span>
             </button>
           </div>
 
-          <div className="w-px h-6 bg-slate-200 hidden md:block" />
-
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Filter size={14} className="text-slate-400" />
+          <div className="flex-1 sm:flex-initial min-w-[120px]">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer"
+              className="w-full px-2.5 sm:px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer truncate"
             >
               <option value="todos">Todos os Status</option>
               <option value="pendente_aprovacao">Pendentes de Aprovação</option>
@@ -276,10 +280,10 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
           <button
             type="button"
             onClick={onOpenCreateModal}
-            className="px-4 py-2 bg-[#1b497d] hover:bg-[#12345b] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
+            className="w-full sm:w-auto px-4 py-2 bg-[#1b497d] hover:bg-[#12345b] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
           >
             <Plus size={16} />
-            <span>Abrir Chamado</span>
+            <span>Novo Chamado</span>
           </button>
         </div>
 
@@ -343,93 +347,130 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                       <span className="text-xs font-medium">Vazio</span>
                     </div>
                   ) : (
-                    displayedItems.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => onSelect(item)}
-                        className="bg-white hover:bg-slate-50 border border-[#e2e8f0] hover:border-[#1b497d]/40 rounded-xl p-4 shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-3 group"
-                      >
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-[11px] text-[#1b497d] bg-[#eef4fa] px-2 py-0.5 rounded-md border border-[#b3c7e0]">
-                            {item.code}
-                          </span>
-                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded flex items-center gap-1 w-max ${
-                            item.priority === 'critica' ? 'bg-red-100 text-red-800' :
-                            item.priority === 'alta' ? 'bg-orange-100 text-orange-800' :
-                            item.priority === 'media' ? 'bg-blue-100 text-blue-800' :
-                            'bg-slate-100 text-slate-800'
-                          }`}>
-                            Prioridade {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
-                          </span>
-                        </div>
+                    displayedItems.map((item) => {
+                      const bd = getChamadoTimeBreakdown(item)
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => onSelect(item)}
+                          className={`bg-white hover:bg-slate-50 border rounded-xl p-4 shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-3 group relative ${
+                            bd.isWaitingResponse 
+                              ? 'border-amber-300 hover:border-amber-400 ring-1 ring-amber-200/60' 
+                              : 'border-[#e2e8f0] hover:border-[#1b497d]/40'
+                          }`}
+                        >
+                          {/* Banner de Aguardando Resposta com sinal visual de notificação */}
+                          {bd.isWaitingResponse && (
+                            <div className="flex items-center justify-between px-2.5 py-1 bg-amber-500/10 border border-amber-300/80 rounded-lg text-amber-900 font-extrabold text-[10px] animate-pulse">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="relative flex h-2 w-2 shrink-0">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
+                                </span>
+                                <MessageSquare size={11} className="text-amber-700 shrink-0" />
+                                <span className="truncate">T.I aguarda resposta</span>
+                              </div>
+                              <span className="font-bold text-[9px] bg-amber-200/90 text-amber-900 px-1.5 py-0.2 rounded shrink-0">Pausado</span>
+                            </div>
+                          )}
 
-                        <div>
-                          <h4 className="font-display font-bold text-sm text-[#1e293b] group-hover:text-[#1b497d] transition-colors leading-snug line-clamp-2">
-                            {item.title}
-                          </h4>
-                          <p className="text-xs text-[#475569] leading-relaxed line-clamp-2 mt-1">
-                            {item.description}
-                          </p>
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between text-[11px] text-[#475569]">
-                            <span className="flex items-center gap-1 font-semibold truncate max-w-[140px]">
-                              <User size={12} /> {item.creatorName}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="font-mono font-bold text-[11px] text-[#1b497d] bg-[#eef4fa] px-2 py-0.5 rounded-md border border-[#b3c7e0]">
+                              {item.code}
                             </span>
-                            <span className="text-[10px] text-slate-400">
-                              {item.creatorSector}
+                            <span className={`px-2 py-0.5 text-[9px] font-bold rounded flex items-center gap-1 w-max ${
+                              item.priority === 'critica' ? 'bg-red-100 text-red-800' :
+                              item.priority === 'alta' ? 'bg-orange-100 text-orange-800' :
+                              item.priority === 'media' ? 'bg-blue-100 text-blue-800' :
+                              'bg-slate-100 text-slate-800'
+                            }`}>
+                              Prioridade {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 flex-wrap gap-1">
-                            <span className="flex items-center gap-1">
-                              <Calendar size={11} /> {new Date(item.createdAt).toLocaleDateString('pt-BR')}
-                            </span>
+                          <div>
+                            <h4 className="font-display font-bold text-sm text-[#1e293b] group-hover:text-[#1b497d] transition-colors leading-snug line-clamp-2">
+                              {item.title}
+                            </h4>
+                            <p className="text-xs text-[#475569] leading-relaxed line-clamp-2 mt-1">
+                              {item.description}
+                            </p>
+                          </div>
 
-                            {hasFullAccess && (() => {
-                              const bd = getChamadoTimeBreakdown(item)
-                              if (item.status === 'pendente_aprovacao') {
+                          <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between gap-2 text-[11px] text-[#475569] min-w-0">
+                              <span className="flex items-center gap-1 font-semibold text-slate-700 min-w-0 flex-1 truncate" title={item.creatorName}>
+                                <User size={12} className="shrink-0 text-slate-400" />
+                                <span className="truncate">{item.creatorName}</span>
+                              </span>
+                              <span className="text-[10px] font-medium text-slate-500 shrink-0 max-w-[110px] truncate text-right bg-slate-100/90 px-1.5 py-0.5 rounded border border-slate-200/70" title={item.creatorSector}>
+                                {item.creatorSector}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 flex-wrap gap-1.5">
+                              <span className="flex items-center gap-1 shrink-0">
+                                <Calendar size={11} /> {new Date(item.createdAt).toLocaleDateString('pt-BR')}
+                              </span>
+
+                              {hasFullAccess && (() => {
+                                if (item.status === 'pendente_aprovacao') {
+                                  return (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200" title={`Aguardando aprovação do setor ${item.approverSector}`}>
+                                      <Timer size={10} />
+                                      Aprov. ({item.approverSector}): {formatDurationShort(bd.sectorMinutes)}
+                                    </span>
+                                  )
+                                }
+                                if (bd.isWaitingResponse) {
+                                  return (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300" title="Tempo do suporte T.I pausado aguardando resposta do solicitante">
+                                      <Timer size={10} />
+                                      Pausado: {formatDurationShort(bd.tiMinutes)}
+                                    </span>
+                                  )
+                                }
                                 return (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200" title={`Aguardando aprovação do setor ${item.approverSector}`}>
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 ${
+                                    item.status === 'concluido' 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                      : item.status === 'recusado'
+                                        ? 'bg-red-50 text-red-700 border border-red-200'
+                                        : 'bg-blue-50 text-blue-800 border border-blue-200'
+                                  }`}>
                                     <Timer size={10} />
-                                    Aprov. ({item.approverSector}): {formatDurationShort(bd.sectorMinutes)}
+                                    {item.status === 'concluido'
+                                      ? `T.I: ${formatDurationShort(bd.tiMinutes)}`
+                                      : `T.I há ${formatDurationShort(bd.tiMinutes)}`
+                                    }
                                   </span>
                                 )
-                              }
-                              return (
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-1 ${
-                                  item.status === 'concluido' 
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                                    : item.status === 'recusado'
-                                      ? 'bg-red-50 text-red-700 border border-red-200'
-                                      : 'bg-blue-50 text-blue-800 border border-blue-200'
-                                }`}>
-                                  <Timer size={10} />
-                                  {item.status === 'concluido'
-                                    ? `T.I: ${formatDurationShort(bd.tiMinutes)}`
-                                    : `T.I há ${formatDurationShort(bd.tiMinutes)}`
-                                  }
-                                </span>
-                              )
-                            })()}
+                              })()}
 
-                            <div className="flex items-center gap-2">
-                              {item.comments && item.comments.length > 0 && (
-                                <span className="flex items-center gap-0.5 text-blue-600 font-bold">
-                                  <MessageSquare size={11} /> {item.comments.length}
-                                </span>
-                              )}
-                              {item.evidenceFiles && item.evidenceFiles.length > 0 && (
-                                <span className="flex items-center gap-0.5 text-indigo-600 font-bold">
-                                  <Paperclip size={11} /> {item.evidenceFiles.length}
-                                </span>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {item.comments && item.comments.length > 0 && (
+                                  bd.isWaitingResponse ? (
+                                    <span className="flex items-center gap-1 text-amber-700 font-extrabold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 animate-pulse" title="Mensagem pendente de resposta do solicitante!">
+                                      <MessageSquare size={11} /> {item.comments.length}
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-0.5 text-blue-600 font-bold">
+                                      <MessageSquare size={11} /> {item.comments.length}
+                                    </span>
+                                  )
+                                )}
+                                {item.evidenceFiles && item.evidenceFiles.length > 0 && (
+                                  <span className="flex items-center gap-0.5 text-indigo-600 font-bold">
+                                    <Paperclip size={11} /> {item.evidenceFiles.length}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
 
                   {/* Indicador para a coluna Concluído se houver mais de 3 */}
@@ -468,79 +509,103 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
       ) : (
         /* VISÃO LISTA TRADICIONAL */
         <div className="grid grid-cols-1 gap-3">
-          {filteredChamados.map((item) => (
-            <div 
-              key={item.id}
-              onClick={() => onSelect(item)}
-              className="bg-white hover:bg-slate-50 rounded-2xl border border-slate-200 p-5 shadow-xs transition-all cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group"
-            >
-              <div className="flex items-start gap-4 flex-1 min-w-0">
-                <span className="font-mono font-bold text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg shrink-0">
-                  {item.code}
-                </span>
+          {filteredChamados.map((item) => {
+            const bd = getChamadoTimeBreakdown(item)
+            return (
+              <div 
+                key={item.id}
+                onClick={() => onSelect(item)}
+                className={`bg-white hover:bg-slate-50 rounded-2xl border p-5 shadow-xs transition-all cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group ${
+                  bd.isWaitingResponse 
+                    ? 'border-amber-300 hover:border-amber-400 ring-1 ring-amber-200/60' 
+                    : 'border-slate-200'
+                }`}
+              >
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <span className="font-mono font-bold text-xs bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg shrink-0">
+                    {item.code}
+                  </span>
 
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-display font-bold text-slate-800 text-sm group-hover:text-[#1b497d] transition-colors truncate">
-                      {item.title}
-                    </h4>
-                    {item.evidenceFiles && item.evidenceFiles.length > 0 && (
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold rounded flex items-center gap-1">
-                        <Paperclip size={10} />
-                        <span>{item.evidenceFiles.length} anexo(s)</span>
-                      </span>
-                    )}
-                  </div>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-display font-bold text-slate-800 text-sm group-hover:text-[#1b497d] transition-colors truncate">
+                        {item.title}
+                      </h4>
+                      {item.evidenceFiles && item.evidenceFiles.length > 0 && (
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold rounded flex items-center gap-1">
+                          <Paperclip size={10} />
+                          <span>{item.evidenceFiles.length} anexo(s)</span>
+                        </span>
+                      )}
+                      {bd.isWaitingResponse && (
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold rounded flex items-center gap-1.5 animate-pulse">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-600"></span>
+                          </span>
+                          <MessageSquare size={10} className="text-amber-700" />
+                          <span>Aguardando Resposta (Pausado)</span>
+                        </span>
+                      )}
+                    </div>
 
-                  <p className="text-xs text-slate-500 line-clamp-1">
-                    {item.description}
-                  </p>
+                    <p className="text-xs text-slate-500 line-clamp-1">
+                      {item.description}
+                    </p>
 
-                  <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1 flex-wrap">
-                    <span className="flex items-center gap-1 font-semibold text-slate-600"><User size={12} /> {item.creatorName} ({item.creatorSector})</span>
-                    <span>•</span>
-                    <span className="font-medium">Resp. Aprovação: <strong className="text-[#1b497d]">{item.approverSector}</strong></span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
+                    <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1 flex-wrap">
+                      <span className="flex items-center gap-1 font-semibold text-slate-600"><User size={12} /> {item.creatorName} ({item.creatorSector})</span>
+                      <span>•</span>
+                      <span className="font-medium">Resp. Aprovação: <strong className="text-[#1b497d]">{item.approverSector}</strong></span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Status & Action */}
-              <div className="flex items-center gap-3 shrink-0 self-end md:self-center w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                {hasFullAccess && (() => {
-                  const bd = getChamadoTimeBreakdown(item)
-                  if (item.status === 'pendente_aprovacao') {
+                {/* Status & Action */}
+                <div className="flex items-center gap-3 shrink-0 self-end md:self-center w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+                  {hasFullAccess && (() => {
+                    if (item.status === 'pendente_aprovacao') {
+                      return (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200">
+                          <Timer size={11} />
+                          Aprovação ({item.approverSector}): {formatDurationShort(bd.sectorMinutes)}
+                        </span>
+                      )
+                    }
+                    if (bd.isWaitingResponse) {
+                      return (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300" title="Tempo de T.I pausado aguardando resposta do solicitante">
+                          <Timer size={11} />
+                          Pausado: {formatDurationShort(bd.tiMinutes)}
+                        </span>
+                      )
+                    }
                     return (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 ${
+                        item.status === 'concluido' 
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                          : item.status === 'recusado'
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : 'bg-blue-50 text-blue-800 border border-blue-200'
+                      }`}>
                         <Timer size={11} />
-                        Aprovação ({item.approverSector}): {formatDurationShort(bd.sectorMinutes)}
+                        {item.status === 'concluido'
+                          ? `Resolvido pela T.I em ${formatDurationShort(bd.tiMinutes)}`
+                          : `T.I há ${formatDurationShort(bd.tiMinutes)}`
+                        }
                       </span>
                     )
-                  }
-                  return (
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1 ${
-                      item.status === 'concluido' 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                        : item.status === 'recusado'
-                          ? 'bg-red-50 text-red-700 border border-red-200'
-                          : 'bg-blue-50 text-blue-800 border border-blue-200'
-                    }`}>
-                      <Timer size={11} />
-                      {item.status === 'concluido'
-                        ? `Resolvido pela T.I em ${formatDurationShort(bd.tiMinutes)}`
-                        : `T.I há ${formatDurationShort(bd.tiMinutes)}`
-                      }
-                    </span>
-                  )
-                })()}
-                {getStatusBadge(item.status, item.approverSector)}
-                <div className="p-2 text-slate-400 group-hover:text-[#1b497d] group-hover:translate-x-0.5 transition-all">
-                  <Eye size={18} />
+                  })()}
+                  {getStatusBadge(item.status, item.approverSector)}
+                  <div className="p-2 text-slate-400 group-hover:text-[#1b497d] group-hover:translate-x-0.5 transition-all">
+                    <Eye size={18} />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, AlertTriangle, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image, Timer } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, AlertTriangle, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image, Timer, Upload } from 'lucide-react'
 import type { ChamadoTI } from './types'
 import { SETORES_APROVADORES, formatDurationFull, getEffectiveCompletionDate, getChamadoTimeBreakdown } from './types'
 
@@ -61,11 +61,11 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const [editApproverSector, setEditApproverSector] = useState(chamado.approverSector || 'Sem Aprovação (Direto T.I)')
   const [editDescription, setEditDescription] = useState(chamado.description)
   const [editEvidenceFiles, setEditEvidenceFiles] = useState<{ name: string; base64: string; type: string }[]>(chamado.evidenceFiles || [])
-  // Handlers para anexos durante a edição
-  const handleFileUploadInEdit = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
+  const [isDraggingEdit, setIsDraggingEdit] = useState(false)
+  const editFileInputRef = useRef<HTMLInputElement>(null)
 
+  // Handlers para anexos durante a edição com suporte a Arrastar e Soltar
+  const processEditFiles = (files: FileList | File[]) => {
     Array.from(files).forEach((file) => {
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -84,33 +84,114 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
     })
   }
 
+  const handleFileUploadInEdit = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      processEditFiles(e.target.files)
+    }
+  }
+
+  const handleEditDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingEdit(true)
+  }
+
+  const handleEditDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingEdit(false)
+  }
+
+  const handleEditDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingEdit(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processEditFiles(e.dataTransfer.files)
+    }
+  }
+
   const removeEditEvidence = (index: number) => {
     setEditEvidenceFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   // Permissões de Ação
   const savedLevel = userLevel || localStorage.getItem('userLevel') || 'lider'
-  const normalizedUserSec = (userSector || '').toLowerCase()
+  const rawSec = userSector || localStorage.getItem('userSector') || ''
+
+  const cleanSectorStr = (s?: string) => 
+    (s || '')
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "")
+
+  const normalizedUserSec = cleanSectorStr(rawSec)
+
   const isOperationsLeader = (normalizedUserSec.includes('operac')) && savedLevel !== 'colaborador'
   const isGestorOrDiretoria = 
     normalizedUserSec.includes('gestor') || 
     normalizedUserSec.includes('diretor') || 
-    userSector === 'Gestor/Diretoria' || 
-    userSector === 'Gestor (Diogo)' || 
+    rawSec === 'Gestor/Diretoria' || 
+    rawSec === 'Gestor (Diogo)' || 
     savedLevel === 'coo'
-  const isTiTeam = normalizedUserSec.includes('ti') || normalizedUserSec.includes('tecnologia')
+  const isTiTeam = 
+    normalizedUserSec.includes('ti') || 
+    normalizedUserSec.includes('tecnologia') ||
+    normalizedUserSec.includes('suporte') ||
+    (userName || '').toLowerCase().includes('t.i') ||
+    (userName || '').toLowerCase().includes('ti') ||
+    (userName || '').toLowerCase().includes('tecnico')
+
   const hasFullAccess = isTiTeam || isGestorOrDiretoria || isOperationsLeader
 
-  const canApprove = (userSector === chamado.approverSector || hasFullAccess) && chamado.status === 'pendente_aprovacao'
-  const canRedirect = hasFullAccess || userSector === chamado.approverSector
+  const isSameSec = (s1?: string, s2?: string) => {
+    if (!s1 || !s2) return false
+    if (s1 === s2) return true
+    const c1 = cleanSectorStr(s1)
+    const c2 = cleanSectorStr(s2)
+    return c1 === c2 || (c1.includes('ti') && c2.includes('ti'))
+  }
+
+  const canApprove = (isSameSec(rawSec, chamado.approverSector) || hasFullAccess) && chamado.status === 'pendente_aprovacao'
+  const canRedirect = hasFullAccess || isSameSec(rawSec, chamado.approverSector)
+  const canTakeTicket = hasFullAccess || isTiTeam
+  const canResolve = hasFullAccess || userName === chamado.creatorName || (chamado.assignedTech && chamado.assignedTech === userName)
   
   // Pode editar se for o criador (ou do mesmo setor) E o chamado ainda NÃO tiver sido assumido pela T.I (status 'pendente_aprovacao' ou 'aprovado')
   const isBeforeTiAssumption = chamado.status === 'pendente_aprovacao' || chamado.status === 'aprovado'
   const canEdit = isBeforeTiAssumption && (
-    userSector === chamado.creatorSector || 
+    isSameSec(rawSec, chamado.creatorSector) || 
     hasFullAccess ||
     userName === chamado.creatorName
   )
+
+  const bd = getChamadoTimeBreakdown(chamado)
+  const completionDateStr = getEffectiveCompletionDate(chamado)
+
+  const formatCommentDateTime = (dateStr: string) => {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return ''
+    const now = new Date()
+    const isToday = d.toDateString() === now.toDateString()
+
+    const yesterday = new Date(now)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const isYesterday = d.toDateString() === yesterday.toDateString()
+
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (isToday) {
+      return `Hoje às ${time}`
+    }
+    if (isYesterday) {
+      return `Ontem às ${time}`
+    }
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const year = d.getFullYear()
+    const sameYear = year === now.getFullYear()
+    return sameYear ? `${day}/${month} às ${time}` : `${day}/${month}/${year} às ${time}`
+  }
 
   const getStatusBadge = () => {
     switch (chamado.status) {
@@ -182,74 +263,132 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="bg-[#1a2332] text-white p-4 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-          <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-            <span className="text-xs font-extrabold bg-blue-500/30 border border-blue-400/40 text-blue-300 px-2.5 py-1 rounded-lg tracking-wider whitespace-nowrap shrink-0">
-              {chamado.code}
-            </span>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-bold text-sm sm:text-base leading-tight text-white line-clamp-2 sm:truncate" title={chamado.title}>
-                {chamado.title}
-              </h3>
-              <p className="text-[11px] sm:text-xs text-slate-300 truncate mt-0.5">
-                Solicitado por {chamado.creatorName} ({chamado.creatorSector})
-              </p>
+        <div className="bg-[#1a2332] text-white p-3.5 sm:px-6 sm:py-4 shrink-0 border-b border-slate-700/50">
+          <div className="flex items-start justify-between gap-3">
+            {/* Left: Code, Title & Requester */}
+            <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <span className="text-xs font-extrabold bg-blue-500/25 border border-blue-400/30 text-blue-300 px-2.5 py-1 rounded-lg tracking-wider whitespace-nowrap shrink-0 mt-0.5">
+                {chamado.code}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-sm sm:text-base leading-snug text-white line-clamp-2" title={chamado.title}>
+                  {chamado.title}
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-300 truncate mt-0.5">
+                  Solicitado por <span className="font-semibold text-slate-100">{chamado.creatorName}</span> ({chamado.creatorSector})
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Actions + Close button (Always pinned at top right) */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Desktop Actions */}
+              <div className="hidden sm:flex items-center gap-2">
+                {canEdit && !isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                  >
+                    <Edit size={14} />
+                    <span>Editar Chamado</span>
+                  </button>
+                )}
+
+                {(hasFullAccess || userName === chamado.creatorName) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Tem certeza que deseja excluir permanentemente o chamado ${chamado.code}?`)) {
+                        if (onDeleteChamado) {
+                          onDeleteChamado(chamado.id)
+                        }
+                        onClose()
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                    title="Excluir Chamado Permanentemente"
+                  >
+                    <Trash2 size={14} />
+                    <span>Excluir</span>
+                  </button>
+                )}
+
+                {(canEdit || hasFullAccess || userName === chamado.creatorName) && (
+                  <div className="w-[1px] h-4 bg-slate-700/80 my-auto mx-0.5" />
+                )}
+              </div>
+
+              {/* Close Button - ALWAYS at top right */}
+              <button 
+                type="button"
+                onClick={onClose}
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
-            {canEdit && !isEditing && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
-              >
-                <Edit size={14} />
-                <span>Editar Chamado</span>
-              </button>
-            )}
 
-            {(hasFullAccess || userName === chamado.creatorName) && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm(`Tem certeza que deseja excluir permanentemente o chamado ${chamado.code}?`)) {
-                    if (onDeleteChamado) {
-                      onDeleteChamado(chamado.id)
+          {/* Mobile Actions Row (cleanly below title if available) */}
+          {((canEdit && !isEditing) || (hasFullAccess || userName === chamado.creatorName)) && (
+            <div className="sm:hidden flex items-center justify-end gap-2 mt-2.5 pt-2 border-t border-slate-700/50">
+              {canEdit && !isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                >
+                  <Edit size={13} />
+                  <span>Editar</span>
+                </button>
+              )}
+
+              {(hasFullAccess || userName === chamado.creatorName) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Tem certeza que deseja excluir permanentemente o chamado ${chamado.code}?`)) {
+                      if (onDeleteChamado) {
+                        onDeleteChamado(chamado.id)
+                      }
+                      onClose()
                     }
-                    onClose()
-                  }
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
-                title="Excluir Chamado"
-              >
-                <Trash2 size={14} />
-                <span className="whitespace-nowrap">Excluir</span>
-              </button>
-            )}
-
-            <button 
-              type="button"
-              onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ml-1 shrink-0"
-            >
-              <X size={20} />
-            </button>
-          </div>
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  title="Excluir Chamado Permanentemente"
+                >
+                  <Trash2 size={13} />
+                  <span>Excluir</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-800">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1 text-slate-800">
           
           {/* Status & Badges bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status:</span>
               {getStatusBadge()}
+              {bd.isWaitingResponse && (
+                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-full flex items-center gap-1.5 animate-pulse">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                  <MessageSquare size={12} className="text-amber-700" />
+                  <span>Aguardando Resposta do Solicitante</span>
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Prioridade:</span>
@@ -257,18 +396,45 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
             </div>
           </div>
 
+          {/* Banner de Cronômetro Pausado / Aguardando Resposta */}
+          {bd.isWaitingResponse && (
+            <div className="p-3.5 bg-amber-50/95 border border-amber-300/90 rounded-xl text-amber-950 flex items-start sm:items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-start sm:items-center gap-2.5">
+                <span className="relative flex h-3 w-3 shrink-0 mt-0.5 sm:mt-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                </span>
+                <div>
+                  <div className="text-xs font-extrabold flex items-center gap-2 flex-wrap">
+                    <span>Cronômetro do Suporte T.I Pausado</span>
+                    <span className="bg-amber-200/80 text-amber-900 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Aguardando Retorno</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 mt-0.5 leading-snug">
+                    {bd.lastUnansweredMessage ? (
+                      <>O T.I enviou uma mensagem no chat e aguarda resposta: <span className="font-semibold italic">"{bd.lastUnansweredMessage.text.slice(0, 100)}{bd.lastUnansweredMessage.text.length > 100 ? '...' : ''}"</span></>
+                    ) : (
+                      <>O T.I enviou uma mensagem solicitando informações adicionais no chat.</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-amber-800 shrink-0 hidden sm:inline-block bg-white px-2.5 py-1 rounded-lg border border-amber-200">
+                O tempo volta a contar após a resposta
+              </span>
+            </div>
+          )}
+
           {/* Métrica de Tempo / Ciclo de Vida (Visível para T.I, Líder de Operações e Gestor/Diretoria) */}
           {hasFullAccess && (() => {
-            const bd = getChamadoTimeBreakdown(chamado)
-            const completionDateStr = getEffectiveCompletionDate(chamado)
-
             return (
               <div className={`p-4 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
                 chamado.status === 'concluido'
                   ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
                   : chamado.status === 'recusado'
                     ? 'bg-red-50/70 border-red-200 text-red-950'
-                    : 'bg-amber-50/70 border-amber-200 text-amber-950'
+                    : bd.isWaitingResponse
+                      ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+                      : 'bg-amber-50/70 border-amber-200 text-amber-950'
               }`}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold ${
@@ -276,20 +442,36 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                       ? 'bg-emerald-100 text-emerald-700'
                       : chamado.status === 'recusado'
                         ? 'bg-red-100 text-red-700'
-                        : 'bg-amber-100 text-amber-700 animate-pulse'
+                        : bd.isWaitingResponse
+                          ? 'bg-amber-200/80 text-amber-800'
+                          : 'bg-amber-100 text-amber-700 animate-pulse'
                   }`}>
                     <Timer size={20} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
                     <div>
                       <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
-                        🛠️ Tempo do Suporte T.I
+                        🛠️ Tempo Comercial T.I (08h às 18h)
                       </span>
-                      <span className="text-sm font-extrabold block text-blue-900">
+                      <span className="text-sm font-extrabold block text-blue-900 flex items-center gap-1.5">
                         {formatDurationFull(bd.tiMinutes)}
+                        {bd.isWaitingResponse && (
+                          <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded font-bold">
+                            Pausado
+                          </span>
+                        )}
                       </span>
                     </div>
-                    {bd.sectorMinutes > 0 || bd.isCurrentlyPendingSector ? (
+                    {bd.pausedMinutes > 0 ? (
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider block text-amber-700">
+                          Tempo Pausado (Aguardando Resposta)
+                        </span>
+                        <span className="text-sm font-extrabold block text-amber-900">
+                          {formatDurationFull(bd.pausedMinutes)}
+                        </span>
+                      </div>
+                    ) : bd.sectorMinutes > 0 || bd.isCurrentlyPendingSector ? (
                       <div>
                         <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
                           ⏳ Aprovação / Redirecionado ({bd.approverSector || 'Setor'})
@@ -301,7 +483,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                     ) : (
                       <div>
                         <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-75">
-                          🕒 Tempo Total Corrido
+                          🕒 Tempo Total Comercial
                         </span>
                         <span className="text-sm font-extrabold block">
                           {formatDurationFull(bd.totalMinutes)}
@@ -311,21 +493,26 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs font-medium opacity-80 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 w-full md:w-auto justify-between md:justify-end border-slate-200">
-                  <div>
-                    <span className="block text-[10px] uppercase font-bold text-slate-400">Abertura</span>
-                    <span>{new Date(chamado.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs font-medium opacity-80 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 w-full md:w-auto justify-between md:justify-end border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <span className="block text-[10px] uppercase font-bold text-slate-400">Abertura</span>
+                      <span>{new Date(chamado.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                    </div>
+                    <span>→</span>
+                    <div>
+                      <span className="block text-[10px] uppercase font-bold text-slate-400">Conclusão</span>
+                      <span>
+                        {completionDateStr
+                          ? new Date(completionDateStr).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                          : 'Em andamento'
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <span>→</span>
-                  <div>
-                    <span className="block text-[10px] uppercase font-bold text-slate-400">Conclusão</span>
-                    <span>
-                      {completionDateStr
-                        ? new Date(completionDateStr).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-                        : 'Em andamento'
-                      }
-                    </span>
-                  </div>
+                  <span className="text-[10px] bg-white/70 px-2 py-0.5 rounded border border-slate-200/80 text-slate-600 font-semibold" title="Tempo contabilizado exclusivamente de segunda a sexta, das 08h às 18h, desconsiderando fins de semana e feriados nacionais">
+                    08:00 às 18:00 (Dias Úteis)
+                  </span>
                 </div>
               </div>
             )
@@ -396,23 +583,60 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
 
               {/* Gerenciamento de Anexos na Edição */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                  <span>Anexos e Evidências ({editEvidenceFiles.length})</span>
-                  <label className="text-blue-600 font-bold hover:underline cursor-pointer flex items-center gap-1">
-                    <Paperclip size={13} />
-                    <span>+ Adicionar arquivo</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-                      onChange={handleFileUploadInEdit}
-                      className="hidden"
-                    />
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Evidências / Anexos ({editEvidenceFiles.length})
                   </label>
-                </label>
+                  {editEvidenceFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => editFileInputRef.current?.click()}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
+                    >
+                      <Paperclip size={13} />
+                      <span>+ Adicionar mais</span>
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  ref={editFileInputRef}
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  onChange={handleFileUploadInEdit}
+                  className="hidden"
+                />
+
+                <div
+                  onClick={() => editFileInputRef.current?.click()}
+                  onDragOver={handleEditDragOver}
+                  onDragEnter={handleEditDragOver}
+                  onDragLeave={handleEditDragLeave}
+                  onDrop={handleEditDrop}
+                  className={`border-2 border-dashed rounded-xl transition-all p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer group ${
+                    isDraggingEdit
+                      ? 'border-blue-500 bg-blue-50/80 ring-4 ring-blue-100 scale-[1.01]'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-blue-300'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 transition-all ${
+                    isDraggingEdit ? 'bg-blue-600 text-white scale-110' : 'bg-blue-50 text-blue-600 group-hover:scale-110'
+                  }`}>
+                    <Upload size={18} />
+                  </div>
+                  <p className="text-[#1a2332] font-bold text-xs mb-0.5">
+                    {isDraggingEdit ? (
+                      <span className="text-blue-600 font-bold animate-pulse">Solte os arquivos aqui</span>
+                    ) : (
+                      <>Arraste arquivos aqui ou <span className="text-blue-600">clique para selecionar</span></>
+                    )}
+                  </p>
+                  <p className="text-slate-400 text-[11px] font-medium">PNG, JPG, PDF - prints, planilhas e documentos</p>
+                </div>
 
                 {editEvidenceFiles.length > 0 && (
-                  <div className="space-y-1.5 bg-white p-2.5 rounded-xl border border-slate-200 max-h-40 overflow-y-auto">
+                  <div className="space-y-1.5 bg-white p-2.5 rounded-xl border border-slate-200 max-h-40 overflow-y-auto mt-2">
                     {editEvidenceFiles.map((file, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
                         <span className="truncate max-w-[80%] font-medium text-slate-700">{file.name}</span>
@@ -718,8 +942,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
             )}
 
             {/* 2. Actions for T.I Team / Leadership */}
-            {hasFullAccess && chamado.status === 'aprovado' && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-4">
+            {canTakeTicket && chamado.status === 'aprovado' && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                 <div>
                   <h5 className="text-xs font-bold text-blue-950 uppercase">Chamado Aprovado</h5>
                   <p className="text-xs text-blue-700">Assuma este chamado para iniciar o atendimento técnico.</p>
@@ -727,7 +951,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => onUpdateStatus(chamado.id, 'em_atendimento', { techName: userName })}
-                  className="px-5 py-2.5 bg-[#1a2332] hover:bg-[#253043] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer whitespace-nowrap"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-[#1a2332] hover:bg-[#253043] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer whitespace-nowrap"
                 >
                   <Wrench size={16} />
                   <span>Assumir Chamado</span>
@@ -735,7 +959,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               </div>
             )}
 
-            {hasFullAccess && chamado.status === 'em_atendimento' && (
+            {canResolve && chamado.status === 'em_atendimento' && (
               <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <h5 className="text-xs font-bold text-indigo-950 uppercase">Atendimento em Andamento</h5>
@@ -789,11 +1013,22 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
 
           {/* Interactive Internal Chat Section */}
           <div className="pt-6 border-t border-slate-200 space-y-4">
-            <div className="flex items-center gap-2">
-              <MessageSquare size={16} className="text-[#1a2332]" />
-              <h4 className="text-xs font-bold text-[#1a2332] uppercase tracking-wider">
-                Histórico & Chat do Chamado ({chamado.comments?.length || 0})
-              </h4>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <MessageSquare size={16} className="text-[#1a2332]" />
+                <h4 className="text-xs font-bold text-[#1a2332] uppercase tracking-wider">
+                  Histórico & Chat do Chamado ({chamado.comments?.length || 0})
+                </h4>
+              </div>
+              {bd.isWaitingResponse && (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
+                  </span>
+                  <span>Aguardando resposta do solicitante</span>
+                </span>
+              )}
             </div>
 
             {/* Comments List */}
@@ -812,8 +1047,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                         <span className="text-[9px] font-bold text-blue-600 uppercase bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
                           {msg.authorSector}
                         </span>
-                        <span className="text-[9px] text-slate-400">
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {formatCommentDateTime(msg.createdAt)}
                         </span>
                       </div>
                       <div className={`p-3 rounded-2xl text-xs max-w-[85%] font-medium leading-relaxed ${

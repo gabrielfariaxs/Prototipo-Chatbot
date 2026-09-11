@@ -34,20 +34,24 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
       query = query.eq('setor', userSector)
     }
 
-    const { data } = await query
+    const { data } = await query.limit(150)
     if (data) {
-      // Auto-lock logic on fetch
+      // Auto-lock logic on fetch (batch update to avoid parallel query spam)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
+      const expiredIds: (string | number)[] = []
       const processedData = data.map((d: any) => {
         if (d.status !== 'Feito' && new Date(d.prazo) < today && d.status !== 'Não concluído') {
-          // Update DB if we are fetching and notice it's expired (do not await to avoid blocking UI)
-          supabase.from('demandas').update({ status: 'Não concluído' }).eq('id', d.id).then()
+          expiredIds.push(d.id)
           return { ...d, status: 'Não concluído' }
         }
         return d
       })
+
+      if (expiredIds.length > 0) {
+        supabase.from('demandas').update({ status: 'Não concluído' }).in('id', expiredIds).then()
+      }
 
       setDemandas(processedData)
     }

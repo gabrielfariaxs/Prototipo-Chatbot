@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Bell, LogOut, Monitor, CheckCircle, X } from 'lucide-react'
+import { Bell, LogOut, Monitor, CheckCircle, X, Activity } from 'lucide-react'
 import type { ChamadoTI } from './types'
 import { ChamadosTiList } from './ChamadosTiList'
 import { ChamadosTiCreateModal } from './ChamadosTiCreateModal'
 import { ChamadosTiDetailModal } from './ChamadosTiDetailModal'
+import { ChamadosTiNetworkModal } from './ChamadosTiNetworkModal'
 import { supabase } from '../../lib/supabase'
 
 export interface TiNotification {
@@ -99,6 +100,7 @@ export const ChamadosTiPanel: React.FC = () => {
   const [chamados, setChamados] = useState<ChamadoTI[]>([])
   const [selectedChamado, setSelectedChamado] = useState<ChamadoTI | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [showNetworkModal, setShowNetworkModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'meus' | 'aprovacoes' | 'ti' | 'historico'>('meus')
   const [historySearch, setHistorySearch] = useState('')
 
@@ -116,6 +118,7 @@ export const ChamadosTiPanel: React.FC = () => {
         .from('ti_chamados')
         .select('*')
         .order('created_at', { ascending: false })
+        .limit(150)
 
       if (chamadosErr) {
         console.warn('Aviso: Falha temporária ao carregar chamados:', chamadosErr.message)
@@ -133,6 +136,7 @@ export const ChamadosTiPanel: React.FC = () => {
         .from('ti_notifications')
         .select('*')
         .order('created_at', { ascending: false })
+        .limit(50)
       
       if (!notifErr && notifData) {
         setNotifications(notifData.map(mapToNotification))
@@ -504,7 +508,12 @@ export const ChamadosTiPanel: React.FC = () => {
     userSector.toLowerCase().includes('gestor') ||
     userSector.toLowerCase().includes('diretoria') ||
     userLevel === 'coo'
-  const isTi = normalizedUserSec.includes('ti') || normalizedUserSec.includes('tecnologia')
+  const isTi = 
+    normalizedUserSec.includes('ti') || 
+    normalizedUserSec.includes('tecnologia') ||
+    (userName || '').toLowerCase().includes('t.i') ||
+    (userName || '').toLowerCase().includes('ti')
+  const isTiLeader = isTi && userLevel === 'lider'
   const hasFullAccess = isTi || isGestorOrDiretoria || isOperationsLeader
 
   // Notificações relevantes ao usuário logado
@@ -589,6 +598,31 @@ export const ChamadosTiPanel: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 md:hidden">
+              {isTiLeader && (
+                <button
+                  type="button"
+                  onClick={() => setShowNetworkModal(true)}
+                  className="p-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-[10px] cursor-pointer"
+                  title="Monitoramento de Internet (Arthromed RN & PE)"
+                >
+                  <Activity size={16} className="text-emerald-600 animate-pulse" />
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                className="relative p-2 text-[#5b6276] hover:text-[#1f29de] rounded-[10px] border border-[#e6e9f2] bg-white cursor-pointer"
+                title="Notificações"
+              >
+                <Bell size={16} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[15px] h-3.5 px-0.5 bg-red-500 text-white text-[8px] font-extrabold rounded-full flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
               <div className="w-8 h-8 rounded-full bg-[#1f29de] text-white flex items-center justify-center text-xs font-bold shadow-xs">
                 {userInitials}
               </div>
@@ -608,21 +642,23 @@ export const ChamadosTiPanel: React.FC = () => {
 
           {/* Tabs & Notifications & User Info */}
           <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 w-full md:w-auto">
-            <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs min-w-max shrink-0">
+            <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs overflow-x-auto no-scrollbar max-w-full">
               <button
                 type="button"
                 onClick={() => setActiveTab('meus')}
-                className={`px-4 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${activeTab === 'meus' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
+                className={`px-3 sm:px-3.5 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${activeTab === 'meus' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
               >
-                {hasFullAccess ? 'Todos os Chamados' : 'Chamados do Setor'}
+                <span className="sm:hidden">{hasFullAccess ? 'Todos' : 'Setor'}</span>
+                <span className="hidden sm:inline">{hasFullAccess ? 'Todos os Chamados' : 'Chamados do Setor'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('aprovacoes')}
-                className={`px-4 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer relative flex items-center gap-1.5 ${activeTab === 'aprovacoes' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
+                className={`px-3 sm:px-3.5 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap relative flex items-center gap-1.5 ${activeTab === 'aprovacoes' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
               >
-                <span>Aprovações Pendentes</span>
+                <span className="sm:hidden">Aprovações</span>
+                <span className="hidden sm:inline">Aprovações Pendentes</span>
                 {pendingApprovalsCount > 0 && (
                   <span className="w-4 h-4 bg-[#f4be56] text-[#14161f] rounded-full text-[10px] font-extrabold flex items-center justify-center">
                     {pendingApprovalsCount}
@@ -635,16 +671,18 @@ export const ChamadosTiPanel: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('ti')}
-                    className={`px-4 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${activeTab === 'ti' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
+                    className={`px-3 sm:px-3.5 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${activeTab === 'ti' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
                   >
-                    Fila Geral / T.I
+                    <span className="sm:hidden">Fila T.I</span>
+                    <span className="hidden sm:inline">Fila Geral / T.I</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('historico')}
-                    className={`px-4 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer ${activeTab === 'historico' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
+                    className={`px-3 sm:px-3.5 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${activeTab === 'historico' ? 'bg-[#1f29de] text-white shadow-xs' : 'text-[#5b6276] hover:text-[#14161f]'}`}
                   >
-                    Histórico Geral / T.I
+                    <span className="sm:hidden">Histórico</span>
+                    <span className="hidden sm:inline">Histórico Geral / T.I</span>
                   </button>
                 </>
               )}
@@ -654,6 +692,20 @@ export const ChamadosTiPanel: React.FC = () => {
 
             {/* Notification Bell & User badge */}
             <div className="hidden md:flex items-center gap-3">
+
+              {/* Botão de Monitoramento de Rede (Exclusivo T.I) */}
+              {isTiLeader && (
+                <button
+                  type="button"
+                  onClick={() => setShowNetworkModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-[11px] text-xs font-bold transition-all cursor-pointer shadow-2xs group"
+                  title="Monitoramento de Internet (Arthromed RN & PE)"
+                >
+                  <Activity size={15} className="text-emerald-600 animate-pulse group-hover:scale-110 transition-transform" />
+                  <span className="hidden lg:inline">Links de Internet</span>
+                  <span className="lg:hidden">Links</span>
+                </button>
+              )}
 
               {/* Notification Bell */}
               <div className="relative">
@@ -681,7 +733,7 @@ export const ChamadosTiPanel: React.FC = () => {
 
                 {/* Notifications Dropdown Popover */}
                 {showNotificationDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-4 animate-in fade-in zoom-in-95">
+                  <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-full mt-2 sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-4 animate-in fade-in zoom-in-95">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
                       <div className="flex items-center gap-2">
                         <Bell size={16} className="text-[#1f29de]" />
@@ -866,6 +918,13 @@ export const ChamadosTiPanel: React.FC = () => {
           onRedirect={handleRedirectChamado}
           onEditChamado={handleEditChamado}
           onDeleteChamado={handleDeleteChamado}
+        />
+      )}
+
+      {/* Network / Internet Monitoring Modal (Exclusivo T.I) */}
+      {showNetworkModal && (
+        <ChamadosTiNetworkModal
+          onClose={() => setShowNetworkModal(false)}
         />
       )}
 
