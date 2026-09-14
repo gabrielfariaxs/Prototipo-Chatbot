@@ -131,7 +131,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   const CARDS = [
     {
       id: 'chatbot',
-      icon: <Bot size={22} strokeWidth={2} />,
+      icon: <Bot size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'Assistente',
       title: 'Chatbot (MedIA)',
       description: 'Suporte a procedimentos internos, dúvidas operacionais e consulta de materiais.',
@@ -144,7 +144,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     },
     {
       id: 'noc',
-      icon: <Layers size={22} strokeWidth={2} />,
+      icon: <Layers size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'Operacional',
       title: 'NOC (NCO)',
       description: 'Registro, acompanhamento e tratativas de Não Conformidades Operacionais.',
@@ -158,7 +158,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     },
     {
       id: 'portfolio',
-      icon: <BookOpen size={22} strokeWidth={2} />,
+      icon: <BookOpen size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'Catálogo',
       title: 'Portfólio da Arthromed',
       description: 'Catálogo completo de produtos, materiais ortopédicos e especificações.',
@@ -172,7 +172,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     },
     {
       id: 'medic_portfolio',
-      icon: <FolderKanban size={22} strokeWidth={2} />,
+      icon: <FolderKanban size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'Novo Catálogo',
       title: 'Portfólio Medic',
       description: 'Catálogo de produtos e soluções do ecossistema Medic.',
@@ -186,7 +186,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     },
     {
       id: 'solicitacao',
-      icon: <Stethoscope size={22} strokeWidth={2} />,
+      icon: <Stethoscope size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'CFM / ANS',
       title: 'Solicitação Médica',
       description: 'Solicitações cirúrgicas, justificativas OPME e recursos de negativa anti-glosa.',
@@ -200,7 +200,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     },
     {
       id: 'chamados_ti',
-      icon: <Monitor size={22} strokeWidth={2} />,
+      icon: <Monitor size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'Suporte T.I',
       title: 'Chamados de T.I',
       description: 'Abertura e acompanhamento de suporte técnico com aprovação do gestor.',

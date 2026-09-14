@@ -19,7 +19,8 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 }) => {
   const defaultSector = userSector === 'T.I' ? 'none' : 'none'
   const [title, setTitle] = useState('')
-  const [requesterName, setRequesterName] = useState(userName || '')
+  const defaultRequester = (userName && userName.includes(' - ')) ? '' : (userName || '')
+  const [requesterName, setRequesterName] = useState(defaultRequester)
   const [priority, setPriority] = useState<ChamadoPriority>('media')
   const [approverSector, setApproverSector] = useState(defaultSector)
   const [description, setDescription] = useState('')

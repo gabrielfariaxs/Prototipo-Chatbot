@@ -346,6 +346,15 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
   let accumulatedPausedMinutes = 0
   let lastUnansweredTiMessage: ChamadoComment | undefined = undefined
 
+  // Rastreia se o chamado está na fase de "Em Atendimento"
+  // Regra de negócio: Na Fila T.I (status 'aprovado' / a fazer), mensagens do líder/técnico NÃO pausam o tempo.
+  // Somente quando o chamado estiver efetivamente em "Em Atendimento" (status 'em_atendimento') o envio de mensagem pelo T.I pausa o cronômetro.
+  let isInService = false
+  const hasInServiceEvent = timelineEvents.some(e => e.type === 'in_service')
+  if (!hasInServiceEvent && chamado.status === 'em_atendimento') {
+    isInService = true
+  }
+
   for (const evt of timelineEvents) {
     if (evt.timestamp < lastMs) continue
     const elapsed = calculateBusinessMinutes(lastMs, evt.timestamp)
@@ -360,12 +369,22 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
 
     if (evt.type === 'redirection_or_pending') {
       currentOwner = 'sector'
+      isInService = false
       lastUnansweredTiMessage = undefined
-    } else if (evt.type === 'approved' || evt.type === 'in_service') {
+    } else if (evt.type === 'approved') {
       currentOwner = 'ti'
+      if (hasInServiceEvent || chamado.status !== 'em_atendimento') {
+        isInService = false
+      }
+      lastUnansweredTiMessage = undefined
+    } else if (evt.type === 'in_service') {
+      currentOwner = 'ti'
+      isInService = true
+      lastUnansweredTiMessage = undefined
     } else if (evt.type === 'ti_message') {
-      // Mensagem enviada pelo T.I solicitando informações / retorno do usuário
-      if (currentOwner !== 'sector') {
+      // REGRA: Mensagem enviada pelo T.I só pausa o tempo se o chamado estiver EFETIVAMENTE "Em Atendimento"
+      // Na Fila T.I (status aprovado), mensagens NÃO pausam o tempo do T.I.
+      if (isInService && currentOwner !== 'sector') {
         currentOwner = 'paused'
         lastUnansweredTiMessage = evt.comment
       }
@@ -393,7 +412,9 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
   const tiMinutes = Math.max(0, accumulatedTiMinutes)
   const sectorMinutes = Math.max(0, accumulatedSectorMinutes)
   const pausedMinutes = Math.max(0, accumulatedPausedMinutes)
-  const isWaitingResponse = !isTicketClosed && currentOwner === 'paused'
+  
+  // O chamado só pode estar no estado de "Aguardando Resposta" (pausado) se estiver com status "em_atendimento"
+  const isWaitingResponse = chamado.status === 'em_atendimento' && !isTicketClosed && currentOwner === 'paused'
 
   return {
     totalMinutes,

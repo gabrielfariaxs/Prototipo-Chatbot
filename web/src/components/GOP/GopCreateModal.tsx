@@ -11,7 +11,8 @@ interface GopCreateModalProps {
 
 export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSuccess, userSector }) => {
   const [setor, setSetor] = useState(userSector || '')
-  const [responsavel, setResponsavel] = useState('')
+  const defaultResponsavel = (userSector && !userSector.includes(' - ')) ? '' : ''
+  const [responsavel, setResponsavel] = useState(defaultResponsavel)
   const [dataOcorrencia, setDataOcorrencia] = useState('')
   const [dataRegistro, setDataRegistro] = useState(new Date().toISOString().split('T')[0])
   const [nome, setNome] = useState('')
@@ -171,7 +172,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Responsável</label>
+                  <label className="text-sm font-bold text-[#1a2332]">Responsável *</label>
                   <input 
                     type="text" 
                     value={responsavel} 
@@ -211,7 +212,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
               </h3>
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Nome da Não Conformidade</label>
+                  <label className="text-sm font-bold text-[#1a2332]">Nome da Não Conformidade *</label>
                   <input 
                     type="text" 
                     value={nome} 
@@ -221,7 +222,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Descrição do Problema</label>
+                  <label className="text-sm font-bold text-[#1a2332]">Descrição do Problema *</label>
                   <textarea 
                     value={descricao} 
                     onChange={e => setDescricao(e.target.value)}

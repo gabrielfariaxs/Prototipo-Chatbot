@@ -641,8 +641,8 @@ export const ChamadosTiPanel: React.FC = () => {
           </div>
 
           {/* Tabs & Notifications & User Info */}
-          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 w-full md:w-auto">
-            <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs overflow-x-auto no-scrollbar max-w-full">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+            <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs min-w-max shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveTab('meus')}
@@ -723,76 +723,7 @@ export const ChamadosTiPanel: React.FC = () => {
                   )}
                 </button>
 
-                {/* Backdrop invisível para fechar ao clicar fora */}
-                {showNotificationDropdown && (
-                  <div
-                    className="fixed inset-0 z-40 bg-transparent"
-                    onClick={() => setShowNotificationDropdown(false)}
-                  />
-                )}
 
-                {/* Notifications Dropdown Popover */}
-                {showNotificationDropdown && (
-                  <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-full mt-2 sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-4 animate-in fade-in zoom-in-95">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-                      <div className="flex items-center gap-2">
-                        <Bell size={16} className="text-[#1f29de]" />
-                        <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">
-                          {unreadCount > 0 ? `Notificações (${unreadCount} não lidas)` : `Notificações (${relevantNotifications.length})`}
-                        </h4>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {unreadCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={markAllNotificationsAsRead}
-                            className="text-[11px] font-bold text-[#1f29de] hover:underline cursor-pointer"
-                          >
-                            Marcar Lidas
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={clearAllNotifications}
-                          className="text-[11px] font-bold text-red-500 hover:underline cursor-pointer"
-                        >
-                          Limpar Tudo
-                        </button>
-                      </div>
-                    </div>
-
-                    {relevantNotifications.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-slate-400 font-medium">
-                        Nenhuma notificação no momento.
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                        {relevantNotifications.slice(0, 15).map((n) => (
-                          <div
-                            key={n.id}
-                            onClick={() => {
-                              if (n.chamadoId) {
-                                const found = chamados.find(c => c.id === n.chamadoId)
-                                if (found) setSelectedChamado(found)
-                              }
-                              markNotificationAsRead(n.id)
-                              setShowNotificationDropdown(false)
-                            }}
-                            className={`p-3 rounded-xl border transition-all cursor-pointer ${n.read ? 'bg-slate-50 border-slate-100 opacity-70' : 'bg-blue-50/60 border-blue-200'}`}
-                          >
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-xs font-bold text-slate-800">{n.title}</span>
-                              <span className="text-[10px] font-semibold text-slate-400">
-                                {new Date(n.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-600 leading-relaxed">{n.message}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* User badge */}
@@ -928,6 +859,74 @@ export const ChamadosTiPanel: React.FC = () => {
         />
       )}
 
+      {/* Global Notifications Dropdown */}
+      {showNotificationDropdown && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-transparent"
+            onClick={() => setShowNotificationDropdown(false)}
+          />
+          <div className="fixed left-3 right-3 md:left-auto md:right-8 top-[72px] mt-2 md:w-[380px] bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 p-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-center gap-2">
+                <Bell size={16} className="text-[#1f29de]" />
+                <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">
+                  {unreadCount > 0 ? `Notificações (${unreadCount} não lidas)` : `Notificações (${relevantNotifications.length})`}
+                </h4>
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllNotificationsAsRead}
+                    className="text-[11px] font-bold text-[#1f29de] hover:underline cursor-pointer"
+                  >
+                    Marcar Lidas
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={clearAllNotifications}
+                  className="text-[11px] font-bold text-red-500 hover:underline cursor-pointer"
+                >
+                  Limpar Tudo
+                </button>
+              </div>
+            </div>
+
+            {relevantNotifications.length === 0 ? (
+              <div className="p-6 text-center text-xs text-slate-400 font-medium">
+                Nenhuma notificação no momento.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {relevantNotifications.slice(0, 15).map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => {
+                      if (n.chamadoId) {
+                        const found = chamados.find(c => c.id === n.chamadoId)
+                        if (found) setSelectedChamado(found)
+                      }
+                      markNotificationAsRead(n.id)
+                      setShowNotificationDropdown(false)
+                    }}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer ${n.read ? 'bg-slate-50 border-slate-100 opacity-70' : 'bg-blue-50/60 border-blue-200'}`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-bold text-slate-800">{n.title}</span>
+                      <span className="text-[10px] font-semibold text-slate-400">
+                        {new Date(n.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">{n.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

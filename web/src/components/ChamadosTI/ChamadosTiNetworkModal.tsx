@@ -37,11 +37,7 @@ export const ChamadosTiNetworkModal: React.FC<ChamadosTiNetworkModalProps> = ({ 
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
-  const handleOpenBoth = () => {
-    DASHBOARDS.forEach(d => {
-      window.open(d.url, '_blank', 'noopener,noreferrer')
-    })
-  }
+
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
@@ -130,16 +126,6 @@ export const ChamadosTiNetworkModal: React.FC<ChamadosTiNetworkModalProps> = ({ 
             ))}
           </div>
 
-          <div className="mt-6 flex justify-center">
-            <button
-              type="button"
-              onClick={handleOpenBoth}
-              className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg cursor-pointer hover:-translate-y-0.5"
-            >
-              <MonitorSmartphone size={18} />
-              <span>Abrir os 2 Dashboards Simultaneamente</span>
-            </button>
-          </div>
         </div>
 
       </div>
