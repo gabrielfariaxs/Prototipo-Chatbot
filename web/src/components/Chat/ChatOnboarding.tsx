@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Bell, X, Sparkles } from 'lucide-react'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Bell, X, Sparkles, Sun, Moon } from 'lucide-react'
 import { BrandLockup } from '../common/BrandLockup'
 import { supabase } from '../../lib/supabase'
+import { useTheme } from '../../lib/theme'
 
 interface ChatOnboardingProps {
   onStart: () => void;
@@ -21,48 +22,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenSolicitacaoMedica,
   onOpenChamadosTi
 }) => {
-  const PROCESS_NEWS = [
-    {
-      badge: "Manual EMULTEC — HELP 001",
-      title: "Novos procedimentos de Cirurgias & Orçamentos (Cadastro, Precificação, Aprovação e Separação)",
-      tag: "Orçamento & Estoque"
-    },
-    {
-      badge: "Manual EMULTEC — HELP 001",
-      title: "Passo a passo de Nota Fiscal de Devolução (Ref. Própria/Terceiro) e Transmissão SEFAZ",
-      tag: "Faturamento & NFe"
-    },
-    {
-      badge: "Manual EMULTEC — HELP 001",
-      title: "Gerenciamento de Notas Fiscais NFe (Emissão, Devoluções, Boletos e Transmissão SEFAZ)",
-      tag: "Faturamento"
-    },
-    {
-      badge: "Novo Procedimento",
-      title: "Transferência de Faturamento Filial para Matriz no Emultec passo a passo",
-      tag: "Faturamento Matriz"
-    }
-  ]
-
-  const [showNotification, setShowNotification] = useState(true)
-  const [newsIndex, setNewsIndex] = useState(0)
-
-  useEffect(() => {
-    setShowNotification(true)
-    const newsInterval = setInterval(() => {
-      setNewsIndex((prev) => (prev + 1) % PROCESS_NEWS.length)
-    }, 4500)
-
-    const timer = setTimeout(() => {
-      setShowNotification(false)
-    }, 14000)
-
-    return () => {
-      clearInterval(newsInterval)
-      clearTimeout(timer)
-    }
-  }, [])
-
+  const { isDark, toggleTheme } = useTheme()
   const [unreadTi, setUnreadTi] = useState(false)
   const [unreadGop, setUnreadGop] = useState(false)
 
@@ -131,85 +91,103 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   const CARDS = [
     {
       id: 'chatbot',
-      icon: <Bot size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'Assistente',
+      icon: <Bot size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Assistente I.A',
       title: 'Chatbot (MedIA)',
-      description: 'Suporte a procedimentos internos, dúvidas operacionais e consulta de materiais.',
+      description: 'Suporte inteligente a procedimentos internos, normas operacionais e consultas de materiais.',
       actionText: 'Acessar Chatbot',
-      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#1b497d] bg-[#eef4fa] border-[#b3c7e0]',
-      hoverTitle: 'group-hover:text-[#1b497d]',
-      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-blue-50 text-[#1f29de] border-blue-200/70',
+      iconTheme: 'bg-gradient-to-br from-[#1f29de] to-[#4338ca] text-white shadow-md shadow-blue-500/20',
+      hoverGlow: 'hover:border-[#1f29de]/50 hover:shadow-[0_16px_36px_rgba(31,41,222,0.14)]',
+      hoverTitle: 'group-hover:text-[#1f29de]',
+      actionTextColor: 'text-[#1f29de]',
+      badgeColor: 'bg-blue-500',
       action: onStart
     },
     {
       id: 'noc',
-      icon: <Layers size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'Operacional',
+      icon: <Layers size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Gestão Operacional',
       title: 'NOC (NCO)',
-      description: 'Registro, acompanhamento e tratativas de Não Conformidades Operacionais.',
-      actionText: 'Acessar NOC',
-      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#1b497d] bg-[#1b497d]/10 border-[#1b497d]/30',
-      hoverTitle: 'group-hover:text-[#1b497d]',
-      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      description: 'Registro, acompanhamento detalhado e tratativas de Não Conformidades Operacionais.',
+      actionText: 'Acessar Módulo NOC',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-indigo-50 text-indigo-700 border-indigo-200/70',
+      iconTheme: 'bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-md shadow-indigo-500/20',
+      hoverGlow: 'hover:border-indigo-500/50 hover:shadow-[0_16px_36px_rgba(79,70,229,0.14)]',
+      hoverTitle: 'group-hover:text-indigo-600',
+      actionTextColor: 'text-indigo-600',
       hasBadge: unreadGop,
+      badgeColor: 'bg-indigo-500',
       action: () => { if (onOpenNoc) onOpenNoc() }
     },
     {
       id: 'portfolio',
-      icon: <BookOpen size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'Catálogo',
-      title: 'Portfólio da Arthromed',
-      description: 'Catálogo completo de produtos, materiais ortopédicos e especificações.',
-      actionText: 'Abrir Portfólio',
-      actionIcon: <ExternalLink size={14} className="group-hover:translate-x-0.5 transition-transform" />,
-      tagColor: 'text-[#17a398] bg-[#17a398]/10 border-[#17a398]/30',
-      hoverTitle: 'group-hover:text-[#17a398]',
-      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      icon: <BookOpen size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Catálogo de Produtos',
+      title: 'Portfólio Arthromed',
+      description: 'Catálogo completo de produtos ortopédicos, especificações técnicas e instrumentais.',
+      actionText: 'Abrir Portfólio Arthromed',
+      actionIcon: <ExternalLink size={15} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />,
+      tagTheme: 'bg-teal-50 text-teal-700 border-teal-200/70',
+      iconTheme: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-md shadow-teal-500/20',
+      hoverGlow: 'hover:border-teal-500/50 hover:shadow-[0_16px_36px_rgba(20,184,166,0.14)]',
+      hoverTitle: 'group-hover:text-teal-600',
+      actionTextColor: 'text-teal-600',
       hasBadge: false,
+      badgeColor: 'bg-teal-500',
       action: handlePortfolioClick
     },
     {
       id: 'medic_portfolio',
-      icon: <FolderKanban size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'Novo Catálogo',
+      icon: <FolderKanban size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Catálogo de Produtos',
       title: 'Portfólio Medic',
-      description: 'Catálogo de produtos e soluções do ecossistema Medic.',
+      description: 'Catálogo atualizado de soluções, produtos e tecnologias do ecossistema Medic.',
       actionText: 'Abrir Portfólio Medic',
-      actionIcon: <ExternalLink size={14} className="group-hover:translate-x-0.5 transition-transform" />,
-      tagColor: 'text-[#0284c7] bg-[#0284c7]/10 border-[#0284c7]/30',
-      hoverTitle: 'group-hover:text-[#0284c7]',
-      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      actionIcon: <ExternalLink size={15} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />,
+      tagTheme: 'bg-sky-50 text-sky-700 border-sky-200/70',
+      iconTheme: 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20',
+      hoverGlow: 'hover:border-sky-500/50 hover:shadow-[0_16px_36px_rgba(14,165,233,0.14)]',
+      hoverTitle: 'group-hover:text-sky-600',
+      actionTextColor: 'text-sky-600',
       hasBadge: false,
+      badgeColor: 'bg-sky-500',
       action: handleMedicPortfolioClick
     },
     {
       id: 'solicitacao',
-      icon: <Stethoscope size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'CFM / ANS',
+      icon: <Stethoscope size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Regulatório CFM / ANS',
       title: 'Solicitação Médica',
-      description: 'Solicitações cirúrgicas, justificativas OPME e recursos de negativa anti-glosa.',
-      actionText: 'Acessar Módulo',
-      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#e05263] bg-[#e05263]/10 border-[#e05263]/30',
-      hoverTitle: 'group-hover:text-[#e05263]',
-      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      description: 'Solicitações cirúrgicas padronizadas, justificativas OPME e pareceres anti-glosa.',
+      actionText: 'Gerar Documento Clínico',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-rose-50 text-rose-700 border-rose-200/70',
+      iconTheme: 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/20',
+      hoverGlow: 'hover:border-rose-500/50 hover:shadow-[0_16px_36px_rgba(244,63,94,0.14)]',
+      hoverTitle: 'group-hover:text-rose-600',
+      actionTextColor: 'text-rose-600',
       hasBadge: false,
+      badgeColor: 'bg-rose-500',
       action: () => { if (onOpenSolicitacaoMedica) onOpenSolicitacaoMedica() }
     },
     {
       id: 'chamados_ti',
-      icon: <Monitor size={22} strokeWidth={2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'Suporte T.I',
+      icon: <Monitor size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Suporte Técnico T.I',
       title: 'Chamados de T.I',
-      description: 'Abertura e acompanhamento de suporte técnico com aprovação do gestor.',
-      actionText: 'Abrir Chamado',
-      actionIcon: <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />,
-      tagColor: 'text-[#6b5b95] bg-[#6b5b95]/10 border-[#6b5b95]/30',
-      hoverTitle: 'group-hover:text-[#6b5b95]',
-      btnBg: 'bg-[#1b497d] hover:bg-[#12345b]',
+      description: 'Abertura rápida e acompanhamento em tempo real de requisições de suporte de informática.',
+      actionText: 'Abrir Suporte T.I',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-purple-50 text-purple-700 border-purple-200/70',
+      iconTheme: 'bg-gradient-to-br from-purple-600 to-fuchsia-700 text-white shadow-md shadow-purple-500/20',
+      hoverGlow: 'hover:border-purple-500/50 hover:shadow-[0_16px_36px_rgba(168,85,247,0.14)]',
+      hoverTitle: 'group-hover:text-purple-600',
+      actionTextColor: 'text-purple-600',
       hasBadge: unreadTi,
+      badgeColor: 'bg-purple-500',
       action: () => { if (onOpenChamadosTi) onOpenChamadosTi() }
     }
   ]
@@ -217,144 +195,82 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   return (
     <motion.div
       key="onboarding"
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.25 }}
-      className="flex-1 flex flex-col items-center p-4 sm:p-6 lg:p-8 bg-[#f4f6fa] overflow-y-auto w-full min-h-full"
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+      className="flex-1 flex flex-col items-center p-4 sm:p-6 lg:p-10 bg-[#f8fafc] overflow-y-auto w-full min-h-full"
     >
-      <div className="w-full max-w-7xl flex flex-col items-center py-4 sm:py-6">
+      <div className="w-full max-w-6xl flex flex-col items-center py-2 sm:py-6">
         
-        {/* Banner de Notificação Flutuante de 10s (Vindo de baixo para cima) */}
-        <AnimatePresence>
-          {showNotification && (
-            <motion.div
-              initial={{ opacity: 0, y: 60, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 60, scale: 0.92 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 max-w-2xl z-50 overflow-hidden bg-gradient-to-r from-[#1b497d] via-[#1d4ed8] to-[#0f766e] text-white rounded-2xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.3)] border border-white/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 backdrop-blur-md"
-            >
-              <div className="flex items-center gap-3 z-10">
-                <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-inner">
-                    <Bell size={20} className="animate-bounce" />
-                  </div>
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                  </span>
-                </div>
-
-                <div className="flex flex-col text-left overflow-hidden min-h-[44px] justify-center">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider flex items-center gap-1">
-                      <Sparkles size={10} /> {PROCESS_NEWS[newsIndex].badge}
-                    </span>
-                    <span className="text-[10px] text-white/70 font-medium font-mono">
-                      {newsIndex + 1}/{PROCESS_NEWS.length} &bull; {PROCESS_NEWS[newsIndex].tag}
-                    </span>
-                  </div>
-                  <AnimatePresence mode="wait">
-                    <motion.p
-                      key={newsIndex}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -5 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2"
-                    >
-                      {PROCESS_NEWS[newsIndex].title}
-                    </motion.p>
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-end sm:self-center z-10 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={onStart}
-                  className="bg-white text-[#1b497d] hover:bg-emerald-50 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all shadow-xs hover:scale-105 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>Ver no Chatbot</span>
-                  <ArrowRight size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowNotification(false)}
-                  className="p-1.5 text-white/70 hover:text-white hover:bg-white/15 rounded-lg transition-colors cursor-pointer"
-                  title="Fechar notificação"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Barra de progresso do temporizador */}
-              <motion.div
-                initial={{ width: '100%' }}
-                animate={{ width: '0%' }}
-                transition={{ duration: 14, ease: 'linear' }}
-                className="absolute bottom-0 left-0 h-1 bg-emerald-400/90"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Header */}
-        <div className="text-center mb-6 sm:mb-8">
-          <div className="inline-flex items-center gap-2 mb-3">
+        {/* Top Header Hero */}
+        <div className="text-center mb-8 sm:mb-10 flex flex-col items-center w-full">
+          <div className="w-full flex items-center justify-center mb-4 px-2">
             <BrandLockup showAppName={true} />
           </div>
-          <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-[#1e293b] tracking-tight mb-1.5">
-            Módulos Corporativos
+          
+          <h1 className="font-display font-black text-2xl sm:text-3xl lg:text-4xl text-slate-900 tracking-tight mb-3">
+            Módulos Operacionais
           </h1>
-          <p className="text-xs sm:text-sm text-[#475569] max-w-[460px] mx-auto leading-relaxed">
-            Selecione um módulo operacional abaixo para iniciar suas atividades.
-          </p>
+
+          {/* Banner de Instrução em Destaque Neon Premium */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 text-blue-950 text-xs sm:text-sm font-bold shadow-xs transition-all hover:border-blue-300">
+            <div className="w-6 h-6 rounded-lg bg-[#1f29de] text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Sparkles size={13} />
+            </div>
+            <span>Clique diretamente em qualquer card abaixo para abrir o módulo desejado</span>
+          </div>
         </div>
 
-        {/* Totalmente Responsivo: 1 col mobile, 2 col tablet, 3 col desktop, 6 col telas grandes */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4 w-full">
+        {/* Grid de Cards Proporcionais e Elegantes (2 cols tablet / 3 cols desktop) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 w-full">
           {CARDS.map((card) => (
             <motion.div
               key={card.id}
               onClick={card.action}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.2 }}
-              className="group bg-white rounded-[16px] p-4 sm:p-5 border border-[#e2e8f0] shadow-[0_2px_12px_rgba(18,29,43,0.04)] hover:shadow-[0_8px_24px_rgba(18,29,43,0.08)] flex flex-col justify-between cursor-pointer transition-all min-h-[220px]"
+              whileHover={{ y: -5, scale: 1.015 }}
+              whileTap={{ scale: 0.985 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={`group relative bg-gradient-to-br from-white via-slate-50/50 to-white rounded-[22px] p-5 sm:p-6 border border-slate-200/90 ${card.hoverGlow} shadow-[0_4px_20px_rgba(15,23,42,0.03)] flex flex-col justify-between cursor-pointer transition-all duration-300 select-none min-h-[195px]`}
             >
+              {/* Header do Card: Ícone + Tag + Badge de Notificação */}
               <div>
-                <div className="w-10 h-10 bg-[#fafbfe] border border-[#e2e8f0] rounded-[11px] flex items-center justify-center text-[#1b497d] shadow-xs mb-3.5 group-hover:scale-105 transition-transform">
-                  {card.icon}
-                </div>
-                <span className={`eyebrow text-[9px] px-2 py-0.5 rounded-[6px] border inline-block mb-2 ${card.tagColor}`}>
-                  {card.tag}
-                </span>
-                <h2 className={`font-display font-extrabold text-base text-[#1e293b] mb-1.5 leading-snug ${card.hoverTitle} transition-colors flex items-center justify-between`}>
-                  <span>{card.title}</span>
-                  {(card as any).hasBadge && (
-                    <span className="relative flex h-2.5 w-2.5 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-11 h-11 rounded-[14px] ${card.iconTheme} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                    {card.icon}
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {(card as any).hasBadge && (
+                      <span className="relative flex h-3 w-3 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-2xs"></span>
+                      </span>
+                    )}
+                    <span className={`eyebrow text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 whitespace-nowrap ${card.tagTheme}`}>
+                      {card.tag}
                     </span>
-                  )}
+                  </div>
+                </div>
+
+                {/* Título e Descrição */}
+                <h2 className={`font-display font-black text-lg text-slate-900 mb-1.5 leading-snug ${card.hoverTitle} transition-colors`}>
+                  {card.title}
                 </h2>
-                <p className="text-[11px] text-[#475569] leading-relaxed mb-4">
+                <p className="text-xs text-slate-500 leading-relaxed font-normal">
                   {card.description}
                 </p>
               </div>
-              
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  card.action()
-                }}
-                className={`w-full ${card.btnBg} text-white py-2.5 rounded-[10px] text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs mt-auto cursor-pointer`}
-              >
-                <span>{card.actionText}</span>
-                {card.actionIcon}
-              </button>
+
+              {/* Rodapé Integrado do Card com Micro-interação */}
+              <div className="pt-3.5 mt-4 border-t border-slate-100/90 flex items-center justify-between text-xs font-extrabold transition-colors">
+                <span className={`group-hover:translate-x-0.5 transition-transform ${card.actionTextColor} font-bold`}>
+                  {card.actionText}
+                </span>
+                <div className="w-7 h-7 rounded-full bg-slate-100 group-hover:bg-[#1f29de] group-hover:text-white text-slate-500 flex items-center justify-center transition-all duration-300 shadow-2xs group-hover:shadow-xs group-hover:translate-x-0.5">
+                  {card.actionIcon}
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>

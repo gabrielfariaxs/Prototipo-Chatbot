@@ -880,7 +880,7 @@ export const FatureIA = ({ onBack }: FatureIAProps) => {
             </div>
             
             {/* Logs List */}
-            <div className="flex-1 overflow-y-auto pt-3 space-y-1 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+            <div className="flex-1 overflow-y-auto pt-3 space-y-1 pr-1 scrollbar-thin scrollbar-thumb-slate-300">
               {logs.length === 0 ? (
                 <div className="text-slate-600 italic">Aguardando início do processo...</div>
               ) : (

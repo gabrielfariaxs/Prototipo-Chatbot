@@ -74,7 +74,7 @@ export const TI_SHORTCUTS: TiShortcutItem[] = [
     title: 'Agenda Arthromed',
     description: 'Agendamentos & Cirurgias (Rede Local)',
     url: 'http://192.168.100.117/arthromed/agenda.php',
-    tag: 'Intranet',
+    tag: 'Agendamento',
     icon: Calendar,
     badgeColor: 'bg-teal-100 text-teal-800 border-teal-200/60',
     iconBgColor: 'bg-teal-50 border-teal-200 text-teal-600',

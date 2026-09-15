@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { 
   Stethoscope, FileText, Download, Copy, Sparkles, Send, Paperclip, X, Image as ImageIcon,
-  Loader2, Check, Eye, Code, Mic, MicOff, Pencil, User
+  Loader2, Check, Eye, Code, Mic, MicOff, Pencil, User, Sun, Moon
 } from 'lucide-react'
 import { generateResponse } from '../../lib/chat'
 import { processClinicalFile, type ProcessedFile } from '../../lib/pdf-reader'
+import { useTheme, setThemeMode } from '../../lib/theme'
 
 /**
  * Componente interativo para edição inline de campos entre colchetes [ ... ]
@@ -340,6 +341,7 @@ function ClinicalPaperDocument({
 }
 
 export function ClinicalDocPanel() {
+  const { isDark, toggleTheme } = useTheme()
   const [rawPrompt, setRawPrompt] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<ProcessedFile[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -857,35 +859,39 @@ Declaro que os materiais acima indicados são essenciais à execução segura e 
     <div className="w-full h-full bg-[#f8fafc] overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
         
-        {/* Header Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl shadow-md border border-slate-800 p-5 sm:p-6 overflow-hidden relative">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-amber-500 text-slate-950 rounded-xl flex items-center justify-center shadow-md shrink-0 font-extrabold mt-0.5">
-              <Stethoscope size={24} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-white">Solicitação Médica</h2>
-                <span className="bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase tracking-wide">
-                  Metodologia Anti-Glosa
-                </span>
+        {/* Header Banner - Clinical Rose & White Glassmorphism */}
+        <div className="bg-gradient-to-br from-white via-rose-50/40 to-white text-slate-900 rounded-[22px] shadow-[0_4px_24px_rgba(244,63,94,0.06)] border border-rose-200/80 p-5 sm:p-6 overflow-hidden relative">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-rose-500 to-pink-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20 shrink-0 mt-0.5">
+                <Stethoscope size={24} />
               </div>
-              <p className="text-xs text-slate-300 mt-1 max-w-[620px] leading-relaxed">
-                Central de documentação cirúrgica padronizada anti-glosa. Anexe fotos ou PDFs das comandas para extrair dados, unificar pacientes e compilar solicitações em Word (.docx).
-              </p>
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h2 className="font-display font-black text-xl sm:text-2xl tracking-tight text-slate-900">
+                    Solicitação Médica
+                  </h2>
+                  <span className="bg-rose-50 text-rose-700 text-[10px] font-extrabold px-3 py-1 rounded-full border border-rose-200/80 uppercase tracking-wider">
+                    Metodologia Anti-Glosa
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-[620px] leading-relaxed font-normal">
+                  Central de documentação cirúrgica padronizada anti-glosa. Anexe fotos ou PDFs das comandas para extrair dados, unificar pacientes e compilar solicitações em Word (.docx).
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0">
-            <span className="text-[11px] font-bold text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 flex items-center gap-1.5">
-              <Sparkles size={14} className="text-amber-400" />
-              Resolução CFM 2.318/2022
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium">Portfólio Medic & Arthromed</span>
+            <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0">
+              <span className="text-xs font-bold text-white bg-gradient-to-r from-rose-500 to-pink-600 px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5 whitespace-nowrap">
+                <Sparkles size={14} className="text-white shrink-0" />
+                Resolução CFM 2.318/2022
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider whitespace-nowrap">
+                Portfólio Medic & Arthromed
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* 3-Step Guided Workflow Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

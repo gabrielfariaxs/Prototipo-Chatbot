@@ -131,20 +131,20 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0b0f19]/60 backdrop-blur-sm flex justify-center items-center p-0 md:p-4">
+    <div className="fixed inset-0 z-50 bg-[#0b0f19]/70 backdrop-blur-sm flex justify-center items-center p-0 md:p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="bg-white w-full max-w-4xl h-full md:h-[90vh] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="bg-white dark:bg-slate-900 w-full max-w-4xl h-full md:h-[90vh] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-transparent dark:border-slate-800"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 border-b border-slate-100 bg-white shrink-0">
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Novo Relato</span>
-            <h2 className="text-2xl font-extrabold text-[#1a2332]">Registro de Não Conformidade Operacional</h2>
+            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Novo Relato</span>
+            <h2 className="text-2xl font-extrabold text-[#1a2332] dark:text-white">Registro de Não Conformidade Operacional</h2>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors">
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
             <X size={24} />
           </button>
         </div>
@@ -155,93 +155,93 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
             
             {/* 1. Informações Gerais */}
             <section>
-              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
-                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">1</span>
+              <h3 className="flex items-center gap-3 text-[#1a2332] dark:text-white text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-300 flex items-center justify-center text-sm font-bold">1</span>
                 Informações Gerais
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Setor *</label>
+                  <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Setor *</label>
                   <input 
                     type="text" 
                     value={setor} 
                     readOnly={!!userSector}
                     onChange={e => !userSector && setSetor(e.target.value)}
                     placeholder="Ex: Comercial, T.I..."
-                    className={`w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none text-slate-700 ${userSector ? 'bg-slate-100 cursor-not-allowed' : 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
+                    className={`w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none text-slate-700 dark:text-white bg-white dark:bg-slate-800 ${userSector ? 'bg-slate-100 dark:bg-slate-800/60 dark:text-slate-300 cursor-not-allowed' : 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Responsável *</label>
+                  <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Responsável *</label>
                   <input 
                     type="text" 
                     value={responsavel} 
                     onChange={e => setResponsavel(e.target.value)}
                     placeholder="Nome do responsável"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Data de Ocorrência</label>
+                  <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Data de Ocorrência</label>
                   <input 
                     type="date" 
                     value={dataOcorrencia} 
                     onChange={e => setDataOcorrencia(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-white"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Data de Registro</label>
+                  <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Data de Registro</label>
                   <input 
                     type="date" 
                     value={dataRegistro} 
                     onChange={e => setDataRegistro(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-white"
                   />
                 </div>
               </div>
             </section>
 
-            <hr className="border-slate-100" />
+            <hr className="border-slate-100 dark:border-slate-800" />
 
             {/* 2. O Problema */}
             <section>
-              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
-                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">2</span>
+              <h3 className="flex items-center gap-3 text-[#1a2332] dark:text-white text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-300 flex items-center justify-center text-sm font-bold">2</span>
                 O Problema
               </h3>
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Nome da Não Conformidade *</label>
+                  <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Nome da Não Conformidade *</label>
                   <input 
                     type="text" 
                     value={nome} 
                     onChange={e => setNome(e.target.value)}
                     placeholder="Ex.: Atraso na aprovação de pedidos de compra"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-700"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-bold text-[#1a2332]">Descrição do Problema *</label>
+                  <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Descrição do Problema *</label>
                   <textarea 
                     value={descricao} 
                     onChange={e => setDescricao(e.target.value)}
                     placeholder="Descreva o que acontece, onde e quem é afetado..."
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px] resize-none text-slate-700"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px] resize-none bg-white dark:bg-slate-800 text-slate-700 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
                 </div>
               </div>
             </section>
 
-            <hr className="border-slate-100" />
+            <hr className="border-slate-100 dark:border-slate-800" />
 
             {/* 3. Evidências */}
             <section>
-              <h3 className="flex items-center gap-3 text-[#1a2332] text-base font-bold mb-4">
-                <span className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-sm">3</span>
+              <h3 className="flex items-center gap-3 text-[#1a2332] dark:text-white text-base font-bold mb-4">
+                <span className="w-7 h-7 rounded-md bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-300 flex items-center justify-center text-sm font-bold">3</span>
                 Evidências <span className="text-red-500">*</span>
               </h3>
-              <div className="bg-red-50/50 border border-red-200 text-red-600 px-4 py-4 rounded-xl text-sm font-medium flex items-center gap-2 mb-4">
+              <div className="bg-red-50/50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-300 px-4 py-4 rounded-xl text-sm font-medium flex items-center gap-2 mb-4">
                 <AlertTriangle size={18} />
                 Sem evidências, o problema não será priorizado.
               </div>
@@ -253,8 +253,8 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                 onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-2xl transition-all p-8 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer group ${
                   isDragging 
-                    ? 'border-blue-500 bg-blue-50/80 ring-4 ring-blue-100 scale-[1.01]' 
-                    : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-blue-300'
+                    ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/80 ring-4 ring-blue-100 dark:ring-blue-900/50 scale-[1.01]' 
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-500'
                 }`}
               >
                 <input 
@@ -265,20 +265,20 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                   onChange={handleFileChange} 
                 />
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all ${
-                  isDragging ? 'bg-blue-600 text-white scale-110' : 'bg-blue-50 text-blue-600 group-hover:scale-110'
+                  isDragging ? 'bg-blue-600 text-white scale-110' : 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 group-hover:scale-110'
                 }`}>
                   <Upload size={28} />
                 </div>
                 {isDragging ? (
-                  <p className="text-blue-600 font-bold text-base mb-1.5 animate-pulse">
+                  <p className="text-blue-600 dark:text-blue-400 font-bold text-base mb-1.5 animate-pulse">
                     Solte os arquivos aqui para anexar
                   </p>
                 ) : (
                   <>
-                    <p className="text-[#1a2332] font-bold text-base mb-1.5">
-                      Arraste arquivos aqui ou <span className="text-blue-600">clique para selecionar</span>
+                    <p className="text-[#1a2332] dark:text-white font-bold text-base mb-1.5">
+                      Arraste arquivos aqui ou <span className="text-blue-600 dark:text-blue-400">clique para selecionar</span>
                     </p>
-                    <p className="text-slate-400 text-sm font-medium">PNG, JPG, PDF - prints, planilhas e documentos</p>
+                    <p className="text-slate-400 dark:text-slate-400 text-sm font-medium">PNG, JPG, PDF - prints, planilhas e documentos</p>
                   </>
                 )}
               </div>
@@ -286,7 +286,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
               {/* Lista de Arquivos Anexados */}
               {arquivos.length > 0 && (
                 <div className="space-y-2 mt-4">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
                     <span>Arquivos Anexados ({arquivos.length})</span>
                     <button
                       type="button"
@@ -294,16 +294,16 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                         e.stopPropagation()
                         setArquivos([])
                       }}
-                      className="text-red-500 hover:text-red-700 cursor-pointer text-[11px]"
+                      className="text-red-500 dark:text-red-400 hover:text-red-700 cursor-pointer text-[11px]"
                     >
                       Remover todos
                     </button>
                   </div>
                   {arquivos.map((file, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm">
                       <div className="flex items-center gap-2.5 truncate">
-                        <FileText size={18} className="text-blue-600 shrink-0" />
-                        <span className="font-semibold text-slate-700 truncate">{file.name}</span>
+                        <FileText size={18} className="text-blue-600 dark:text-blue-400 shrink-0" />
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 truncate">{file.name}</span>
                         <span className="text-xs text-slate-400 font-medium shrink-0">
                           ({(file.size / 1024).toFixed(0)} KB)
                         </span>
@@ -314,7 +314,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                           e.stopPropagation()
                           removeArquivo(idx)
                         }}
-                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
                         title="Remover arquivo"
                       >
                         <Trash2 size={16} />
@@ -331,14 +331,14 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-4 shrink-0">
-          <button onClick={onClose} className="px-6 py-3 text-[15px] font-bold text-slate-600 hover:bg-slate-200 bg-white border border-slate-200 rounded-xl transition-colors">
+        <div className="px-8 py-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-end gap-4 shrink-0">
+          <button onClick={onClose} className="px-6 py-3 text-[15px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors cursor-pointer">
             Cancelar
           </button>
           <button 
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-8 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-xl flex items-center gap-2.5 transition-colors shadow-lg shadow-blue-600/20"
+            className="px-8 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-xl flex items-center gap-2.5 transition-colors shadow-lg shadow-blue-600/20 cursor-pointer"
           >
             {isSubmitting ? (
               <Loader2 size={18} className="animate-spin" />

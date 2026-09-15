@@ -51,76 +51,45 @@ export const GopPanel: React.FC<GopPanelProps> = ({
       <style>{`.brand-filete-bar { height: 3px; background: linear-gradient(90deg, #1f29de 0%, #4338ca 100%); }`}</style>
       
       {/* Top Header */}
-      <div className="w-full bg-white border-b border-[#e6e9f2] sticky top-0 z-40 shadow-xs">
-        <div className="px-3 sm:px-6 lg:px-8 py-2.5 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 lg:gap-4">
+      <div className="w-full bg-white border-b border-[#e6e9f2] sticky top-0 z-40 shadow-xs shrink-0">
+        <div className="px-3 sm:px-5 lg:px-6 py-2.5 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 sm:gap-3">
 
           {/* Left section: Back button + Divider + Brand Logo */}
-          <div className="flex items-center justify-between w-full lg:w-auto gap-3 shrink-0">
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {onBackToMenu && (
-                <button
-                  type="button"
-                  onClick={onBackToMenu}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[11px] text-[#5b6276] hover:text-[#14161f] bg-[#f0f3fa] hover:bg-[#e4e9f5] border border-[#d8e0f0] transition-all cursor-pointer font-bold text-xs shrink-0 whitespace-nowrap shadow-2xs"
-                  title="Voltar ao Menu Principal"
-                >
-                  <ArrowLeft size={15} className="shrink-0" />
-                  <span className="hidden sm:inline whitespace-nowrap">Menu</span>
-                </button>
-              )}
-
-              {onBackToMenu && (
-                <div className="hidden sm:block w-px h-6 bg-[#e6e9f2] shrink-0" />
-              )}
-
-              {/* Logo / Title */}
-              <div className="flex items-center gap-2.5 shrink-0 select-none">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-[11px] bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
-                  <Layers size={17} className="shrink-0" />
-                </div>
-                <div className="shrink-0">
-                  <span className="font-display font-extrabold text-[#14161f] text-sm sm:text-base leading-none block whitespace-nowrap">
-                    Módulo NCO
-                  </span>
-                  <span className="eyebrow text-[9px] block mt-0.5 whitespace-nowrap text-slate-500 font-semibold tracking-wider uppercase">
-                    Não Conformidades Operacionais
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Actions (< lg) */}
-            <div className="flex lg:hidden items-center gap-1.5 shrink-0 select-none">
-              <div className="w-7 h-7 rounded-full bg-[#1f29de] text-white flex items-center justify-center text-[11px] font-bold shadow-2xs shrink-0">
-                {userInitials}
-              </div>
-              <button 
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {onBackToMenu && (
+              <button
                 type="button"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  localStorage.removeItem('userSector');
-                  window.location.reload();
-                }}
-                className="w-8 h-8 flex items-center justify-center rounded-[10px] border border-transparent hover:border-red-200 text-[#9097aa] hover:text-[#dc2f2f] hover:bg-[#feecec] cursor-pointer transition-colors shrink-0"
-                title="Sair da Conta"
+                onClick={onBackToMenu}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[11px] text-[#5b6276] hover:text-[#14161f] bg-[#f0f3fa] hover:bg-[#e4e9f5] border border-[#d8e0f0] transition-all cursor-pointer font-bold text-xs shrink-0 whitespace-nowrap shadow-2xs"
+                title="Voltar ao Menu Principal"
               >
-                <LogOut size={15} className="shrink-0" />
+                <ArrowLeft size={15} className="shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">Menu</span>
               </button>
-              {onClose && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-[10px] border border-slate-200/80 transition-colors cursor-pointer shrink-0 ml-0.5"
-                  title="Fechar"
-                >
-                  <X size={17} className="shrink-0" />
-                </button>
-              )}
+            )}
+
+            {onBackToMenu && (
+              <div className="hidden sm:block w-px h-6 bg-[#e6e9f2] shrink-0" />
+            )}
+
+            {/* Logo / Title */}
+            <div className="flex items-center gap-2.5 shrink-0 select-none">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-[11px] bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex items-center justify-center font-bold shadow-sm shadow-indigo-500/20 shrink-0">
+                <Layers size={17} className="shrink-0" />
+              </div>
+              <div className="shrink-0">
+                <span className="font-display font-extrabold text-[#14161f] text-sm sm:text-base leading-none block whitespace-nowrap">
+                  Módulo NCO
+                </span>
+                <span className="eyebrow text-[9px] block mt-0.5 whitespace-nowrap text-slate-500 font-semibold tracking-wider uppercase">
+                  Não Conformidades Operacionais
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Center section: Navigation tabs pill */}
-          <div className="flex items-center overflow-x-auto hide-scrollbar w-full lg:w-auto shrink-0 justify-start lg:justify-center">
+          <div className="flex items-center overflow-x-auto hide-scrollbar shrink-0 justify-start lg:justify-center">
             <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs min-w-max shrink-0 gap-0.5">
               {userLevel !== 'colaborador' && (
                 <button 
@@ -170,15 +139,15 @@ export const GopPanel: React.FC<GopPanelProps> = ({
             </div>
           </div>
 
-          {/* Right section: Desktop (>= lg) User Card + Logout + Close */}
-          <div className="hidden lg:flex items-center gap-2 shrink-0 select-none">
+          {/* Right section: User Card + Logout + Close */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 select-none">
             <div className="shrink-0 flex items-center gap-2.5 bg-[#fafbfe] border border-[#e6e9f2] px-2.5 py-1 rounded-[10px] min-w-max select-none">
               <div className="w-6 h-6 rounded-full bg-[#1f29de] text-white flex items-center justify-center text-[11px] font-bold shadow-2xs shrink-0">
                 {userInitials}
               </div>
-              <div className="flex flex-col shrink-0 text-left">
-                <span className="text-xs font-bold text-[#14161f] whitespace-nowrap leading-tight">{userName}</span>
-                <span className="text-[10px] text-[#5b6276] font-semibold whitespace-nowrap leading-tight">
+              <div className="hidden md:flex flex-col shrink-0 text-left max-w-[130px]">
+                <span className="text-xs font-bold text-[#14161f] whitespace-nowrap leading-tight truncate">{userName}</span>
+                <span className="text-[10px] text-[#5b6276] font-semibold whitespace-nowrap leading-tight truncate">
                   {userLevel === 'colaborador' ? 'Colaborador' : (activeTab === 'coo' || userSector.toLowerCase().includes('gestor') || userSector.toLowerCase().includes('diretoria')) ? 'Diretor de Operações / Gestor' : 'Líder de Setor'}
                 </span>
               </div>
