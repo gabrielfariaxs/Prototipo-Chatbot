@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react'
 import { X, CheckCircle2, XCircle, Wrench, ShieldCheck, Clock, AlertTriangle, Paperclip, FileText, Download, Send, MessageSquare, ArrowLeftRight, Edit, Trash2, ZoomIn, Image, Timer, Upload } from 'lucide-react'
 import type { ChamadoTI } from './types'
 import { SETORES_APROVADORES, formatDurationFull, getEffectiveCompletionDate, getChamadoTimeBreakdown } from './types'
+import { LinkifiedText } from '../common/LinkifiedText'
 
 interface ChamadosTiDetailModalProps {
   chamado: ChamadoTI
@@ -716,7 +717,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
           <div>
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Descrição da Solicitação</h4>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium leading-relaxed whitespace-pre-wrap text-slate-800">
-              {chamado.description}
+              <LinkifiedText text={chamado.description} isDarkBg={false} />
             </div>
           </div>
 
@@ -1058,7 +1059,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                             ? 'bg-[#1a2332] text-white rounded-tr-xs shadow-xs' 
                             : 'bg-white border border-slate-200 text-slate-800 rounded-tl-xs shadow-xs'
                       }`}>
-                        {msg.text}
+                        <LinkifiedText text={msg.text} isDarkBg={isMe} />
                       </div>
                     </div>
                   )

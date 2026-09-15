@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Activity, ExternalLink, Wifi, Server, MonitorSmartphone } from 'lucide-react'
+import { X, Activity, ExternalLink, Wifi, Server } from 'lucide-react'
 
 interface ChamadosTiNetworkModalProps {
   onClose: () => void

@@ -16,6 +16,7 @@ import { LoginScreen } from './common/LoginScreen'
 import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
 import { supabase } from '../lib/supabase'
+import { LinkifiedText } from './common/LinkifiedText'
 import type { Session } from '@supabase/supabase-js'
 
 type Message = {
@@ -1145,7 +1146,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             )}
           >
             {/* Unified Corporate Header */}
-            <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2 min-h-[56px]">
+            {step !== 'chamados_ti' && step !== 'gop' && (
+              <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2 min-h-[56px]">
               <div className="flex items-center gap-2 sm:gap-4 flex-1 flex-wrap sm:flex-nowrap">
                 {step !== 'onboarding' && (
                   <button 
@@ -1162,14 +1164,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Setor:</span>
                     <div className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-semibold border border-slate-200">
                       {sector}
-                    </div>
-                  </div>
-                )}
-                {step === 'gop' && (
-                  <div className="flex items-center gap-2">
-                    <div className="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md text-xs font-bold border border-indigo-100 flex items-center gap-1.5">
-                      <Layers size={14} />
-                      <span>Módulo NOC (NCO)</span>
                     </div>
                   </div>
                 )}
@@ -1262,6 +1256,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 </button>
               </div>
             </div>
+            )}
 
             <div className="flex-1 flex flex-col overflow-hidden relative">
               <AnimatePresence mode="wait">
@@ -1292,7 +1287,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 )}
 
                 {step === 'gop' && (
-                  <GopPanel onPreviewFile={setPreviewFile} />
+                  <GopPanel 
+                    onPreviewFile={setPreviewFile}
+                    onBackToMenu={() => setStep('onboarding')}
+                    onClose={handleClose}
+                  />
                 )}
 
                 {step === 'doc_clinica' && (
@@ -1300,7 +1299,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 )}
 
                 {step === 'chamados_ti' && (
-                  <ChamadosTiPanel />
+                  <ChamadosTiPanel 
+                    onBackToMenu={() => setStep('onboarding')}
+                    onClose={handleClose}
+                  />
                 )}
 
                 {step === 'sector' && (
@@ -1342,7 +1344,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                             >
                               {msg.role === 'user' ? (
                                 <div className="flex flex-col gap-3">
-                                  <span>{msg.text}</span>
+                                  <LinkifiedText text={msg.text} isDarkBg={true} />
                                   {msg.files && msg.files.length > 0 && (
                                     <div className="flex flex-col gap-2 w-full mt-1">
                                       {msg.files.map((file, idx) => (

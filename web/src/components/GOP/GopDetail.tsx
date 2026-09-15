@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { ChevronLeft, File, FileText, Image as ImageIcon, Calendar, Loader2, Trash2, Edit, Save, X, Paperclip, Plus, ArrowLeftRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { LinkifiedText } from '../common/LinkifiedText'
 
 export const SETORES_GOP = [
   'Operações',
@@ -511,13 +512,17 @@ return (
 
             <div className="flex flex-col gap-2">
               <h3 className="font-bold text-[#1a2332] text-[15px]">Descrição do Problema</h3>
-              <p className="text-slate-600 text-[15px] leading-relaxed break-words">{gargalo.descricao}</p>
+              <p className="text-slate-600 text-[15px] leading-relaxed break-words">
+                <LinkifiedText text={gargalo.descricao} />
+              </p>
             </div>
 
             {gargalo.consequencias && (
               <div className="flex flex-col gap-2 mt-2">
                 <h3 className="font-bold text-[#1a2332] text-[15px]">Consequências</h3>
-                <p className="text-slate-600 text-[15px] leading-relaxed">{gargalo.consequencias}</p>
+                <p className="text-slate-600 text-[15px] leading-relaxed">
+                  <LinkifiedText text={gargalo.consequencias} />
+                </p>
               </div>
             )}
 
