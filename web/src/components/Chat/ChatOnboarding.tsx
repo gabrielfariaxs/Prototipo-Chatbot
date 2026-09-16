@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Bell, X, Sparkles, Sun, Moon } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles } from 'lucide-react'
 import { BrandLockup } from '../common/BrandLockup'
 import { supabase } from '../../lib/supabase'
-import { useTheme } from '../../lib/theme'
 
 interface ChatOnboardingProps {
   onStart: () => void;
@@ -22,7 +21,6 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenSolicitacaoMedica,
   onOpenChamadosTi
 }) => {
-  const { isDark, toggleTheme } = useTheme()
   const [unreadTi, setUnreadTi] = useState(false)
   const [unreadGop, setUnreadGop] = useState(false)
 

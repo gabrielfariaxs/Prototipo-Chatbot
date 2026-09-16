@@ -1,6 +1,5 @@
 import React from 'react'
-import { Monitor, Link2, ChevronDown, Bell, LogOut, ArrowLeft, X, Sun, Moon } from 'lucide-react'
-import { useTheme } from '../../lib/theme'
+import { Monitor, Link2, ChevronDown, Bell, LogOut, ArrowLeft, X, KeyRound } from 'lucide-react'
 
 interface ChamadosTiHeaderProps {
   activeTab: 'meus' | 'aprovacoes' | 'ti' | 'historico'
@@ -21,6 +20,7 @@ interface ChamadosTiHeaderProps {
   onLogout: () => void
   onBackToMenu?: () => void
   onClose?: () => void
+  onOpenPortalPasswords?: () => void
 }
 
 export const ChamadosTiHeader: React.FC<ChamadosTiHeaderProps> = ({
@@ -42,9 +42,14 @@ export const ChamadosTiHeader: React.FC<ChamadosTiHeaderProps> = ({
   onLogout,
   onBackToMenu,
   onClose,
+  onOpenPortalPasswords,
 }) => {
-  const { isDark, toggleTheme } = useTheme()
-  const canAccessShortcuts = isTiLeader || isTi || hasFullAccess
+  const canAccessShortcuts = isTiLeader
+
+  const isComercialInterno = (() => {
+    const s = (userSector || localStorage.getItem('userSector') || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+    return s.includes('comercial') || s.includes('ti') || s.includes('tecnologia') || s.includes('gestor') || s.includes('diretor')
+  })()
 
   const renderTabs = () => (
     <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs shrink-0 min-w-max gap-0.5">

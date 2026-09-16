@@ -1,7 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Layers, Briefcase, DollarSign, Landmark, Calculator, Truck, ArrowRight, Building2, Package, Receipt, Wallet, PieChart, Sparkles, Sun, Moon } from 'lucide-react'
-import { useTheme, setThemeMode } from '../../lib/theme'
+import { Layers, Briefcase, Landmark, Calculator, Truck, ArrowRight, Building2, Receipt, Sparkles } from 'lucide-react'
 
 interface ChatSectorSelectProps {
   availableSectors: string[];
@@ -9,7 +8,6 @@ interface ChatSectorSelectProps {
 }
 
 export const ChatSectorSelect: React.FC<ChatSectorSelectProps> = ({ availableSectors, onSelectSector }) => {
-  const { isDark, toggleTheme } = useTheme()
 
   return (
     <motion.div

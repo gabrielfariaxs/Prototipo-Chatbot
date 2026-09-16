@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { LogOut, ArrowLeft, X, Layers } from 'lucide-react'
+import { LogOut, ArrowLeft, X, Layers, KeyRound } from 'lucide-react'
 import { GopList } from './GopList'
 import { GopDetail } from './GopDetail'
 import { DemandasList } from './DemandasList'
@@ -9,12 +9,14 @@ interface GopPanelProps {
   onPreviewFile?: (file: any) => void
   onBackToMenu?: () => void
   onClose?: () => void
+  onOpenPortalPasswords?: () => void
 }
 
 export const GopPanel: React.FC<GopPanelProps> = ({ 
   onPreviewFile, 
   onBackToMenu, 
-  onClose 
+  onClose,
+  onOpenPortalPasswords
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [userName, setUserName] = useState<string>('Usuário')

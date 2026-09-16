@@ -100,9 +100,10 @@ const isSameSector = (s1?: string, s2?: string) => {
 interface ChamadosTiPanelProps {
   onBackToMenu?: () => void
   onClose?: () => void
+  onOpenPortalPasswords?: () => void
 }
 
-export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, onClose }) => {
+export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, onClose, onOpenPortalPasswords }) => {
   const [chamados, setChamados] = useState<ChamadoTI[]>([])
   const [selectedChamado, setSelectedChamado] = useState<ChamadoTI | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -520,7 +521,7 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, 
     normalizedUserSec.includes('tecnologia') ||
     (userName || '').toLowerCase().includes('t.i') ||
     (userName || '').toLowerCase().includes('ti')
-  const isTiLeader = isTi && userLevel === 'lider'
+  const isTiLeader = isTi && userLevel !== 'colaborador'
   const hasFullAccess = isTi || isGestorOrDiretoria || isOperationsLeader
 
   // Notificações relevantes ao usuário logado
@@ -620,6 +621,7 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, 
         }}
         onBackToMenu={onBackToMenu}
         onClose={onClose}
+        onOpenPortalPasswords={onOpenPortalPasswords}
       />
 
       {/* Main Content */}
@@ -727,11 +729,13 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, 
       )}
 
       {/* Global Shortcuts Dropdown Popover */}
-      <ChamadosTiShortcutsDropdown
-        isOpen={showShortcutsDropdown}
-        onClose={() => setShowShortcutsDropdown(false)}
-        onOpenNetworkModal={() => setShowNetworkModal(true)}
-      />
+      {isTiLeader && (
+        <ChamadosTiShortcutsDropdown
+          isOpen={showShortcutsDropdown}
+          onClose={() => setShowShortcutsDropdown(false)}
+          onOpenNetworkModal={() => setShowNetworkModal(true)}
+        />
+      )}
 
       {/* Global Notifications Dropdown */}
       <ChamadosTiNotificationsDropdown

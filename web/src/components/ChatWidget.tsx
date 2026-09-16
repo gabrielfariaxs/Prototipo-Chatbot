@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Layers, ArrowLeft, FileText, Paperclip, Shield, Clock, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, Volume2, VolumeX, BarChart2, Trash2, FileSpreadsheet, Plus, Edit3, Image as ImageIcon, Maximize2, History, Bot, Stethoscope, Sun, Moon } from 'lucide-react'
+import { MessageCircle, X, Send, User, Layers, ArrowLeft, FileText, Paperclip, Shield, Clock, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, Volume2, VolumeX, BarChart2, Trash2, FileSpreadsheet, Plus, Edit3, Image as ImageIcon, Maximize2, History, Bot, Stethoscope, KeyRound } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors } from '../lib/chat'
 import { cn } from '../lib/utils'
@@ -15,9 +15,9 @@ import { getCustomProcedures, canAccessProcedureHistory, type ProcedureItem } fr
 import { LoginScreen } from './common/LoginScreen'
 import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
+import { PortalPasswordsModal } from './common/PortalPasswordsModal'
 import { supabase } from '../lib/supabase'
 import { LinkifiedText } from './common/LinkifiedText'
-import { useTheme } from '../lib/theme'
 import type { Session } from '@supabase/supabase-js'
 
 type Message = {
@@ -36,7 +36,6 @@ type Message = {
 }
 
 export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDesktop?: boolean, hideToggle?: boolean }) => {
-  const { isDark, toggleTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(isDesktop)
   const [previewFile, setPreviewFile] = useState<{ name: string; base64: string; type: string; originalPdfBase64?: string; url?: string } | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -207,6 +206,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [procedureModalMode, setProcedureModalMode] = useState<'create' | 'edit' | 'delete'>('create')
   const [procedureModalData, setProcedureModalData] = useState<Partial<ProcedureItem> | null>(null)
   const [customProcedures, setCustomProcedures] = useState<ProcedureItem[]>([])
+  const [isPortalPasswordsModalOpen, setIsPortalPasswordsModalOpen] = useState(false)
 
   const canShowHistoryButton = () => {
     const userSec = sector || localStorage.getItem('userSector') || ''
@@ -338,21 +338,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
     setActiveSpeech(utterance)
     window.speechSynthesis.speak(utterance)
-  }
-
-  // Detecta passos numerados na resposta do bot
-  const parseSteps = (text: string): { intro: string; steps: string[] } | null => {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
-    const steps: string[] = []
-    const introLines: string[] = []
-    for (const line of lines) {
-      if (/^\d+[\.)\-]\s+.+/.test(line)) {
-        steps.push(line)
-      } else if (steps.length === 0) {
-        introLines.push(line)
-      }
-    }
-    return steps.length >= 2 ? { intro: introLines.join(' '), steps } : null
   }
 
 
@@ -1249,8 +1234,17 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     >
                       <Trash2 size={16} />
                     </button>
-
                   </>
+                )}
+                {(step === 'sector' || step === 'login' || step === 'chat') && (
+                  <button
+                    type="button"
+                    onClick={() => setIsPortalPasswordsModalOpen(true)}
+                    className="p-2 border border-amber-200 text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-full transition-all shadow-2xs cursor-pointer flex-shrink-0"
+                    title="Senhas dos Portais"
+                  >
+                    <KeyRound size={18} />
+                  </button>
                 )}
                 <button
                   onClick={handleClose}
@@ -1296,6 +1290,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     onPreviewFile={setPreviewFile}
                     onBackToMenu={() => setStep('onboarding')}
                     onClose={handleClose}
+                    onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
                   />
                 )}
 
@@ -1307,6 +1302,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   <ChamadosTiPanel 
                     onBackToMenu={() => setStep('onboarding')}
                     onClose={handleClose}
+                    onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
                   />
                 )}
 
@@ -1574,6 +1570,12 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
           userSector={sector || localStorage.getItem('userSector') || undefined}
         />
       )}
+
+      {/* Modal de Senhas dos Portais (Comercial Interno) */}
+      <PortalPasswordsModal
+        isOpen={isPortalPasswordsModalOpen}
+        onClose={() => setIsPortalPasswordsModalOpen(false)}
+      />
 
       {/* Modal de Pré-visualização Premium */}
       <FilePreviewModal 

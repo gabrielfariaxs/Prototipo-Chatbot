@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { 
   Stethoscope, FileText, Download, Copy, Sparkles, Send, Paperclip, X, Image as ImageIcon,
-  Loader2, Check, Eye, Code, Mic, MicOff, Pencil, User, Sun, Moon
+  Loader2, Check, Eye, Code, Mic, MicOff, Pencil, User
 } from 'lucide-react'
 import { generateResponse } from '../../lib/chat'
 import { processClinicalFile, type ProcessedFile } from '../../lib/pdf-reader'
-import { useTheme, setThemeMode } from '../../lib/theme'
 
 /**
  * Componente interativo para edição inline de campos entre colchetes [ ... ]
@@ -341,7 +340,6 @@ function ClinicalPaperDocument({
 }
 
 export function ClinicalDocPanel() {
-  const { isDark, toggleTheme } = useTheme()
   const [rawPrompt, setRawPrompt] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<ProcessedFile[]>([])
   const [isLoading, setIsLoading] = useState(false)
