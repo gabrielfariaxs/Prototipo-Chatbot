@@ -88,8 +88,28 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="pt-br" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        <style dangerouslySetInnerHTML={{ __html: `svg { max-width: 100%; }` }} />
+        <style dangerouslySetInnerHTML={{ __html: `
+          svg { max-width: 100%; }
+          html, body { margin: 0; padding: 0; }
+          body:not(.app-loaded) { opacity: 0 !important; }
+          body.app-loaded { opacity: 1 !important; transition: opacity 0.12s ease-in; }
+          button { appearance: none; -webkit-appearance: none; background: transparent; border: none; }
+        ` }} />
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            function reveal() {
+              if (document.body) document.body.classList.add('app-loaded');
+            }
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+              setTimeout(reveal, 10);
+            } else {
+              document.addEventListener('DOMContentLoaded', reveal);
+              window.addEventListener('load', reveal);
+            }
+            setTimeout(reveal, 150);
+          })();
+        ` }} />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         {children}
