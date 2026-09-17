@@ -235,6 +235,21 @@ html, body {
   background: #94a3b8;
 }
 
+/* Explicit brand primary color utilities for Tailwind v4 */
+.bg-\[\#1f29de\] {
+  background-color: #1f29de !important;
+}
+.hover\:bg-\[\#1a22b8\]:hover {
+  background-color: #1a22b8 !important;
+}
+.text-\[\#1f29de\] {
+  color: #1f29de !important;
+}
+.border-\[\#1f29de\] {
+  border-color: #1f29de !important;
+}
+
+
 
 
 

@@ -19,7 +19,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 }) => {
   const defaultSector = userSector === 'T.I' ? 'none' : 'none'
   const [title, setTitle] = useState('')
-  const defaultRequester = (userName && userName.includes(' - ')) ? '' : (userName || '')
+  const defaultRequester = (userName && !userName.startsWith('Líder') && !userName.startsWith('Colaborador') && !userName.startsWith('COO')) ? userName : ''
   const [requesterName, setRequesterName] = useState(defaultRequester)
   const [priority, setPriority] = useState<ChamadoPriority>('media')
   const [approverSector, setApproverSector] = useState(defaultSector)
@@ -367,14 +367,16 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+              className="px-4 py-2.5 text-xs font-bold text-slate-700 rounded-xl transition-colors cursor-pointer"
+              style={{ backgroundColor: '#f1f5f9', color: '#334155' }}
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all disabled:opacity-50 cursor-pointer"
+              style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
             >
               <Send size={14} />
               <span>{submitting ? 'Abrindo...' : 'Enviar Chamado'}</span>

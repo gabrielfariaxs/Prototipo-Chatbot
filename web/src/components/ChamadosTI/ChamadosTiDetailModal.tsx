@@ -293,7 +293,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                    style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
                   >
                     <Edit size={14} />
                     <span>Editar Chamado</span>
@@ -343,7 +344,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
                 >
                   <Edit size={13} />
                   <span>Editar</span>
@@ -952,7 +954,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => onUpdateStatus(chamado.id, 'em_atendimento', { techName: userName })}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-[#1a2332] hover:bg-[#253043] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer whitespace-nowrap"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer whitespace-nowrap"
+                  style={{ backgroundColor: '#1a2332', color: '#ffffff' }}
                 >
                   <Wrench size={16} />
                   <span>Assumir Chamado</span>
@@ -971,7 +974,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowResolveForm(true)}
-                    className="w-full bg-[#06df82] hover:bg-[#05b96c] text-[#14161f] hover:text-white py-2.5 rounded-[11px] text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                    className="w-full text-[#14161f] py-2.5 rounded-[11px] text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                    style={{ backgroundColor: '#06df82', color: '#14161f' }}
                   >
                     <ShieldCheck size={16} />
                     <span>Concluir Chamado</span>
@@ -1079,7 +1083,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               <button
                 type="submit"
                 disabled={!commentInput.trim()}
-                className="px-4 py-2.5 bg-[#1a2332] hover:bg-[#253043] disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                style={{ backgroundColor: '#1a2332', color: '#ffffff' }}
               >
                 <span>Enviar</span>
                 <Send size={14} />

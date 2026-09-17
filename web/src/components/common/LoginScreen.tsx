@@ -189,22 +189,30 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
                       <button
                         type="button"
                         onClick={() => setRole('lider')}
-                        className={`h-[44px] rounded-[11px] text-xs font-bold transition-all cursor-pointer ${
+                        className={`h-[44px] rounded-[11px] text-xs font-extrabold transition-all cursor-pointer border ${
                           role === 'lider'
-                            ? 'bg-[#1f29de] text-white shadow-xs'
-                            : 'bg-[#fafbfe] border border-[#e6e9f2] text-[#5b6276] hover:border-[#1f29de]'
+                            ? 'bg-[#1f29de] text-white shadow-xs border-[#1f29de]'
+                            : 'bg-[#fafbfe] border-[#e6e9f2] text-[#5b6276] hover:border-[#1f29de]'
                         }`}
+                        style={{
+                          backgroundColor: role === 'lider' ? '#1f29de' : '#fafbfe',
+                          color: role === 'lider' ? '#ffffff' : '#5b6276',
+                        }}
                       >
                         Líder de Setor
                       </button>
                       <button
                         type="button"
                         onClick={() => setRole('colaborador')}
-                        className={`h-[44px] rounded-[11px] text-xs font-bold transition-all cursor-pointer ${
+                        className={`h-[44px] rounded-[11px] text-xs font-extrabold transition-all cursor-pointer border ${
                           role === 'colaborador'
-                            ? 'bg-[#1f29de] text-white shadow-xs'
-                            : 'bg-[#fafbfe] border border-[#e6e9f2] text-[#5b6276] hover:border-[#1f29de]'
+                            ? 'bg-[#1f29de] text-white shadow-xs border-[#1f29de]'
+                            : 'bg-[#fafbfe] border-[#e6e9f2] text-[#5b6276] hover:border-[#1f29de]'
                         }`}
+                        style={{
+                          backgroundColor: role === 'colaborador' ? '#1f29de' : '#fafbfe',
+                          color: role === 'colaborador' ? '#ffffff' : '#5b6276',
+                        }}
                       >
                         Colaborador
                       </button>
@@ -250,7 +258,11 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-[44px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer mt-2"
+                  className="w-full h-[44px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] text-sm font-extrabold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 cursor-pointer mt-2"
+                  style={{
+                    backgroundColor: '#1f29de',
+                    color: '#ffffff',
+                  }}
                 >
                   {loading ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -316,7 +328,11 @@ export function LoginScreen({ onSuccess, onBackToMenu }: LoginScreenProps) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-[44px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                    className="w-full h-[44px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] text-sm font-extrabold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                    style={{
+                      backgroundColor: '#1f29de',
+                      color: '#ffffff',
+                    }}
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <span>Enviar Instruções</span>}
                   </button>

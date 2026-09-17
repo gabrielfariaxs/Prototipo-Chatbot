@@ -51,68 +51,72 @@ export const ChamadosTiHeader: React.FC<ChamadosTiHeaderProps> = ({
     return s.includes('comercial') || s.includes('ti') || s.includes('tecnologia') || s.includes('gestor') || s.includes('diretor')
   })()
 
-  const renderTabs = () => (
-    <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs shrink-0 min-w-max gap-0.5">
-      <button
-        type="button"
-        onClick={() => setActiveTab('meus')}
-        className={`px-3 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-          activeTab === 'meus'
-            ? 'bg-[#1f29de] text-white shadow-xs'
-            : 'text-[#5b6276] hover:text-[#14161f] hover:bg-slate-100/60'
-        }`}
-      >
-        <span className="xl:hidden">{hasFullAccess ? 'Todos' : 'Setor'}</span>
-        <span className="hidden xl:inline">
-          {hasFullAccess ? 'Todos os Chamados' : 'Chamados do Setor'}
-        </span>
-      </button>
+  const renderTabs = () => {
+    const getTabProps = (tabKey: 'meus' | 'aprovacoes' | 'ti' | 'historico') => {
+      const isActive = activeTab === tabKey
+      return {
+        className: `px-3.5 py-1.5 rounded-[8px] text-xs font-extrabold transition-all cursor-pointer shrink-0 whitespace-nowrap relative flex items-center gap-1.5 shadow-2xs ${
+          isActive
+            ? 'bg-purple-700 text-white shadow-sm'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+        }`,
+        style: {
+          backgroundColor: isActive ? '#1f29de' : 'transparent',
+          color: isActive ? '#ffffff' : '#475569',
+        }
+      }
+    }
 
-      <button
-        type="button"
-        onClick={() => setActiveTab('aprovacoes')}
-        className={`px-3 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap relative flex items-center gap-1.5 ${
-          activeTab === 'aprovacoes'
-            ? 'bg-[#1f29de] text-white shadow-xs'
-            : 'text-[#5b6276] hover:text-[#14161f] hover:bg-slate-100/60'
-        }`}
-      >
-        <span>Aprovações</span>
-        {pendingApprovalsCount > 0 && (
-          <span className="min-w-[18px] h-[18px] px-1 bg-[#f4be56] text-[#14161f] rounded-full text-[10px] font-extrabold flex items-center justify-center shrink-0 shadow-2xs">
-            {pendingApprovalsCount}
+    return (
+      <div className="bg-[#fafbfe] border border-[#e6e9f2] rounded-[11px] p-1 flex items-center shadow-xs shrink-0 min-w-max gap-0.5">
+        <button
+          type="button"
+          onClick={() => setActiveTab('meus')}
+          {...getTabProps('meus')}
+        >
+          <span className="xl:hidden">{hasFullAccess ? 'Todos' : 'Setor'}</span>
+          <span className="hidden xl:inline">
+            {hasFullAccess ? 'Todos os Chamados' : 'Chamados do Setor'}
           </span>
-        )}
-      </button>
+        </button>
 
-      {hasFullAccess && (
-        <>
-          <button
-            type="button"
-            onClick={() => setActiveTab('ti')}
-            className={`px-3 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-              activeTab === 'ti'
-                ? 'bg-[#1f29de] text-white shadow-xs'
-                : 'text-[#5b6276] hover:text-[#14161f] hover:bg-slate-100/60'
-            }`}
-          >
-            <span>Fila T.I</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('historico')}
-            className={`px-3 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-              activeTab === 'historico'
-                ? 'bg-[#1f29de] text-white shadow-xs'
-                : 'text-[#5b6276] hover:text-[#14161f] hover:bg-slate-100/60'
-            }`}
-          >
-            <span>Histórico</span>
-          </button>
-        </>
-      )}
-    </div>
-  )
+        <button
+          type="button"
+          onClick={() => setActiveTab('aprovacoes')}
+          {...getTabProps('aprovacoes')}
+        >
+          <span>Aprovações</span>
+          {pendingApprovalsCount > 0 && (
+            <span 
+              className="min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-extrabold flex items-center justify-center shrink-0 shadow-2xs"
+              style={{ backgroundColor: '#f4be56', color: '#14161f' }}
+            >
+              {pendingApprovalsCount}
+            </span>
+          )}
+        </button>
+
+        {hasFullAccess && (
+          <>
+            <button
+              type="button"
+              onClick={() => setActiveTab('ti')}
+              {...getTabProps('ti')}
+            >
+              <span>Fila T.I</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('historico')}
+              {...getTabProps('historico')}
+            >
+              <span>Histórico</span>
+            </button>
+          </>
+        )}
+      </div>
+    )
+  }
 
   const renderActions = (isCompact = false) => (
     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 select-none">

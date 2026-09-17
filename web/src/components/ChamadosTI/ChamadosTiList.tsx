@@ -245,7 +245,11 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('kanban')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'kanban' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              style={{
+                backgroundColor: viewMode === 'kanban' ? '#1b497d' : 'transparent',
+                color: viewMode === 'kanban' ? '#ffffff' : '#64748b',
+              }}
             >
               <LayoutGrid size={14} />
               <span>Kanban</span>
@@ -253,7 +257,11 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === 'list' ? 'bg-[#1b497d] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              style={{
+                backgroundColor: viewMode === 'list' ? '#1b497d' : 'transparent',
+                color: viewMode === 'list' ? '#ffffff' : '#64748b',
+              }}
             >
               <List size={14} />
               <span>Lista</span>
@@ -280,7 +288,11 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
           <button
             type="button"
             onClick={onOpenCreateModal}
-            className="w-full sm:w-auto px-4 py-2 bg-[#1b497d] hover:bg-[#12345b] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+            style={{
+              backgroundColor: '#1b497d',
+              color: '#ffffff',
+            }}
           >
             <Plus size={16} />
             <span>Novo Chamado</span>
@@ -302,7 +314,11 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
           <button
             type="button"
             onClick={onOpenCreateModal}
-            className="mt-4 px-4 py-2 bg-[#1b497d] text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs"
+            className="mt-4 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm"
+            style={{
+              backgroundColor: '#1b497d',
+              color: '#ffffff',
+            }}
           >
             <Plus size={14} />
             <span>Abrir Chamado</span>

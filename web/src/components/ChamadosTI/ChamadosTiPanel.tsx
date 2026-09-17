@@ -97,6 +97,24 @@ const isSameSector = (s1?: string, s2?: string) => {
   return false
 }
 
+const inferSectorFromEmail = (email?: string): string => {
+  if (!email) return ''
+  const handle = email.split('@')[0].toLowerCase()
+  if (handle.includes('comercial_externo')) return 'Comercial externo'
+  if (handle.includes('comercial_interno') || handle.includes('comercial')) return 'Comercial interno'
+  if (handle.includes('instrumentacao')) return 'Instrumentação'
+  if (handle.includes('t_i') || handle.includes('ti') || handle.includes('suporte')) return 'T.I'
+  if (handle.includes('qualidade')) return 'Qualidade / RT'
+  if (handle.includes('gente_gestao') || handle.includes('rh')) return 'Gente Gestão'
+  if (handle.includes('financeiro')) return 'Financeiro'
+  if (handle.includes('estoque') || handle.includes('logistica')) return 'Estoque e logistica'
+  if (handle.includes('supply')) return 'Supply Chain'
+  if (handle.includes('compras')) return 'Compras'
+  if (handle.includes('operac')) return 'Operações'
+  if (handle.includes('gestor') || handle.includes('diretor')) return 'Gestor/Diretoria'
+  return ''
+}
+
 interface ChamadosTiPanelProps {
   onBackToMenu?: () => void
   onClose?: () => void
@@ -154,32 +172,53 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, 
     }
   }
 
-  // Carregar setor/nível e nome do usuário a partir do localStorage e sessão, com listener em tempo real
+  // Carregar setor/nível e nome do usuário a partir do localStorage e sessão, com auto-recuperação
   useEffect(() => {
     const updateUserInfo = () => {
-      const savedSector = localStorage.getItem('userSector') || 'Geral'
-      const savedLevel = localStorage.getItem('userLevel') || 'lider'
-      setUserSector(savedSector)
-      setUserLevel(savedLevel)
-
-      const levelLabel =
-        savedLevel === 'coo' ? 'COO/Diretoria' :
-        savedLevel === 'lider' ? 'Líder de Setor' :
-        'Colaborador'
+      let savedSector = localStorage.getItem('userSector') || ''
+      let savedLevel = localStorage.getItem('userLevel') || 'lider'
 
       supabase.auth.getSession().then(({ data: { session } }: any) => {
         if (session?.user) {
+          const metaSector = session.user.user_metadata?.sector || session.user.user_metadata?.department
+          const emailSector = inferSectorFromEmail(session.user.email)
+          const effectiveSector = (savedSector && savedSector !== 'Geral')
+            ? savedSector
+            : (metaSector || emailSector || 'T.I')
+
+          if (effectiveSector && effectiveSector !== savedSector) {
+            localStorage.setItem('userSector', effectiveSector)
+            savedSector = effectiveSector
+          }
+
+          setUserSector(effectiveSector)
+          setUserLevel(savedLevel)
+
+          const levelLabel =
+            savedLevel === 'coo' ? 'COO/Diretoria' :
+            savedLevel === 'lider' ? 'Líder de Setor' :
+            'Colaborador'
+
           const metaName = session.user.user_metadata?.full_name as string | undefined
           const displayName = (metaName && metaName.trim())
             ? metaName.trim()
-            : `${levelLabel} - ${savedSector}`
+            : `${levelLabel} - ${effectiveSector}`
           setUserName(displayName)
           const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
           setUserInitials(initials)
         } else {
-          const displayName = `${levelLabel} - ${savedSector}`
+          const effectiveSector = savedSector || 'T.I'
+          setUserSector(effectiveSector)
+          setUserLevel(savedLevel)
+
+          const levelLabel =
+            savedLevel === 'coo' ? 'COO/Diretoria' :
+            savedLevel === 'lider' ? 'Líder de Setor' :
+            'Colaborador'
+
+          const displayName = `${levelLabel} - ${effectiveSector}`
           setUserName(displayName)
-          const initials = savedSector.substring(0, 2).toUpperCase()
+          const initials = effectiveSector.substring(0, 2).toUpperCase()
           setUserInitials(initials)
         }
       })

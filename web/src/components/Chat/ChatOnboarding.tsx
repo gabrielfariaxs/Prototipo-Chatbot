@@ -22,52 +22,138 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenChamadosTi
 }) => {
   const [unreadTi, setUnreadTi] = useState(false)
+  const [unreadTiCount, setUnreadTiCount] = useState(0)
   const [unreadGop, setUnreadGop] = useState(false)
+  const [unreadGopCount, setUnreadGopCount] = useState(0)
+
+  const fetchNotifications = async () => {
+    try {
+      const userSector = (localStorage.getItem('userSector') || '').toLowerCase().trim()
+      const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().trim()
+      const userName = (localStorage.getItem('userName') || '').toLowerCase().trim()
+      
+      const isTi = userSector.includes('ti') || userSector.includes('tecnologia')
+      const isOpsLeader = userSector.includes('operaç') || userSector.includes('operac') || userSector.includes('gop') || userSector.includes('noc') || userLevel === 'coo' || userLevel === 'lider'
+      const hasFullAccess = userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
+
+      // ----------------------------------------------------
+      // 1. CHAMADOS DE T.I (Notificações, Redirecionamentos e Fila TI)
+      // ----------------------------------------------------
+      const { data: tiNotifs } = await supabase
+        .from('ti_notifications')
+        .select('*')
+        .eq('read', false)
+
+      let relevantTiNotifsCount = 0
+      if (tiNotifs && tiNotifs.length > 0) {
+        relevantTiNotifsCount = tiNotifs.filter((n: any) => {
+          if (isTi || hasFullAccess) return true
+          if (!n.target_sector) return true
+          const targetSec = (n.target_sector || '').toLowerCase()
+          if (targetSec === userSector || targetSec.includes(userSector)) return true
+          if (n.target_user && userName.includes((n.target_user || '').toLowerCase())) return true
+          return false
+        }).length
+      }
+
+      let tiQueueOpenCount = 0
+      if (isTi || (hasFullAccess && userSector.includes('ti'))) {
+        const { count } = await supabase
+          .from('ti_chamados')
+          .select('id', { count: 'exact', head: true })
+          .in('status', ['Aberto', 'Em Andamento', 'Novo'])
+        
+        if (count && count > 0) tiQueueOpenCount = count
+      }
+
+      const totalTiUnread = Math.max(relevantTiNotifsCount, tiQueueOpenCount)
+      setUnreadTiCount(totalTiUnread)
+      setUnreadTi(totalTiUnread > 0)
+
+      // ----------------------------------------------------
+      // 2. NÃO CONFORMIDADES NOC (GOP, Gargalos NCO e Demandas Operacionais)
+      // ----------------------------------------------------
+      const { data: gopNotifs } = await supabase
+        .from('gop_notifications')
+        .select('*')
+        .eq('read', false)
+
+      let relevantGopNotifsCount = 0
+      if (gopNotifs && gopNotifs.length > 0) {
+        relevantGopNotifsCount = gopNotifs.filter((n: any) => {
+          if (isOpsLeader || hasFullAccess) return true
+          if (!n.target_sector) return true
+          const targetSec = (n.target_sector || '').toLowerCase()
+          return targetSec === userSector || targetSec.includes(userSector)
+        }).length
+      }
+
+      // Consulta NCOs pendentes no gargalos/demandas direcionadas para o setor/líder
+      let openGargalosCount = 0
+      if (isOpsLeader || hasFullAccess) {
+        const { count } = await supabase
+          .from('gargalos')
+          .select('id', { count: 'exact', head: true })
+          .in('status', ['Pendente', 'Em Análise', 'Aberto', 'Novo'])
+        
+        if (count && count > 0) openGargalosCount = count
+      } else if (userSector) {
+        const { count } = await supabase
+          .from('gargalos')
+          .select('id', { count: 'exact', head: true })
+          .ilike('setor', `%${userSector}%`)
+          .in('status', ['Pendente', 'Em Análise', 'Aberto'])
+        
+        if (count && count > 0) openGargalosCount = count
+      }
+
+      const totalGopUnread = Math.max(relevantGopNotifsCount, openGargalosCount)
+      setUnreadGopCount(totalGopUnread)
+      setUnreadGop(totalGopUnread > 0)
+
+    } catch (e) {
+      // fail silently
+    }
+  }
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const userSector = (localStorage.getItem('userSector') || '').toLowerCase().trim()
-        const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().trim()
-        
-        const isTi = userSector.includes('ti') || userSector.includes('tecnologia')
-        const hasFullAccess = isTi || userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
-
-        // Verifica T.I
-        const { data: tiData } = await supabase.from('ti_notifications').select('target_sector, target_user').eq('read', false)
-        if (tiData && tiData.length > 0) {
-          const hasRelevantTi = tiData.some((n: any) => 
-            hasFullAccess || 
-            !n.target_sector || 
-            (n.target_sector || '').toLowerCase() === userSector ||
-            (n.target_user && localStorage.getItem('userName')?.toLowerCase().includes(n.target_user.toLowerCase()))
-          )
-          setUnreadTi(hasRelevantTi)
-        } else {
-          setUnreadTi(false)
-        }
-
-        // Verifica GOP
-        const { data: gopData } = await supabase.from('gop_notifications').select('target_sector').eq('read', false)
-        if (gopData && gopData.length > 0) {
-          const hasRelevantGop = gopData.some((n: any) => 
-            hasFullAccess || 
-            !n.target_sector || 
-            (n.target_sector || '').toLowerCase() === userSector
-          )
-          setUnreadGop(hasRelevantGop)
-        } else {
-          setUnreadGop(false)
-        }
-      } catch (e) {
-        // fail silently
-      }
-    }
-
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 60000) // 1 minuto
-    return () => clearInterval(interval)
+
+    // Realtime listener para atualização instantânea das tabelas relevantes
+    const channel = supabase
+      .channel('onboarding_realtime_all')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ti_notifications' }, fetchNotifications)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ti_chamados' }, fetchNotifications)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gop_notifications' }, fetchNotifications)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gargalos' }, fetchNotifications)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'demandas' }, fetchNotifications)
+      .subscribe()
+
+    const interval = setInterval(fetchNotifications, 25000) // Fallback 25s
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(interval)
+    }
   }, [])
+
+  const handleOpenChamadosTi = async () => {
+    setUnreadTiCount(0)
+    setUnreadTi(false)
+    try {
+      await supabase.from('ti_notifications').update({ read: true }).eq('read', false)
+    } catch (e) {}
+    if (onOpenChamadosTi) onOpenChamadosTi()
+  }
+
+  const handleOpenNoc = async () => {
+    setUnreadGopCount(0)
+    setUnreadGop(false)
+    try {
+      await supabase.from('gop_notifications').update({ read: true }).eq('read', false)
+    } catch (e) {}
+    if (onOpenNoc) onOpenNoc()
+  }
+
   const handlePortfolioClick = () => {
     if (onOpenPortfolio) {
       onOpenPortfolio()
@@ -117,8 +203,9 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       hoverTitle: 'group-hover:text-indigo-600',
       actionTextColor: 'text-indigo-600',
       hasBadge: unreadGop,
+      unreadCount: unreadGopCount,
       badgeColor: 'bg-indigo-500',
-      action: () => { if (onOpenNoc) onOpenNoc() }
+      action: handleOpenNoc
     },
     {
       id: 'portfolio',
@@ -185,8 +272,9 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       hoverTitle: 'group-hover:text-purple-600',
       actionTextColor: 'text-purple-600',
       hasBadge: unreadTi,
+      unreadCount: unreadTiCount,
       badgeColor: 'bg-purple-500',
-      action: () => { if (onOpenChamadosTi) onOpenChamadosTi() }
+      action: handleOpenChamadosTi
     }
   ]
 
@@ -239,12 +327,18 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {(card as any).hasBadge && (
+                    {(card as any).unreadCount && (card as any).unreadCount > 0 ? (
+                      <div className="flex items-center gap-1.5 bg-red-500 text-white px-2.5 py-0.5 rounded-full text-[11px] font-extrabold shadow-sm animate-pulse tracking-wide">
+                        <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                        <span>{(card as any).unreadCount} {(card as any).unreadCount === 1 ? 'novo' : 'novos'}</span>
+                      </div>
+                    ) : (card as any).hasBadge ? (
                       <span className="relative flex h-3 w-3 shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-2xs"></span>
                       </span>
-                    )}
+                    ) : null}
+
                     <span className={`eyebrow text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 whitespace-nowrap ${card.tagTheme}`}>
                       {card.tag}
                     </span>

@@ -668,7 +668,6 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [companyFilter, setCompanyFilter] = useState<'Todas' | 'Medic' | 'Arthromed' | 'Ambas'>('Todas')
-  const [showAllPasswords, setShowAllPasswords] = useState(false)
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({})
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
@@ -685,10 +684,18 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
   })
   const [formError, setFormError] = useState('')
 
-  // Delete Confirmation State
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  // Helper to ensure all default portals (Medic + Arthromed) are present and properly company-tagged
+  // Sector Permission Check (Visibilidade restrita ao Comercial Interno)
+  const currentSector = localStorage.getItem('userSector') || ''
+  const cleanSec = currentSector.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  const isComercialInterno = cleanSec.includes('comercial') && cleanSec.includes('interno')
+  const isTi = cleanSec.includes('ti') || cleanSec.includes('tecnologia') || cleanSec.includes('suporte')
+  const isGestor = cleanSec.includes('gestor') || cleanSec.includes('diretor') || cleanSec.includes('coo')
+  
+  const canViewPasswords = isComercialInterno || isTi || isGestor
+
+  // Helper to ensure all default portals (Medic + Arthromed) and custom local additions are present and properly company-tagged
   const mergeWithDefaults = (existingList: PortalCredential[]): PortalCredential[] => {
     const listToProcess = (!existingList || !Array.isArray(existingList) || existingList.length === 0)
       ? DEFAULT_PORTALS
@@ -702,18 +709,27 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
 
     const existingIds = new Set(sanitizedExisting.map(p => p.id))
     const existingNames = new Set(sanitizedExisting.map(p => (p.portal_name || '').toLowerCase().trim()))
+
+    // Local custom fallback
+    let localCustoms: PortalCredential[] = []
+    try {
+      const savedCustom = localStorage.getItem('custom_portal_passwords')
+      if (savedCustom) {
+        const parsed = JSON.parse(savedCustom)
+        if (Array.isArray(parsed)) {
+          localCustoms = parsed.filter(item => !existingIds.has(item.id) && !existingNames.has((item.portal_name || '').toLowerCase().trim()))
+        }
+      }
+    } catch {}
     
-    const missing = DEFAULT_PORTALS.filter(
+    const missingDefaults = DEFAULT_PORTALS.filter(
       def => !existingIds.has(def.id) && !existingNames.has((def.portal_name || '').toLowerCase().trim())
     )
 
-    if (missing.length > 0) {
-      return [...sanitizedExisting, ...missing]
-    }
-    return sanitizedExisting
+    return [...localCustoms, ...sanitizedExisting, ...missingDefaults]
   }
 
-  // Load Portals (Supabase + LocalStorage Fallback with Auto-Merge)
+  // Load Portals (Supabase + LocalStorage Fallback with Auto-Merge & Realtime Sync)
   useEffect(() => {
     if (!isOpen) return
 
@@ -746,6 +762,32 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
           const merged = mergeWithDefaults(data)
           setPortals(merged)
           localStorage.setItem('portal_passwords_v6', JSON.stringify(merged))
+
+          // Auto-seed missing default portals into Supabase in background so all users get them
+          const existingIds = new Set(data.map((d: any) => d.id))
+          const existingNames = new Set(data.map((d: any) => (d.portal_name || '').toLowerCase().trim()))
+          const missing = DEFAULT_PORTALS.filter(
+            def => !existingIds.has(def.id) && !existingNames.has((def.portal_name || '').toLowerCase().trim())
+          )
+          if (missing.length > 0) {
+            const cleanSeed = missing.map(m => ({
+              id: m.id,
+              portal_name: m.portal_name,
+              login: m.login || '',
+              password: m.password || '',
+              access_url: m.access_url || '',
+              observations: m.observations || '',
+              company: m.company || 'Medic',
+              created_at: m.created_at || new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }))
+            supabase.from('portal_passwords').upsert(cleanSeed).then(({ error: seedErr }) => {
+              if (seedErr && seedErr.message.includes('company')) {
+                const noComp = cleanSeed.map(({ company, ...rest }) => rest)
+                supabase.from('portal_passwords').upsert(noComp)
+              }
+            })
+          }
         }
       } catch (err) {
         console.warn('Erro ao carregar do Supabase, usando cache local:', err)
@@ -767,6 +809,16 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
     }
 
     fetchPortals()
+
+    // Realtime channel listener para refletir adições/edições em tempo real para todos os usuários
+    const channel = supabase
+      .channel('portal_passwords_realtime_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'portal_passwords' }, fetchPortals)
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [isOpen])
 
   if (!isOpen) return null
@@ -849,12 +901,30 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
 
       updatedList = portals.map(p => p.id === editingPortal.id ? updatedItem : p)
 
-      // Try Supabase update
+      // Try Supabase update with fallback schema
+      const dbPayload = {
+        id: updatedItem.id,
+        portal_name: updatedItem.portal_name,
+        login: updatedItem.login || '',
+        password: updatedItem.password || '',
+        access_url: updatedItem.access_url || '',
+        observations: updatedItem.observations || '',
+        company: updatedItem.company || 'Medic',
+        created_at: updatedItem.created_at || new Date().toISOString(),
+        updated_at: updatedItem.updated_at
+      }
+
       try {
-        await supabase
+        const { error } = await supabase
           .from('portal_passwords')
-          .update(updatedItem)
-          .eq('id', editingPortal.id)
+          .upsert(dbPayload)
+        if (error) {
+          console.warn('Aviso Supabase update:', error.message)
+          if (error.message.includes('company')) {
+            const { company, ...withoutComp } = dbPayload
+            await supabase.from('portal_passwords').upsert(withoutComp)
+          }
+        }
       } catch (err) {
         console.warn('Falha na atualização remota Supabase:', err)
       }
@@ -874,11 +944,37 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
 
       updatedList = [newItem, ...portals]
 
-      // Try Supabase insert
+      // Guard in local custom storage backup
       try {
-        await supabase
+        const savedCustom = localStorage.getItem('custom_portal_passwords')
+        const currentCustoms: PortalCredential[] = savedCustom ? JSON.parse(savedCustom) : []
+        localStorage.setItem('custom_portal_passwords', JSON.stringify([newItem, ...currentCustoms]))
+      } catch {}
+
+      // Try Supabase insert with fallback schema
+      const dbPayload = {
+        id: newItem.id,
+        portal_name: newItem.portal_name,
+        login: newItem.login || '',
+        password: newItem.password || '',
+        access_url: newItem.access_url || '',
+        observations: newItem.observations || '',
+        company: newItem.company || 'Medic',
+        created_at: newItem.created_at,
+        updated_at: newItem.updated_at
+      }
+
+      try {
+        const { error } = await supabase
           .from('portal_passwords')
-          .insert(newItem)
+          .upsert(dbPayload)
+        if (error) {
+          console.warn('Aviso Supabase insert:', error.message)
+          if (error.message.includes('company')) {
+            const { company, ...withoutComp } = dbPayload
+            await supabase.from('portal_passwords').upsert(withoutComp)
+          }
+        }
       } catch (err) {
         console.warn('Falha na inserção remota Supabase:', err)
       }
@@ -892,6 +988,16 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
   const handleDelete = async (id: string) => {
     const updatedList = portals.filter(p => p.id !== id)
     await savePortalsState(updatedList)
+
+    // Remove from custom local storage if present
+    try {
+      const savedCustom = localStorage.getItem('custom_portal_passwords')
+      if (savedCustom) {
+        const parsed: PortalCredential[] = JSON.parse(savedCustom)
+        localStorage.setItem('custom_portal_passwords', JSON.stringify(parsed.filter(p => p.id !== id)))
+      }
+    } catch {}
+
     setDeletingId(null)
 
     // Try Supabase delete
@@ -1001,49 +1107,58 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
             <button
               type="button"
               onClick={() => setCompanyFilter('Todas')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                companyFilter === 'Todas'
-                  ? 'bg-white text-slate-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              style={{
+                backgroundColor: companyFilter === 'Todas' ? '#1e293b' : 'transparent',
+                color: companyFilter === 'Todas' ? '#ffffff' : '#475569',
+              }}
             >
               Todas ({portals.length})
             </button>
             <button
               type="button"
               onClick={() => setCompanyFilter('Medic')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                companyFilter === 'Medic'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-emerald-700 hover:bg-emerald-100/60'
-              }`}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              style={{
+                backgroundColor: companyFilter === 'Medic' ? '#059669' : 'transparent',
+                color: companyFilter === 'Medic' ? '#ffffff' : '#047857',
+              }}
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: companyFilter === 'Medic' ? '#a7f3d0' : '#10b981' }}
+              />
               <span>Medic ({medicCount})</span>
             </button>
             <button
               type="button"
               onClick={() => setCompanyFilter('Arthromed')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                companyFilter === 'Arthromed'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-purple-700 hover:bg-purple-100/60'
-              }`}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              style={{
+                backgroundColor: companyFilter === 'Arthromed' ? '#7c3aed' : 'transparent',
+                color: companyFilter === 'Arthromed' ? '#ffffff' : '#6d28d9',
+              }}
             >
-              <span className="w-2 h-2 rounded-full bg-purple-400" />
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: companyFilter === 'Arthromed' ? '#e9d5ff' : '#a855f7' }}
+              />
               <span>Arthromed ({arthromedCount})</span>
             </button>
             {ambasCount > 0 && (
               <button
                 type="button"
                 onClick={() => setCompanyFilter('Ambas')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  companyFilter === 'Ambas'
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'text-amber-700 hover:bg-amber-100/60'
-                }`}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                style={{
+                  backgroundColor: companyFilter === 'Ambas' ? '#d97706' : 'transparent',
+                  color: companyFilter === 'Ambas' ? '#ffffff' : '#b45309',
+                }}
               >
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: companyFilter === 'Ambas' ? '#fde68a' : '#f59e0b' }}
+                />
                 <span>Ambas ({ambasCount})</span>
               </button>
             )}
@@ -1070,28 +1185,20 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowAllPasswords(!showAllPasswords)}
-              className={`flex items-center gap-1.5 px-3 py-2 border rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                showAllPasswords
-                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'
-              }`}
-              title={showAllPasswords ? 'Ocultar todas as senhas' : 'Exibir todas as senhas de uma vez'}
-            >
-              {showAllPasswords ? <EyeOff size={14} /> : <Eye size={14} />}
-              <span>{showAllPasswords ? 'Ocultar Senhas' : 'Exibir Senhas'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={openCreateForm}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer shrink-0 whitespace-nowrap"
-            >
-              <Plus size={15} strokeWidth={2.5} />
-              <span>Novo Portal</span>
-            </button>
+            {canViewPasswords && (
+              <button
+                type="button"
+                onClick={openCreateForm}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer shrink-0 whitespace-nowrap"
+                style={{
+                  backgroundColor: '#7c3aed',
+                  color: '#ffffff',
+                }}
+              >
+                <Plus size={15} strokeWidth={2.5} />
+                <span>Novo Portal</span>
+              </button>
+            )}
           </div>
 
         </div>
@@ -1127,7 +1234,7 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredPortals.map(portal => {
-                const isPasswordVisible = showAllPasswords || visiblePasswords[portal.id] || false
+                const isPasswordVisible = visiblePasswords[portal.id] || false
                 const isLoginCopied = copiedField === `login-${portal.id}`
                 const isPassCopied = copiedField === `pass-${portal.id}`
                 const pCompany = getPortalCompany(portal)
@@ -1193,24 +1300,26 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
                         </div>
 
                         {/* Card Action Buttons: Edit & Delete */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => openEditForm(portal)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="Editar credencial"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeletingId(portal.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Remover portal"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                        {canViewPasswords && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => openEditForm(portal)}
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              title="Editar credencial"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeletingId(portal.id)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              title="Remover portal"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Login Field */}
@@ -1230,11 +1339,12 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
                           <button
                             type="button"
                             onClick={() => copyToClipboard(portal.login, `login-${portal.id}`)}
-                            className={`p-1.5 rounded-lg border text-xs font-bold transition-all shrink-0 flex items-center gap-1 cursor-pointer ${
-                              isLoginCopied
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700'
-                            }`}
+                            className="p-1.5 rounded-lg border text-xs font-bold transition-all shrink-0 flex items-center gap-1 cursor-pointer"
+                            style={{
+                              backgroundColor: isLoginCopied ? '#ecfdf5' : '#ffffff',
+                              color: isLoginCopied ? '#059669' : '#64748b',
+                              borderColor: isLoginCopied ? '#a7f3d0' : '#e2e8f0',
+                            }}
                             title="Copiar login"
                           >
                             {isLoginCopied ? <Check size={13} /> : <Copy size={13} />}
@@ -1251,34 +1361,44 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
                               Senha de Acesso
                             </span>
                             <span className={`text-xs block mt-0.5 truncate select-all ${portal.password ? 'font-mono font-bold text-slate-800' : 'text-slate-400 font-medium italic'}`}>
-                              {portal.password ? (isPasswordVisible ? portal.password : '••••••••••••') : 'Sem senha cadastrada'}
+                              {portal.password
+                                ? (canViewPasswords ? (isPasswordVisible ? portal.password : '••••••••••••') : '••••••••••••')
+                                : 'Sem senha cadastrada'}
                             </span>
                           </div>
                         </div>
 
                         {portal.password ? (
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => togglePasswordVisibility(portal.id)}
-                              className="p-1.5 bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                              title={isPasswordVisible ? 'Ocultar senha' : 'Exibir senha'}
-                            >
-                              {isPasswordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(portal.password || '', `pass-${portal.id}`)}
-                              className={`p-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
-                                isPassCopied
-                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700'
-                              }`}
-                              title="Copiar senha"
-                            >
-                              {isPassCopied ? <Check size={13} /> : <Copy size={13} />}
-                            </button>
-                          </div>
+                          canViewPasswords ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility(portal.id)}
+                                className="p-1.5 bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                title={isPasswordVisible ? 'Ocultar senha' : 'Exibir senha'}
+                              >
+                                {isPasswordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(portal.password || '', `pass-${portal.id}`)}
+                                className="p-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer"
+                                style={{
+                                  backgroundColor: isPassCopied ? '#ecfdf5' : '#ffffff',
+                                  color: isPassCopied ? '#059669' : '#64748b',
+                                  borderColor: isPassCopied ? '#a7f3d0' : '#e2e8f0',
+                                }}
+                                title="Copiar senha"
+                              >
+                                {isPassCopied ? <Check size={13} /> : <Copy size={13} />}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1 shadow-2xs">
+                              <Lock size={10} />
+                              <span>Restrito Comercial Interno</span>
+                            </span>
+                          )
                         ) : (
                           <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md shrink-0">
                             Acesso Direto
@@ -1324,7 +1444,8 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            style={{ backgroundColor: '#f1f5f9', color: '#334155' }}
           >
             Fechar
           </button>
@@ -1365,37 +1486,49 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, company: 'Medic' })}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      formData.company === 'Medic'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
-                    }`}
+                    className="py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                    style={{
+                      backgroundColor: formData.company === 'Medic' ? '#059669' : '#f8fafc',
+                      color: formData.company === 'Medic' ? '#ffffff' : '#334155',
+                      borderColor: formData.company === 'Medic' ? '#059669' : '#e2e8f0',
+                    }}
                   >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: formData.company === 'Medic' ? '#a7f3d0' : '#10b981' }}
+                    />
                     <span>Medic</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, company: 'Arthromed' })}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      formData.company === 'Arthromed'
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-purple-50 hover:text-purple-700'
-                    }`}
+                    className="py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                    style={{
+                      backgroundColor: formData.company === 'Arthromed' ? '#7c3aed' : '#f8fafc',
+                      color: formData.company === 'Arthromed' ? '#ffffff' : '#334155',
+                      borderColor: formData.company === 'Arthromed' ? '#7c3aed' : '#e2e8f0',
+                    }}
                   >
-                    <span className="w-2 h-2 rounded-full bg-purple-400" />
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: formData.company === 'Arthromed' ? '#e9d5ff' : '#a855f7' }}
+                    />
                     <span>Arthromed</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, company: 'Ambas' })}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      formData.company === 'Ambas'
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-amber-50 hover:text-amber-700'
-                    }`}
+                    className="py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                    style={{
+                      backgroundColor: formData.company === 'Ambas' ? '#d97706' : '#f8fafc',
+                      color: formData.company === 'Ambas' ? '#ffffff' : '#334155',
+                      borderColor: formData.company === 'Ambas' ? '#d97706' : '#e2e8f0',
+                    }}
                   >
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: formData.company === 'Ambas' ? '#fde68a' : '#f59e0b' }}
+                    />
                     <span>Ambas</span>
                   </button>
                 </div>
@@ -1473,13 +1606,15 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  style={{ backgroundColor: '#f1f5f9', color: '#334155' }}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  className="px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  style={{ backgroundColor: '#7c3aed', color: '#ffffff' }}
                 >
                   {editingPortal ? 'Salvar Alterações' : 'Cadastrar Portal'}
                 </button>
@@ -1506,14 +1641,16 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
               <button
                 type="button"
                 onClick={() => setDeletingId(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                style={{ backgroundColor: '#f1f5f9', color: '#334155' }}
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(deletingId)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
               >
                 Sim, Remover
               </button>

@@ -1246,13 +1246,15 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     <KeyRound size={18} />
                   </button>
                 )}
-                <button
-                  onClick={handleClose}
-                  className="bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 p-2 rounded-full transition-all shadow-sm border border-slate-100"
-                  title={isDesktop ? "Encerrar Programa" : "Fechar Chat"}
-                >
-                  <X size={20} />
-                </button>
+                {step !== 'onboarding' && (
+                  <button
+                    onClick={handleClose}
+                    className="bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 p-2 rounded-full transition-all shadow-sm border border-slate-100 cursor-pointer"
+                    title={isDesktop ? "Encerrar Programa" : "Fechar Chat"}
+                  >
+                    <X size={20} />
+                  </button>
+                )}
               </div>
             </div>
             )}
