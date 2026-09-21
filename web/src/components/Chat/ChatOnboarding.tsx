@@ -285,6 +285,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       unreadCount: unreadTiCount,
       badgeColor: 'bg-purple-500',
       action: handleOpenChamadosTi
+    }
   ]
 
   return (
