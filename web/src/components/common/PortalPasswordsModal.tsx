@@ -686,14 +686,20 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
 
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  // Sector Permission Check (Visibilidade restrita ao Comercial Interno)
-  const currentSector = localStorage.getItem('userSector') || ''
+  // Sector & Role Permission Check (Visibilidade restrita ao Comercial Interno, T.I / Líder de T.I, Líderes e Gestores)
+  const currentSector = (typeof window !== 'undefined' ? localStorage.getItem('userSector') : '') || ''
+  const currentLevel = (typeof window !== 'undefined' ? localStorage.getItem('userLevel') : '') || ''
+  const currentRole = (typeof window !== 'undefined' ? localStorage.getItem('userRole') : '') || ''
   const cleanSec = currentSector.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  const cleanLevel = currentLevel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  const cleanRole = currentRole.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
   const isComercialInterno = cleanSec.includes('comercial') && cleanSec.includes('interno')
-  const isTi = cleanSec.includes('ti') || cleanSec.includes('tecnologia') || cleanSec.includes('suporte')
-  const isGestor = cleanSec.includes('gestor') || cleanSec.includes('diretor') || cleanSec.includes('coo')
+  const isTi = cleanSec.includes('ti') || cleanSec.includes('tecnologia') || cleanSec.includes('suporte') || cleanLevel.includes('ti') || cleanRole.includes('ti')
+  const isLider = cleanLevel.includes('lider') || cleanRole.includes('lider') || cleanRole.includes('líder') || cleanSec.includes('lider')
+  const isGestor = cleanSec.includes('gestor') || cleanSec.includes('diretor') || cleanSec.includes('coo') || cleanLevel === 'coo' || cleanRole.includes('gestor')
   
-  const canViewPasswords = isComercialInterno || isTi || isGestor
+  const canViewPasswords = isComercialInterno || isTi || isLider || isGestor
 
   // Helper to ensure all default portals (Medic + Arthromed) and custom local additions are present and properly company-tagged
   const mergeWithDefaults = (existingList: PortalCredential[]): PortalCredential[] => {
@@ -1058,8 +1064,8 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
                 <h3 className="text-base font-extrabold text-slate-800 tracking-tight leading-tight">
                   Senhas dos Portais
                 </h3>
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider border border-amber-200 shrink-0">
-                  Comercial Interno
+                <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-amber-200 shrink-0">
+                  Comercial Interno & T.I
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
@@ -1204,7 +1210,7 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
         </div>
 
         {/* Modal Content / Cards Grid */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50/30 hide-scrollbar">
+        <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50/30">
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
               <div className="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -1432,14 +1438,6 @@ export const PortalPasswordsModal: React.FC<PortalPasswordsModalProps> = ({ isOp
                 {filteredPortals.length} {filteredPortals.length === 1 ? 'portal cadastrado' : 'portais cadastrados'}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={resetToDefaults}
-              className="text-[11px] text-slate-400 hover:text-purple-600 font-semibold hover:underline cursor-pointer transition-colors"
-              title="Restaurar a lista padrão de 69 portais (Medic + Arthromed)"
-            >
-              (Restaurar Padrão)
-            </button>
           </div>
           <button
             type="button"

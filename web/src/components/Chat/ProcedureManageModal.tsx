@@ -445,7 +445,8 @@ export const ProcedureManageModal: React.FC<ProcedureManageModalProps> = ({
                       type="button"
                       onClick={handleStructureWithAI}
                       disabled={isAiProcessing || (attachedFiles.length === 0 && !conteudo.trim())}
-                      className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                      className="px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                      style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
                       title="A IA lê as fotos anexadas e gera os passos já vinculados às fotos"
                     >
                       {isAiProcessing ? (
@@ -557,11 +558,8 @@ export const ProcedureManageModal: React.FC<ProcedureManageModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting || isAiProcessing}
-                className={`px-5 py-2 text-xs font-bold rounded-xl text-white flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50 ${
-                  mode === 'delete' 
-                    ? 'bg-rose-600 hover:bg-rose-700' 
-                    : 'bg-[#1a2332] hover:bg-[#253043]'
-                }`}
+                className={`px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50`}
+                style={mode === 'delete' ? { backgroundColor: '#e11d48', color: '#ffffff' } : { backgroundColor: '#1a2332', color: '#ffffff' }}
               >
                 {isSubmitting ? (
                   <>

@@ -382,12 +382,13 @@ export const getChamadoTimeBreakdown = (chamado: ChamadoTI): ChamadoTimeBreakdow
       isInService = true
       lastUnansweredTiMessage = undefined
     } else if (evt.type === 'ti_message') {
-      // REGRA: Mensagem enviada pelo T.I só pausa o tempo se o chamado estiver EFETIVAMENTE "Em Atendimento"
-      // Na Fila T.I (status aprovado), mensagens NÃO pausam o tempo do T.I.
+      // REGRA: A pedido do usuário, mensagens enviadas pelo T.I não pausam mais o tempo.
+      /*
       if (isInService && currentOwner !== 'sector') {
         currentOwner = 'paused'
         lastUnansweredTiMessage = evt.comment
       }
+      */
     } else if (evt.type === 'requester_message') {
       // Solicitante respondeu à mensagem! O cronômetro do T.I é retomado
       if (currentOwner === 'paused') {

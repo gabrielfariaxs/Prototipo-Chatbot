@@ -26,16 +26,22 @@ try {
   console.error('Erro ao criar placeholder de validação:', e.message)
 }
 
-// 3. Inicia o servidor Vite Dev
+// 3. Inicia o servidor Bridge IMAP Locaweb (Porta 3001)
+const bridgeProcess = spawn('node scripts/email-bridge.js', { stdio: 'inherit', shell: true })
+
+// 4. Inicia o servidor Vite Dev (Porta 3000)
 const devProcess = spawn('npx vite dev --port 3000', { stdio: 'inherit', shell: true })
 
 devProcess.on('close', (code) => {
+  bridgeProcess.kill()
   process.exit(code || 0)
 })
 
 process.on('SIGINT', () => {
+  bridgeProcess.kill('SIGINT')
   devProcess.kill('SIGINT')
 })
 process.on('SIGTERM', () => {
+  bridgeProcess.kill('SIGTERM')
   devProcess.kill('SIGTERM')
 })

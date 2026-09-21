@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Layers, ArrowLeft, FileText, Paperclip, Shield, Clock, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, Volume2, VolumeX, BarChart2, Trash2, FileSpreadsheet, Plus, Edit3, Image as ImageIcon, Maximize2, History, Bot, Stethoscope, KeyRound } from 'lucide-react'
+import { MessageCircle, X, Send, User, Layers, ArrowLeft, FileText, Paperclip, Shield, Clock, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, Volume2, VolumeX, BarChart2, Trash2, FileSpreadsheet, Plus, Edit3, Image as ImageIcon, Maximize2, History, Bot, Stethoscope, KeyRound, Mail } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors } from '../lib/chat'
 import { cn } from '../lib/utils'
@@ -16,6 +16,7 @@ import { LoginScreen } from './common/LoginScreen'
 import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
 import { PortalPasswordsModal } from './common/PortalPasswordsModal'
+import { OutlookEmailsModal } from './common/OutlookEmailsModal'
 import { supabase } from '../lib/supabase'
 import { LinkifiedText } from './common/LinkifiedText'
 import type { Session } from '@supabase/supabase-js'
@@ -207,6 +208,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [procedureModalData, setProcedureModalData] = useState<Partial<ProcedureItem> | null>(null)
   const [customProcedures, setCustomProcedures] = useState<ProcedureItem[]>([])
   const [isPortalPasswordsModalOpen, setIsPortalPasswordsModalOpen] = useState(false)
+  const [isOutlookModalOpen, setIsOutlookModalOpen] = useState(false)
 
   const canShowHistoryButton = () => {
     const userSec = sector || localStorage.getItem('userSector') || ''
@@ -1172,7 +1174,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     {canShowHistoryButton() && (
                       <button
                         onClick={() => setIsHistoryModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-100 border border-indigo-700/60 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                        className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-700/60 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                        style={{ backgroundColor: '#1e1b4b', color: '#e0e7ff' }} /* indigo-950 and indigo-100 */
                         title="Histórico de adições, edições e exclusões de procedimentos (Gestor/Operações/TI)"
                       >
                         <History size={14} className="text-indigo-300" />
@@ -1185,7 +1188,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                         setProcedureModalMode('create')
                         setIsProcedureModalOpen(true)
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a2332] hover:bg-[#253043] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                      style={{ backgroundColor: '#1a2332', color: '#ffffff' }}
                       title="Adicionar ou cadastrar novo procedimento com fotos de passo a passo"
                     >
                       <Plus size={14} />
@@ -1237,14 +1241,26 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   </>
                 )}
                 {(step === 'sector' || step === 'login' || step === 'chat') && (
-                  <button
-                    type="button"
-                    onClick={() => setIsPortalPasswordsModalOpen(true)}
-                    className="p-2 border border-amber-200 text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-full transition-all shadow-2xs cursor-pointer flex-shrink-0"
-                    title="Senhas dos Portais"
-                  >
-                    <KeyRound size={18} />
-                  </button>
+                  <>
+                    {/* Ocultado para não ir para o deploy em produção 
+                    <button
+                      type="button"
+                      onClick={() => setIsOutlookModalOpen(true)}
+                      className="p-2 border border-blue-200 text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full transition-all shadow-2xs cursor-pointer flex-shrink-0"
+                      title="Central de E-mails Outlook"
+                    >
+                      <Mail size={18} />
+                    </button>
+                    */}
+                    <button
+                      type="button"
+                      onClick={() => setIsPortalPasswordsModalOpen(true)}
+                      className="p-2 border border-amber-200 text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-full transition-all shadow-2xs cursor-pointer flex-shrink-0"
+                      title="Senhas dos Portais"
+                    >
+                      <KeyRound size={18} />
+                    </button>
+                  </>
                 )}
                 {step !== 'onboarding' && (
                   <button
@@ -1275,6 +1291,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     }}
                     onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
                     onOpenChamadosTi={handleSelectChamadosTiModule}
+                    onOpenOutlookEmails={() => setIsOutlookModalOpen(true)}
                   />
                 )}
 
@@ -1577,6 +1594,16 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       <PortalPasswordsModal
         isOpen={isPortalPasswordsModalOpen}
         onClose={() => setIsPortalPasswordsModalOpen(false)}
+      />
+
+      {/* Modal da Central de E-mails Outlook Multicontas */}
+      <OutlookEmailsModal
+        isOpen={isOutlookModalOpen}
+        onClose={() => setIsOutlookModalOpen(false)}
+        onOpenTiTicket={() => {
+          setIsOutlookModalOpen(false)
+          handleSelectChamadosTiModule()
+        }}
       />
 
       {/* Modal de Pré-visualização Premium */}

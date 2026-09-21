@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { X, Send, AlertCircle, ShieldAlert, Monitor, Paperclip, FileText, Trash2, User, Upload } from 'lucide-react'
 import { SETORES_APROVADORES } from './types'
 import type { ChamadoPriority, ChamadoTI, ChamadoEvidenceFile } from './types'
@@ -49,6 +49,32 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
       reader.readAsDataURL(file)
     })
   }
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+
+      const imageFiles: File[] = []
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile()
+          if (blob) {
+            const fileName = `print_${Date.now()}_${i + 1}.png`
+            const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+            imageFiles.push(file)
+          }
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        processFiles(imageFiles)
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -323,7 +349,9 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
                   <>Arraste arquivos aqui ou <span className="text-blue-600">clique para selecionar</span></>
                 )}
               </p>
-              <p className="text-slate-400 text-xs font-medium">PNG, JPG, PDF - prints, planilhas e documentos</p>
+              <p className="text-slate-400 text-xs font-medium">
+                PNG, JPG, PDF — Pressione <kbd className="px-1.5 py-0.5 bg-slate-200 text-slate-800 rounded text-[11px] font-mono font-bold shadow-2xs">Ctrl + V</kbd> para colar print direto da área de transferência
+              </p>
             </div>
 
             {/* Lista de Arquivos Anexados */}

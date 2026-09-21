@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, History, PlusCircle, Edit3, Trash2, Search, Filter, Calendar, User, Layers, RefreshCw } from 'lucide-react'
-import { getProcedureLogs, type ProcedureLogItem } from '../../lib/procedures-service'
+import { X, History, PlusCircle, Edit3, Trash2, Search, Filter, Calendar, User, Layers, RefreshCw, ChevronDown, ChevronUp, FileText } from 'lucide-react'
+import { getProcedureLogs, type ProcedureLogItem, getCustomProcedures, type ProcedureItem } from '../../lib/procedures-service'
 
 interface ProcedureHistoryModalProps {
   onClose: () => void;
@@ -10,16 +10,22 @@ interface ProcedureHistoryModalProps {
 
 export const ProcedureHistoryModal: React.FC<ProcedureHistoryModalProps> = ({ onClose, userSector }) => {
   const [logs, setLogs] = useState<ProcedureLogItem[]>([])
+  const [procedures, setProcedures] = useState<ProcedureItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterAction, setFilterAction] = useState<'todos' | 'adicao' | 'edicao' | 'exclusao'>('todos')
   const [filterSector, setFilterSector] = useState<string>('todos')
+  const [expandedId, setExpandedId] = useState<string | number | null>(null)
 
   const fetchLogs = async () => {
     setLoading(true)
     try {
-      const data = await getProcedureLogs()
+      const [data, procs] = await Promise.all([
+        getProcedureLogs(),
+        getCustomProcedures()
+      ])
       setLogs(data)
+      setProcedures(procs)
     } catch (err) {
       console.error('Erro ao carregar histórico de procedimentos:', err)
     } finally {
@@ -231,45 +237,119 @@ export const ProcedureHistoryModal: React.FC<ProcedureHistoryModalProps> = ({ on
               </p>
             </div>
           ) : (
-            filteredLogs.map(log => (
-              <div 
-                key={log.id}
-                className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 hover:border-slate-300 transition-all shadow-2xs hover:shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {getActionBadge(log.acao)}
-                    <h4 className="text-sm font-bold text-slate-900 tracking-tight">{log.processo}</h4>
-                    <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                      Setor: {log.setor}
-                    </span>
-                    {log.sistema && (
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        {log.sistema}
-                      </span>
+            filteredLogs.map(log => {
+              const isExpanded = expandedId === log.id;
+              const relProc = (log.acao === 'adicao' || log.acao === 'edicao') 
+                ? procedures.find(p => String(p.id) === String(log.procedimento_id) || (p.processo && log.processo && p.processo.toLowerCase() === log.processo.toLowerCase()))
+                : null;
+
+              return (
+                <div 
+                  key={log.id}
+                  className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition-all shadow-2xs overflow-hidden"
+                >
+                  <div 
+                    onClick={() => setExpandedId(isExpanded ? null : log.id)}
+                    className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/50"
+                  >
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {getActionBadge(log.acao)}
+                        <h4 className="text-sm font-bold text-slate-900 tracking-tight">{log.processo}</h4>
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          Setor: {log.setor}
+                        </span>
+                        {log.sistema && (
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {log.sistema}
+                          </span>
+                        )}
+                      </div>
+
+                      {log.detalhes && (
+                        <p className="text-xs text-slate-600 leading-relaxed font-normal bg-slate-50 p-2 rounded-lg border border-slate-100 inline-block">
+                          {log.detalhes}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 text-[11px] text-slate-500 border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0 shrink-0">
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                          <User size={13} className="text-slate-400" />
+                          <span>{log.usuario_nome || 'Usuário do Sistema'}</span>
+                          {log.usuario_setor && <span className="text-slate-400">({log.usuario_setor})</span>}
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <Calendar size={12} />
+                          <span>{formatDate(log.data)}</span>
+                        </div>
+                      </div>
+                      
+                      <button className="flex items-center gap-1 mt-1 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md transition-colors font-medium">
+                        <FileText size={13} />
+                        {isExpanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
+                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-slate-100 bg-slate-50 overflow-hidden"
+                      >
+                        <div className="p-4 sm:p-5">
+                          {log.acao === 'exclusao' ? (
+                            <div className="text-sm text-slate-500 italic flex items-center gap-2">
+                              <Trash2 size={16} className="text-rose-400" />
+                              O procedimento foi excluído do sistema. Detalhes não disponíveis.
+                            </div>
+                          ) : relProc ? (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                                <h5 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                  <FileText size={16} className="text-indigo-500" />
+                                  Conteúdo (Estado Atual)
+                                </h5>
+                              </div>
+                              <div className="prose prose-sm prose-slate max-w-none prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:text-slate-50">
+                                {relProc.conteudo.split('\n\n').map((paragraph, i) => {
+                                  if (paragraph.startsWith('![')) {
+                                    const altMatch = paragraph.match(/!\[(.*?)\]/);
+                                    const urlMatch = paragraph.match(/\((.*?)\)/);
+                                    if (altMatch && urlMatch) {
+                                      return (
+                                        <div key={i} className="my-3 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                                          <img src={urlMatch[1]} alt={altMatch[1]} className="w-full h-auto object-cover max-h-64" />
+                                          <div className="bg-slate-100 p-2 text-[11px] text-slate-600 font-medium text-center">
+                                            {altMatch[1]}
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                  return (
+                                    <p key={i} className="text-slate-700 whitespace-pre-wrap text-sm" dangerouslySetInnerHTML={{ __html: paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-slate-500 italic">
+                              Conteúdo não encontrado ou procedimento já foi excluído.
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
                     )}
-                  </div>
-
-                  {log.detalhes && (
-                    <p className="text-xs text-slate-600 leading-relaxed font-normal bg-slate-50 p-2 rounded-lg border border-slate-100">
-                      {log.detalhes}
-                    </p>
-                  )}
+                  </AnimatePresence>
                 </div>
-
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 text-[11px] text-slate-500 border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0 shrink-0">
-                  <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                    <User size={13} className="text-slate-400" />
-                    <span>{log.usuario_nome || 'Usuário do Sistema'}</span>
-                    {log.usuario_setor && <span className="text-slate-400">({log.usuario_setor})</span>}
-                  </div>
-                  <div className="flex items-center gap-1 text-slate-400">
-                    <Calendar size={12} />
-                    <span>{formatDate(log.data)}</span>
-                  </div>
-                </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
 

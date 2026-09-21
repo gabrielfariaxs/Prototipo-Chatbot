@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles } from 'lucide-react'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles, Mail } from 'lucide-react'
 import { BrandLockup } from '../common/BrandLockup'
 import { supabase } from '../../lib/supabase'
 
@@ -11,6 +11,7 @@ interface ChatOnboardingProps {
   onOpenMedicPortfolio?: () => void;
   onOpenSolicitacaoMedica?: () => void;
   onOpenChamadosTi?: () => void;
+  onOpenOutlookEmails?: () => void;
 }
 
 export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ 
@@ -19,7 +20,8 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenPortfolio,
   onOpenMedicPortfolio,
   onOpenSolicitacaoMedica,
-  onOpenChamadosTi
+  onOpenChamadosTi,
+  onOpenOutlookEmails
 }) => {
   const [unreadTi, setUnreadTi] = useState(false)
   const [unreadTiCount, setUnreadTiCount] = useState(0)
@@ -32,7 +34,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().trim()
       const userName = (localStorage.getItem('userName') || '').toLowerCase().trim()
       
-      const isTi = userSector.includes('ti') || userSector.includes('tecnologia')
+      const isTi = userSector.includes('ti') || userSector.includes('t.i') || userSector.includes('tecnologia') || userSector.includes('suporte')
       const isOpsLeader = userSector.includes('operaç') || userSector.includes('operac') || userSector.includes('gop') || userSector.includes('noc') || userLevel === 'coo' || userLevel === 'lider'
       const hasFullAccess = userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
 
@@ -57,12 +59,20 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       }
 
       let tiQueueOpenCount = 0
-      if (isTi || (hasFullAccess && userSector.includes('ti'))) {
+      if (isTi || hasFullAccess) {
         const { count } = await supabase
           .from('ti_chamados')
           .select('id', { count: 'exact', head: true })
-          .in('status', ['Aberto', 'Em Andamento', 'Novo'])
+          .in('status', ['aprovado', 'em_atendimento', 'pendente_aprovacao'])
         
+        if (count && count > 0) tiQueueOpenCount = count
+      } else if (userSector) {
+        const { count } = await supabase
+          .from('ti_chamados')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'pendente_aprovacao')
+          .ilike('approver_sector', `%${userSector}%`)
+
         if (count && count > 0) tiQueueOpenCount = count
       }
 
@@ -275,7 +285,6 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       unreadCount: unreadTiCount,
       badgeColor: 'bg-purple-500',
       action: handleOpenChamadosTi
-    }
   ]
 
   return (

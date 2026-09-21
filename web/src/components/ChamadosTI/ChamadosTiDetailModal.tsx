@@ -112,6 +112,33 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
     }
   }
 
+  React.useEffect(() => {
+    if (!isEditing) return
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+
+      const imageFiles: File[] = []
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile()
+          if (blob) {
+            const fileName = `print_${Date.now()}_${i + 1}.png`
+            const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+            imageFiles.push(file)
+          }
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        processEditFiles(imageFiles)
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [isEditing])
+
   const removeEditEvidence = (index: number) => {
     setEditEvidenceFiles((prev) => prev.filter((_, i) => i !== index))
   }

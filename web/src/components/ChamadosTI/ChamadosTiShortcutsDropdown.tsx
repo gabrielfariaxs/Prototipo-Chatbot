@@ -34,6 +34,18 @@ export const TI_SHORTCUTS: TiShortcutItem[] = [
     hoverBorderColor: 'hover:border-emerald-200',
   },
   {
+    id: 'monitoramento-paraiba',
+    title: 'Monitoramento Paraíba',
+    description: 'Status dos Links de Internet (PB)',
+    url: 'http://192.168.100.73:3001/status/cp',
+    tag: 'Online',
+    icon: Activity,
+    badgeColor: 'bg-emerald-200/80 text-emerald-900',
+    iconBgColor: 'bg-emerald-100 border-emerald-200 text-emerald-700',
+    hoverBgColor: 'hover:bg-emerald-50/80',
+    hoverBorderColor: 'hover:border-emerald-200',
+  },
+  {
     id: 'pws',
     title: 'Portal PWS',
     description: 'Portal de Serviços Web PSFX',
