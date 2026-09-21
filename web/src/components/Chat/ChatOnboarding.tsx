@@ -285,7 +285,27 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       unreadCount: unreadTiCount,
       badgeColor: 'bg-purple-500',
       action: handleOpenChamadosTi
-    }
+    },
+    // O card abaixo será renderizado APENAS em ambiente local (npm run dev)
+    // No Vercel (produção) ele será automaticamente ocultado.
+    ...(import.meta.env.DEV ? [{
+      id: 'outlook_emails',
+      icon: <Mail size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Comunicação Corporativa',
+      title: 'Central E-mails Outlook',
+      description: 'Visualização, leitura, resumos com I.A e resposta de e-mails corporativos (200+ mensagens).',
+      actionText: 'Abrir Central Outlook',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-blue-50 text-blue-700 border-blue-200/70',
+      iconTheme: 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md shadow-blue-500/20',
+      hoverGlow: 'hover:border-blue-500/50 hover:shadow-[0_16px_36px_rgba(37,99,235,0.14)]',
+      hoverTitle: 'group-hover:text-blue-600',
+      actionTextColor: 'text-blue-600',
+      hasBadge: true,
+      unreadCount: 30,
+      badgeColor: 'bg-blue-600',
+      action: () => { if (onOpenOutlookEmails) onOpenOutlookEmails() }
+    }] : [])
   ]
 
   return (
