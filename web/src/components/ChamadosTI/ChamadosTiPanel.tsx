@@ -119,14 +119,30 @@ interface ChamadosTiPanelProps {
   onBackToMenu?: () => void
   onClose?: () => void
   onOpenPortalPasswords?: () => void
+  onBack?: () => void
+  onOpenNetworkModal?: () => void
+  onOpenEmailsModal?: () => void
+  onOpenAgendasModal?: () => void
+  onOpenHospedagemModal?: () => void
 }
 
-export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, onClose, onOpenPortalPasswords }) => {
+export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ 
+  onBackToMenu, 
+  onClose, 
+  onOpenPortalPasswords,
+  onBack, 
+  onOpenNetworkModal,
+  onOpenEmailsModal,
+  onOpenAgendasModal,
+  onOpenHospedagemModal,
+}) => {
   const [chamados, setChamados] = useState<ChamadoTI[]>([])
   const [selectedChamado, setSelectedChamado] = useState<ChamadoTI | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [showNetworkModal, setShowNetworkModal] = useState(false)
   const [showShortcutsDropdown, setShowShortcutsDropdown] = useState(false)
+  const showShortcuts = showShortcutsDropdown
+  const setShowShortcuts = setShowShortcutsDropdown
   const [activeTab, setActiveTab] = useState<'meus' | 'aprovacoes' | 'ti' | 'historico'>('meus')
   const [historySearch, setHistorySearch] = useState('')
 
@@ -658,7 +674,7 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, 
           localStorage.removeItem('userSector')
           window.location.reload()
         }}
-        onBackToMenu={onBackToMenu}
+        onBackToMenu={onBackToMenu || onBack}
         onClose={onClose}
         onOpenPortalPasswords={onOpenPortalPasswords}
       />
@@ -770,9 +786,11 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({ onBackToMenu, 
       {/* Global Shortcuts Dropdown Popover */}
       {isTiLeader && (
         <ChamadosTiShortcutsDropdown
-          isOpen={showShortcutsDropdown}
-          onClose={() => setShowShortcutsDropdown(false)}
-          onOpenNetworkModal={() => setShowNetworkModal(true)}
+          isOpen={showShortcuts}
+          onClose={() => setShowShortcuts(false)}
+          onOpenNetworkModal={onOpenNetworkModal || (() => setShowNetworkModal(true))}
+          onOpenAgendasModal={() => onOpenAgendasModal?.()}
+          onOpenHospedagemModal={() => onOpenHospedagemModal?.()}
         />
       )}
 

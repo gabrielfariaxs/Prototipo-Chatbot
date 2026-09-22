@@ -16,7 +16,8 @@ const DASHBOARDS = [
     lightBg: 'bg-emerald-50',
     borderColor: 'border-emerald-200',
     textColor: 'text-emerald-700',
-    hoverBorder: 'hover:border-emerald-400'
+    hoverBorder: 'hover:border-emerald-400',
+    ip: '192.168.100.73:3001'
   },
   {
     id: 'pe',
@@ -28,7 +29,21 @@ const DASHBOARDS = [
     lightBg: 'bg-blue-50',
     borderColor: 'border-blue-200',
     textColor: 'text-blue-800',
-    hoverBorder: 'hover:border-blue-400'
+    hoverBorder: 'hover:border-blue-400',
+    ip: '192.168.100.73:3001'
+  },
+  {
+    id: 'pb',
+    name: 'Medic PB',
+    subtitle: 'Filial Paraíba',
+    url: 'http://192.168.100.73:3001/status/cp',
+    color: 'indigo',
+    bgColor: 'bg-indigo-600',
+    lightBg: 'bg-indigo-50',
+    borderColor: 'border-indigo-200',
+    textColor: 'text-indigo-800',
+    hoverBorder: 'hover:border-indigo-400',
+    ip: '192.168.100.73:3001'
   }
 ]
 
@@ -90,7 +105,7 @@ export const ChamadosTiNetworkModal: React.FC<ChamadosTiNetworkModalProps> = ({ 
 
         {/* Cards Launchpad */}
         <div className="p-6 bg-slate-50">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {DASHBOARDS.map((dashboard) => (
               <div 
                 key={dashboard.id}
@@ -115,10 +130,10 @@ export const ChamadosTiNetworkModal: React.FC<ChamadosTiNetworkModalProps> = ({ 
                 </div>
 
                 <div className="relative z-10 mt-5 pt-4 border-t border-black/5 flex items-center justify-between">
-                  <code className={`text-[10px] font-mono font-bold ${dashboard.textColor} opacity-60`}>
-                    192.168.100.73:3001
+                  <code className={`text-[10px] font-mono font-bold ${dashboard.textColor} opacity-60 truncate mr-2`}>
+                    {dashboard.ip}
                   </code>
-                  <span className={`text-xs font-bold ${dashboard.textColor} flex items-center gap-1 group-hover:translate-x-1 transition-transform`}>
+                  <span className={`text-xs font-bold ${dashboard.textColor} flex items-center gap-1 group-hover:translate-x-1 transition-transform shrink-0`}>
                     Acessar <ExternalLink size={12} />
                   </span>
                 </div>

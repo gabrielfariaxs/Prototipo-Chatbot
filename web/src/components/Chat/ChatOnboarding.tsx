@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles, Mail } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles, Mail, X, Users } from 'lucide-react'
 import { BrandLockup } from '../common/BrandLockup'
 import { supabase } from '../../lib/supabase'
+import { getTodaysBirthdays } from '../../data/birthdays'
+import type { Birthday } from '../../data/birthdays'
+import { Cake } from 'lucide-react'
 
 interface ChatOnboardingProps {
   onStart: () => void;
@@ -12,6 +15,7 @@ interface ChatOnboardingProps {
   onOpenSolicitacaoMedica?: () => void;
   onOpenChamadosTi?: () => void;
   onOpenOutlookEmails?: () => void;
+  onOpenTreinamentos?: () => void;
 }
 
 export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ 
@@ -21,23 +25,26 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenMedicPortfolio,
   onOpenSolicitacaoMedica,
   onOpenChamadosTi,
-  onOpenOutlookEmails
+  onOpenOutlookEmails,
+  onOpenTreinamentos
 }) => {
   const [unreadTi, setUnreadTi] = useState(false)
   const [unreadTiCount, setUnreadTiCount] = useState(0)
   const [unreadGop, setUnreadGop] = useState(false)
   const [unreadGopCount, setUnreadGopCount] = useState(0)
+  const [showPortfolioSelection, setShowPortfolioSelection] = useState(false)
+
+  const userSector = (typeof window !== 'undefined' ? localStorage.getItem('userSector') || '' : '').toLowerCase().trim()
+  const userLevel = (typeof window !== 'undefined' ? localStorage.getItem('userLevel') || '' : '').toLowerCase().trim()
+  const userName = (typeof window !== 'undefined' ? localStorage.getItem('userName') || '' : '').trim()
+
+  const isTi = userSector.includes('ti') || userSector.includes('t.i') || userSector.includes('tecnologia') || userSector.includes('suporte')
+  const isOpsLeader = userSector.includes('operaç') || userSector.includes('operac') || userSector.includes('gop') || userSector.includes('noc') || userLevel === 'coo' || userLevel === 'lider'
+  const hasFullAccess = userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
+  const isTreinamentosAuthorized = isTi || isOpsLeader || hasFullAccess || userSector.includes('rh')
 
   const fetchNotifications = async () => {
     try {
-      const userSector = (localStorage.getItem('userSector') || '').toLowerCase().trim()
-      const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().trim()
-      const userName = (localStorage.getItem('userName') || '').toLowerCase().trim()
-      
-      const isTi = userSector.includes('ti') || userSector.includes('t.i') || userSector.includes('tecnologia') || userSector.includes('suporte')
-      const isOpsLeader = userSector.includes('operaç') || userSector.includes('operac') || userSector.includes('gop') || userSector.includes('noc') || userLevel === 'coo' || userLevel === 'lider'
-      const hasFullAccess = userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
-
       // ----------------------------------------------------
       // 1. CHAMADOS DE T.I (Notificações, Redirecionamentos e Fila TI)
       // ----------------------------------------------------
@@ -168,8 +175,8 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     if (onOpenPortfolio) {
       onOpenPortfolio()
     } else {
-      const portfolioUrl = localStorage.getItem('portfolio_url') || 'https://portifolioarthromed-medic.vercel.app'
-      window.open(portfolioUrl, '_blank')
+      const portfolioUrl = (typeof window !== 'undefined' ? localStorage.getItem('portfolio_url') : null) || 'https://portifolioarthromed-medic.vercel.app'
+      if (typeof window !== 'undefined') window.open(portfolioUrl, '_blank')
     }
   }
 
@@ -177,8 +184,8 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     if (onOpenMedicPortfolio) {
       onOpenMedicPortfolio()
     } else {
-      const medicPortfolioUrl = localStorage.getItem('medic_portfolio_url') || 'https://medic-portfolio.vercel.app/'
-      window.open(medicPortfolioUrl, '_blank')
+      const medicPortfolioUrl = (typeof window !== 'undefined' ? localStorage.getItem('medic_portfolio_url') : null) || 'https://medic-portfolio.vercel.app/'
+      if (typeof window !== 'undefined') window.open(medicPortfolioUrl, '_blank')
     }
   }
 
@@ -217,40 +224,77 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       badgeColor: 'bg-indigo-500',
       action: handleOpenNoc
     },
-    {
-      id: 'portfolio',
-      icon: <BookOpen size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'Catálogo de Produtos',
-      title: 'Portfólio Arthromed',
-      description: 'Catálogo completo de produtos ortopédicos, especificações técnicas e instrumentais.',
-      actionText: 'Abrir Portfólio Arthromed',
-      actionIcon: <ExternalLink size={15} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />,
-      tagTheme: 'bg-teal-50 text-teal-700 border-teal-200/70',
-      iconTheme: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-md shadow-teal-500/20',
-      hoverGlow: 'hover:border-teal-500/50 hover:shadow-[0_16px_36px_rgba(20,184,166,0.14)]',
-      hoverTitle: 'group-hover:text-teal-600',
-      actionTextColor: 'text-teal-600',
+    ...(import.meta.env.DEV ? [
+      {
+        id: 'portfolios',
+        icon: <BookOpen size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+        tag: 'Catálogo de Produtos',
+        title: 'Portfólios Corporativos',
+        description: 'Catálogos completos de produtos, soluções tecnológicas, especificações técnicas e instrumentais do grupo.',
+        actionText: 'Selecionar Portfólio',
+        actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+        tagTheme: 'bg-teal-50 text-teal-700 border-teal-200/70',
+        iconTheme: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-md shadow-teal-500/20',
+        hoverGlow: 'hover:border-teal-500/50 hover:shadow-[0_16px_36px_rgba(20,184,166,0.14)]',
+        hoverTitle: 'group-hover:text-teal-600',
+        actionTextColor: 'text-teal-600',
+        hasBadge: false,
+        badgeColor: 'bg-teal-500',
+        action: () => setShowPortfolioSelection(true)
+      }
+    ] : [
+      {
+        id: 'portfolio',
+        icon: <BookOpen size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+        tag: 'Catálogo de Produtos',
+        title: 'Portfólio Arthromed',
+        description: 'Catálogo de implantes ortopédicos, artroscopia e especificações.',
+        actionText: 'Acessar Portfólio',
+        actionIcon: <ExternalLink size={15} className="group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />,
+        tagTheme: 'bg-teal-50 text-teal-700 border-teal-200/70',
+        iconTheme: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-md shadow-teal-500/20',
+        hoverGlow: 'hover:border-teal-500/50 hover:shadow-[0_16px_36px_rgba(20,184,166,0.14)]',
+        hoverTitle: 'group-hover:text-teal-600',
+        actionTextColor: 'text-teal-600',
+        hasBadge: false,
+        badgeColor: 'bg-teal-500',
+        action: handlePortfolioClick
+      },
+      {
+        id: 'portfolio-medic',
+        icon: <FolderKanban size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+        tag: 'Catálogo de Soluções',
+        title: 'Portfólio Medic',
+        description: 'Soluções bucomaxilofaciais e tecnologias cirúrgicas exclusivas.',
+        actionText: 'Acessar Portfólio Medic',
+        actionIcon: <ExternalLink size={15} className="group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />,
+        tagTheme: 'bg-sky-50 text-sky-700 border-sky-200/70',
+        iconTheme: 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20',
+        hoverGlow: 'hover:border-sky-500/50 hover:shadow-[0_16px_36px_rgba(14,165,233,0.14)]',
+        hoverTitle: 'group-hover:text-sky-600',
+        actionTextColor: 'text-sky-600',
+        hasBadge: false,
+        badgeColor: 'bg-sky-500',
+        action: handleMedicPortfolioClick
+      }
+    ]),
+    ...(import.meta.env.DEV && (isTreinamentosAuthorized || !userSector) ? [{
+      id: 'treinamentos',
+      icon: <Users size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Capacitação',
+      title: 'Treinamentos',
+      description: 'Agendamento de reuniões, controle de atas digitais via QR Code e calendário corporativo.',
+      actionText: 'Acessar Treinamentos',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200/70',
+      iconTheme: 'bg-gradient-to-br from-fuchsia-500 to-purple-700 text-white shadow-md shadow-fuchsia-500/20',
+      hoverGlow: 'hover:border-fuchsia-500/50 hover:shadow-[0_16px_36px_rgba(217,70,239,0.14)]',
+      hoverTitle: 'group-hover:text-fuchsia-600',
+      actionTextColor: 'text-fuchsia-600',
       hasBadge: false,
-      badgeColor: 'bg-teal-500',
-      action: handlePortfolioClick
-    },
-    {
-      id: 'medic_portfolio',
-      icon: <FolderKanban size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
-      tag: 'Catálogo de Produtos',
-      title: 'Portfólio Medic',
-      description: 'Catálogo atualizado de soluções, produtos e tecnologias do ecossistema Medic.',
-      actionText: 'Abrir Portfólio Medic',
-      actionIcon: <ExternalLink size={15} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />,
-      tagTheme: 'bg-sky-50 text-sky-700 border-sky-200/70',
-      iconTheme: 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20',
-      hoverGlow: 'hover:border-sky-500/50 hover:shadow-[0_16px_36px_rgba(14,165,233,0.14)]',
-      hoverTitle: 'group-hover:text-sky-600',
-      actionTextColor: 'text-sky-600',
-      hasBadge: false,
-      badgeColor: 'bg-sky-500',
-      action: handleMedicPortfolioClick
-    },
+      badgeColor: 'bg-fuchsia-500',
+      action: () => { if (onOpenTreinamentos) onOpenTreinamentos() }
+    }] : []),
     {
       id: 'solicitacao',
       icon: <Stethoscope size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
@@ -329,6 +373,31 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
             Módulos Operacionais
           </h1>
 
+          {/* Banner de Aniversariantes */}
+          {getTodaysBirthdays().length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="w-full max-w-lg mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-100 via-orange-100 to-amber-100 border border-amber-200/60 shadow-lg shadow-amber-500/10"
+            >
+              <div className="flex flex-col items-center p-4">
+                <div className="flex items-center gap-2 mb-2 text-amber-700">
+                  <Cake size={20} className="animate-bounce" />
+                  <span className="font-bold text-sm uppercase tracking-wider">Aniversariantes do Dia</span>
+                  <Cake size={20} className="animate-bounce" style={{ animationDelay: '0.2s' }} />
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {getTodaysBirthdays().map((b: Birthday, i: number) => (
+                    <span key={i} className="px-3 py-1 bg-white/60 rounded-full font-bold text-amber-900 text-sm shadow-xs border border-white/80">
+                      🎉 {b.name}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs font-semibold text-amber-800/70 mt-3 text-center">Deseje muitas felicidades para a equipe! 🎂</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Banner de Instrução em Destaque Neon Premium */}
           <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 text-blue-950 text-xs sm:text-sm font-bold shadow-xs transition-all hover:border-blue-300">
             <div className="w-6 h-6 rounded-lg bg-[#1f29de] text-white flex items-center justify-center shrink-0 shadow-2xs">
@@ -398,6 +467,71 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
         </div>
 
       </div>
+
+      <AnimatePresence>
+        {showPortfolioSelection && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shadow-inner">
+                    <BookOpen size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-base">Portfólios Corporativos</h3>
+                    <p className="text-xs text-slate-500">Selecione o catálogo desejado</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPortfolioSelection(false)}
+                  className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <button
+                  onClick={() => {
+                    setShowPortfolioSelection(false);
+                    handlePortfolioClick();
+                  }}
+                  className="relative w-full group flex flex-col items-center justify-center p-6 rounded-3xl border border-slate-200 hover:border-teal-300 hover:bg-teal-50/60 transition-all text-center shadow-2xs hover:shadow-lg"
+                >
+                  <ExternalLink size={16} className="absolute top-4 right-4 text-slate-300 group-hover:text-teal-500 transition-colors" />
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white mb-4 shadow-lg shadow-teal-500/30 group-hover:scale-110 transition-transform duration-300">
+                    <BookOpen size={30} strokeWidth={2} />
+                  </div>
+                  <h4 className="font-bold text-slate-800 text-lg group-hover:text-teal-700 transition-colors">Arthromed</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed mt-2 font-medium">Implantes ortopédicos, sinteses e artroscopia</p>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowPortfolioSelection(false);
+                    handleMedicPortfolioClick();
+                  }}
+                  className="relative w-full group flex flex-col items-center justify-center p-6 rounded-3xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/60 transition-all text-center shadow-2xs hover:shadow-lg"
+                >
+                  <ExternalLink size={16} className="absolute top-4 right-4 text-slate-300 group-hover:text-sky-500 transition-colors" />
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white mb-4 shadow-lg shadow-sky-500/30 group-hover:scale-110 transition-transform duration-300">
+                    <FolderKanban size={30} strokeWidth={2} />
+                  </div>
+                  <h4 className="font-bold text-slate-800 text-lg group-hover:text-sky-700 transition-colors">Medic</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed mt-2 font-medium">Soluções completas, bucomaxilo e tecnologias</p>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </motion.div>
   )
 }

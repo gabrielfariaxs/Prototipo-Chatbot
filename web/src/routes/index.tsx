@@ -98,18 +98,18 @@ function App() {
       <div className="pointer-events-none fixed -bottom-20 -right-20 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,127,80,0.05),transparent_70%)]" />
 
       <div className="rise-in max-w-2xl w-full flex flex-col items-center text-center mt-12 md:mt-0">
-        <p className="island-kicker mb-4 text-[var(--color-primary)] font-bold tracking-widest uppercase text-sm">Portal MedIA</p>
-        <h1 className="display-title mb-6 text-5xl md:text-6xl leading-[1.1] font-extrabold tracking-tight text-[var(--sea-ink)] sm:text-7xl">
+        <p className="island-kicker mb-4 text-[var(--color-holding-primary)] font-bold tracking-widest uppercase text-sm">Portal MedIA</p>
+        <h1 className="display-title mb-6 text-5xl md:text-6xl leading-[1.1] font-extrabold tracking-tight text-[var(--ink)] sm:text-7xl">
           Bem-vindo ao <span className="media-text-gradient opacity-75">MedIA</span>
         </h1>
-        <p className="text-lg text-[var(--sea-ink-soft)] opacity-60 leading-relaxed mb-10 max-w-lg">
+        <p className="text-lg text-[var(--ink-2)] opacity-60 leading-relaxed mb-10 max-w-lg">
           Sua central de inteligência para suporte operacional da Arthromed e Medic. 
           Pronto para otimizar seus processos?
         </p>
         
         <button 
           onClick={() => window.dispatchEvent(new CustomEvent('open-media-chat'))}
-          className="group relative flex items-center justify-center w-full md:w-auto gap-3 bg-[var(--color-primary)] text-white px-6 md:px-10 py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          className="group relative flex items-center justify-center w-full md:w-auto gap-3 bg-[var(--color-holding-primary)] text-white px-6 md:px-10 py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer"
         >
           <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
           Começar Atendimento

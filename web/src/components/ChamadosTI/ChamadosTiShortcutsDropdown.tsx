@@ -1,5 +1,5 @@
 import React from 'react'
-import { Activity, Globe, Server, Mail, Calendar, CalendarCheck, CalendarDays, ExternalLink } from 'lucide-react'
+import { Activity, Globe, ShieldAlert, MonitorSmartphone, Mail, Calendar, CalendarCheck, CalendarDays, ExternalLink, HardDrive } from 'lucide-react'
 
 export interface TiShortcutItem {
   id: string
@@ -22,22 +22,10 @@ export interface TiShortcutItem {
  */
 export const TI_SHORTCUTS: TiShortcutItem[] = [
   {
-    id: 'links-internet',
+    id: 'links-internet-geral',
     title: 'Links de Internet',
-    description: 'Monitoramento Arthromed RN & PE',
+    description: 'Monitoramento de Redes (RN, PE, PB)',
     action: 'network_modal',
-    tag: 'Online',
-    icon: Activity,
-    badgeColor: 'bg-emerald-200/80 text-emerald-900',
-    iconBgColor: 'bg-emerald-100 border-emerald-200 text-emerald-700',
-    hoverBgColor: 'hover:bg-emerald-50/80',
-    hoverBorderColor: 'hover:border-emerald-200',
-  },
-  {
-    id: 'monitoramento-paraiba',
-    title: 'Monitoramento Paraíba',
-    description: 'Status dos Links de Internet (PB)',
-    url: 'http://192.168.100.73:3001/status/cp',
     tag: 'Online',
     icon: Activity,
     badgeColor: 'bg-emerald-200/80 text-emerald-900',
@@ -58,64 +46,28 @@ export const TI_SHORTCUTS: TiShortcutItem[] = [
     hoverBorderColor: 'hover:border-blue-200',
   },
   {
-    id: 'kinghost',
-    title: 'Painel KingHost',
-    description: 'Gerenciamento KingHost & Domínios',
-    url: 'https://login.kinghost.com.br/?referrer=https:%2F%2Fpainel.kinghost.com.br%2Findex.php',
-    tag: 'Hospedagem',
-    icon: Server,
-    badgeColor: 'bg-amber-100 text-amber-800 border-amber-200/60',
-    iconBgColor: 'bg-amber-50 border-amber-200 text-amber-600',
-    hoverBgColor: 'hover:bg-amber-50/80',
-    hoverBorderColor: 'hover:border-amber-200',
+    id: 'hospedagem-webmail',
+    title: 'Hospedagem & E-mail',
+    description: 'Servidores e E-mails Locais',
+    action: 'hospedagem_modal',
+    tag: 'Web',
+    icon: HardDrive,
+    badgeColor: 'bg-orange-100 text-orange-800 border-orange-200/60',
+    iconBgColor: 'bg-orange-50 border-orange-200 text-orange-600',
+    hoverBgColor: 'hover:bg-orange-50/80',
+    hoverBorderColor: 'hover:border-orange-200',
   },
   {
-    id: 'locaweb',
-    title: 'E-mail Locaweb',
-    description: 'Painel de E-mail Corporativo',
-    url: 'https://login-new.locaweb.com.br/login?service=https%3A%2F%2Fpainel-email.locaweb.com.br%2F',
-    tag: 'Locaweb',
-    icon: Mail,
-    badgeColor: 'bg-rose-100 text-rose-800 border-rose-200/60',
-    iconBgColor: 'bg-rose-50 border-rose-200 text-rose-600',
-    hoverBgColor: 'hover:bg-rose-50/80',
-    hoverBorderColor: 'hover:border-rose-200',
-  },
-  {
-    id: 'agenda-arthromed',
-    title: 'Agenda Arthromed',
-    description: 'Agendamentos & Cirurgias (Rede Local)',
-    url: 'http://192.168.100.117/arthromed/agenda.php',
-    tag: 'Agendamento',
+    id: 'agendas-locais',
+    title: 'Agendas Locais',
+    description: 'Sistemas de Agendamento da Rede',
+    action: 'agendas_modal',
+    tag: 'Sistemas',
     icon: Calendar,
-    badgeColor: 'bg-teal-100 text-teal-800 border-teal-200/60',
-    iconBgColor: 'bg-teal-50 border-teal-200 text-teal-600',
-    hoverBgColor: 'hover:bg-teal-50/80',
-    hoverBorderColor: 'hover:border-teal-200',
-  },
-  {
-    id: 'agenda-medicpa',
-    title: 'Agenda Medic PA',
-    description: 'Agendamentos & Cirurgias Medic PA (Rede Local)',
-    url: 'http://192.168.100.117/medicpa/agenda.php',
-    tag: 'Medicpa',
-    icon: CalendarCheck,
-    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200/60',
-    iconBgColor: 'bg-purple-50 border-purple-200 text-purple-600',
-    hoverBgColor: 'hover:bg-purple-50/80',
-    hoverBorderColor: 'hover:border-purple-200',
-  },
-  {
-    id: 'agenda-medicpe',
-    title: 'Agenda Medic PE',
-    description: 'Agendamentos & Cirurgias Medic PE (Rede Local)',
-    url: 'http://192.168.100.117/medicpe/agenda.php',
-    tag: 'Medicpe',
-    icon: CalendarDays,
-    badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200/60',
-    iconBgColor: 'bg-indigo-50 border-indigo-200 text-indigo-600',
-    hoverBgColor: 'hover:bg-indigo-50/80',
-    hoverBorderColor: 'hover:border-indigo-200',
+    badgeColor: 'bg-violet-100 text-violet-800 border-violet-200/60',
+    iconBgColor: 'bg-violet-50 border-violet-200 text-violet-600',
+    hoverBgColor: 'hover:bg-violet-50/80',
+    hoverBorderColor: 'hover:border-violet-200',
   },
 ]
 
@@ -123,12 +75,16 @@ interface ChamadosTiShortcutsDropdownProps {
   isOpen: boolean
   onClose: () => void
   onOpenNetworkModal: () => void
+  onOpenAgendasModal: () => void
+  onOpenHospedagemModal: () => void
 }
 
 export const ChamadosTiShortcutsDropdown: React.FC<ChamadosTiShortcutsDropdownProps> = ({
   isOpen,
   onClose,
   onOpenNetworkModal,
+  onOpenAgendasModal,
+  onOpenHospedagemModal,
 }) => {
   if (!isOpen) return null
 
@@ -201,6 +157,38 @@ export const ChamadosTiShortcutsDropdown: React.FC<ChamadosTiShortcutsDropdownPr
                   onClick={() => {
                     onClose()
                     onOpenNetworkModal()
+                  }}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl border border-transparent transition-all text-left cursor-pointer group ${hoverBgColor} ${hoverBorderColor}`}
+                >
+                  {content}
+                </button>
+              )
+            }
+
+            if (item.action === 'agendas_modal') {
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    onClose()
+                    onOpenAgendasModal()
+                  }}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl border border-transparent transition-all text-left cursor-pointer group ${hoverBgColor} ${hoverBorderColor}`}
+                >
+                  {content}
+                </button>
+              )
+            }
+
+            if (item.action === 'hospedagem_modal') {
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    onClose()
+                    onOpenHospedagemModal()
                   }}
                   className={`w-full flex items-center gap-3 p-2.5 rounded-xl border border-transparent transition-all text-left cursor-pointer group ${hoverBgColor} ${hoverBorderColor}`}
                 >

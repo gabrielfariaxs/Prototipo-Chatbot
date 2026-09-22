@@ -17,6 +17,9 @@ import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
 import { PortalPasswordsModal } from './common/PortalPasswordsModal'
 import { OutlookEmailsModal } from './common/OutlookEmailsModal'
+import { AgendasLocaisModal } from './common/AgendasLocaisModal'
+import { HospedagemModal } from './common/HospedagemModal'
+import { TreinamentosModal } from './Treinamentos/TreinamentosModal'
 import { supabase } from '../lib/supabase'
 import { LinkifiedText } from './common/LinkifiedText'
 import type { Session } from '@supabase/supabase-js'
@@ -128,9 +131,9 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedbackComment: comment } : m))
     saveGlobalFeedback(msgId, 'down', comment)
   }
-  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login' | 'doc_clinica' | 'chamados_ti'>('onboarding')
+  const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login' | 'doc_clinica' | 'chamados_ti' | 'treinamentos'>('onboarding')
   const [session, setSession] = useState<Session | null>(null)
-  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | null>(null)
+  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
@@ -178,6 +181,15 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     }
   }
 
+  const handleSelectTreinamentosModule = () => {
+    if (session || localStorage.getItem('userSector')) {
+      setStep('treinamentos')
+    } else {
+      setPendingModule('treinamentos')
+      setStep('login')
+    }
+  }
+
   const handleLoginSuccess = () => {
     if (pendingModule === 'noc') {
       setStep('gop')
@@ -185,6 +197,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       setStep('doc_clinica')
     } else if (pendingModule === 'chamados_ti') {
       setStep('chamados_ti')
+    } else if (pendingModule === 'treinamentos') {
+      setStep('treinamentos')
     } else {
       handleStart()
     }
@@ -209,6 +223,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [customProcedures, setCustomProcedures] = useState<ProcedureItem[]>([])
   const [isPortalPasswordsModalOpen, setIsPortalPasswordsModalOpen] = useState(false)
   const [isOutlookModalOpen, setIsOutlookModalOpen] = useState(false)
+  const [isAgendasModalOpen, setIsAgendasModalOpen] = useState(false)
+  const [isHospedagemModalOpen, setIsHospedagemModalOpen] = useState(false)
 
   const canShowHistoryButton = () => {
     const userSec = sector || localStorage.getItem('userSector') || ''
@@ -1135,7 +1151,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             )}
           >
             {/* Unified Corporate Header */}
-            {step !== 'chamados_ti' && step !== 'gop' && (
+            {step !== 'chamados_ti' && step !== 'gop' && step !== 'treinamentos' && (
               <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2 min-h-[56px]">
               <div className="flex items-center gap-2 sm:gap-4 flex-1 flex-wrap sm:flex-nowrap">
                 {step !== 'onboarding' && (
@@ -1292,6 +1308,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
                     onOpenChamadosTi={handleSelectChamadosTiModule}
                     onOpenOutlookEmails={() => setIsOutlookModalOpen(true)}
+                    onOpenTreinamentos={handleSelectTreinamentosModule}
                   />
                 )}
 
@@ -1322,6 +1339,17 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     onBackToMenu={() => setStep('onboarding')}
                     onClose={handleClose}
                     onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
+                    onOpenAgendasModal={() => setIsAgendasModalOpen(true)}
+                    onOpenHospedagemModal={() => setIsHospedagemModalOpen(true)}
+                  />
+                )}
+
+                {step === 'treinamentos' && (
+                  <TreinamentosModal 
+                    onClose={() => setStep('onboarding')} 
+                    userSector={sector || (typeof window !== 'undefined' ? localStorage.getItem('userSector') : null) || ''}
+                    userLevel={typeof window !== 'undefined' ? localStorage.getItem('userLevel') || '' : ''}
+                    userName={typeof window !== 'undefined' ? localStorage.getItem('userName') || '' : ''}
                   />
                 )}
 
@@ -1604,6 +1632,18 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
           setIsOutlookModalOpen(false)
           handleSelectChamadosTiModule()
         }}
+      />
+
+      {/* Modal de Agendas Locais */}
+      <AgendasLocaisModal
+        isOpen={isAgendasModalOpen}
+        onClose={() => setIsAgendasModalOpen(false)}
+      />
+
+      {/* Modal de Hospedagem */}
+      <HospedagemModal
+        isOpen={isHospedagemModalOpen}
+        onClose={() => setIsHospedagemModalOpen(false)}
       />
 
       {/* Modal de Pré-visualização Premium */}
