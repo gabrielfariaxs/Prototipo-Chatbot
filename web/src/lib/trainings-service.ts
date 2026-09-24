@@ -59,6 +59,21 @@ export async function createTreinamento(treinamento: Omit<Treinamento, 'id' | 'c
   return data as Treinamento
 }
 
+export async function updateTreinamento(id: string, treinamento: Partial<Omit<Treinamento, 'id' | 'created_at'>>) {
+  const { data, error } = await supabase
+    .from('treinamentos')
+    .update(treinamento)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Erro ao atualizar treinamento:', error)
+    throw error
+  }
+  return data as Treinamento
+}
+
 export async function updateTreinamentoStatus(id: string, status: 'agendado' | 'em_andamento' | 'finalizado') {
   const { data, error } = await supabase
     .from('treinamentos')

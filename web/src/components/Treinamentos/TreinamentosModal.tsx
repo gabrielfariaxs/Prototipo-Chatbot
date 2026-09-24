@@ -4,7 +4,7 @@ import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Cl
 import { QRCodeSVG } from 'qrcode.react'
 import * as ExcelJS from 'exceljs'
 import { supabase } from '../../lib/supabase'
-import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas } from '../../lib/trainings-service'
+import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas, updateTreinamento } from '../../lib/trainings-service'
 import type { Treinamento, Presenca } from '../../lib/trainings-service'
 
 interface TreinamentosModalProps {
@@ -96,21 +96,33 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
     setLoading(true)
     try {
       const dataStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-      await createTreinamento({
-        titulo: formData.titulo,
-        descricao: formData.descricao,
-        data: dataStr,
-        horario: `${formData.horario} às ${formData.horarioFim}`,
-        colaboradores: formData.colaboradores,
-        link_video: formData.link_video,
-        criado_por: userName
-      })
+      if (selectedTreinamento) {
+        await updateTreinamento(selectedTreinamento.id, {
+          titulo: formData.titulo,
+          descricao: formData.descricao,
+          data: dataStr,
+          horario: `${formData.horario} às ${formData.horarioFim}`,
+          colaboradores: formData.colaboradores,
+          link_video: formData.link_video,
+        })
+      } else {
+        await createTreinamento({
+          titulo: formData.titulo,
+          descricao: formData.descricao,
+          data: dataStr,
+          horario: `${formData.horario} às ${formData.horarioFim}`,
+          colaboradores: formData.colaboradores,
+          link_video: formData.link_video,
+          criado_por: userName
+        })
+      }
       await fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1)
+      setSelectedTreinamento(null)
       setView('day_details')
       setFormData({ titulo: '', descricao: '', horario: '14:00', horarioFim: '15:00', colaboradores: '', link_video: '' })
     } catch (e: any) {
       console.error(e)
-      alert('Erro ao criar treinamento: ' + (e.message || JSON.stringify(e)))
+      alert('Erro ao salvar treinamento: ' + (e.message || JSON.stringify(e)))
     } finally {
       setLoading(false)
     }
@@ -312,6 +324,24 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                       <Play size={16} /> Iniciar Treinamento
                     </button>
                     <button 
+                      onClick={() => {
+                        const [horarioInicio, horarioFim] = t.horario.split(' às ')
+                        setFormData({
+                          titulo: t.titulo,
+                          descricao: t.descricao,
+                          horario: horarioInicio || '14:00',
+                          horarioFim: horarioFim || '15:00',
+                          colaboradores: t.colaboradores || '',
+                          link_video: t.link_video || ''
+                        })
+                        setSelectedTreinamento(t)
+                        setView('create_form')
+                      }}
+                      className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors text-sm font-bold"
+                    >
+                      Editar
+                    </button>
+                    <button 
                       onClick={async () => {
                         if (confirm('Deletar este agendamento?')) {
                           await deleteTreinamento(t.id);
@@ -356,14 +386,22 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
             <div className="flex items-center gap-4 relative z-10">
               <button 
-                onClick={() => setView('calendar')} 
+                onClick={() => {
+                  setView('calendar')
+                  setSelectedTreinamento(null)
+                  setFormData({ titulo: '', descricao: '', horario: '14:00', horarioFim: '15:00', colaboradores: '', link_video: '' })
+                }} 
                 className="p-3 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 text-slate-500 shadow-sm transition-all hover:-translate-x-1"
               >
                 <ChevronLeft size={20} strokeWidth={2.5} />
               </button>
               <div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Agendar Treinamento</h2>
-                <p className="text-sm font-semibold text-slate-500 mt-1">Preencha os detalhes para criar uma nova ata de presença</p>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                  {selectedTreinamento ? 'Editar Treinamento' : 'Agendar Treinamento'}
+                </h2>
+                <p className="text-sm font-semibold text-slate-500 mt-1">
+                  {selectedTreinamento ? 'Modifique os detalhes da ata de presença' : 'Preencha os detalhes para criar uma nova ata de presença'}
+                </p>
               </div>
             </div>
           </div>
@@ -448,7 +486,7 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                 style={{ backgroundColor: loading ? '#94a3b8' : '#4f46e5', color: '#ffffff' }}
                 className="w-full sm:w-auto px-10 py-4 rounded-2xl font-black text-base shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none border border-transparent"
               >
-                {loading ? 'Criando Sessão...' : 'Confirmar e Criar Treinamento'}
+                {loading ? (selectedTreinamento ? 'Salvando...' : 'Criando Sessão...') : (selectedTreinamento ? 'Salvar Alterações' : 'Confirmar e Criar Treinamento')}
               </button>
             </div>
           </form>
