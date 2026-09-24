@@ -176,7 +176,7 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                 <Timer size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Tempo Médio de Solução</span>
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Tempo de abertura -&gt; Resolução</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {concludedChamados.length > 0 ? formatDurationShort(avgResolutionMinutes) : 'N/A'}
                 </span>
@@ -212,7 +212,7 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
                 <BarChart3 size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Taxa de Conclusão</span>
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Taxa de Resolução</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {tiBaseChamados.length > 0 ? `${Math.round((concludedChamados.length / tiBaseChamados.length) * 100)}%` : '0%'}
                 </span>

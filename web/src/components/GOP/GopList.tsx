@@ -68,6 +68,15 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
 
   useEffect(() => {
     fetchGargalos()
+
+    const handleVisibility = () => { if (document.visibilityState === 'visible') fetchGargalos() }
+    window.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', fetchGargalos)
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', fetchGargalos)
+    }
   }, [])
 
   const fetchGargalos = async () => {
@@ -85,7 +94,18 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
       sectorLower.includes('operac')
 
     if (userRole === 'lider' && userSector && !isGestorOrDiretoria) {
-      query = query.eq('setor', userSector)
+      const { data: { session } } = await supabase.auth.getSession()
+      let currentUserName = ''
+      if (session?.user) {
+        currentUserName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || ''
+      }
+      
+      if (currentUserName) {
+        // Usa aspas duplas ao redor dos valores para evitar problemas com espaços
+        query = query.or(`setor.eq."${userSector}",autor_nome.ilike."%${currentUserName}%"`)
+      } else {
+        query = query.eq('setor', userSector)
+      }
     }
 
     const { data, error } = await query.limit(150)
@@ -369,13 +389,13 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
 
           {/* Grade de 5 Cards Principais */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 pt-1">
-            {/* Card 1: Tempo Médio de Solução */}
+            {/* Card 1: Tempo de abertura -> Resolução */}
             <div className="bg-slate-50/80 hover:bg-slate-100/80 p-3.5 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3 transition-colors">
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold shrink-0">
                 <Timer size={18} />
               </div>
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Tempo Médio de Solução</span>
+                <span className="text-[11px] font-bold text-slate-500 leading-tight block mb-0.5 whitespace-normal">Tempo de abertura -&gt; Resolução</span>
                 <span className="text-sm font-extrabold text-slate-800 leading-tight block">
                   {totalResolvidos.length > 0 ? formatDurationShort(avgResolutionMinutes) : 'N/A'}
                 </span>

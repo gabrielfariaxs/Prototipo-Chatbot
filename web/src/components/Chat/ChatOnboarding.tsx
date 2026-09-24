@@ -5,7 +5,30 @@ import { BrandLockup } from '../common/BrandLockup'
 import { supabase } from '../../lib/supabase'
 import { getTodaysBirthdays } from '../../data/birthdays'
 import type { Birthday } from '../../data/birthdays'
-import { Cake } from 'lucide-react'
+import { Cake, BellRing } from 'lucide-react'
+
+// Utilidade para converter VAPID base64 string para Uint8Array
+function urlBase64ToUint8Array(base64String: string) {
+  try {
+    // Remove possíveis aspas (se o usuário colocou no .env com aspas), espaços ou quebras de linha
+    const cleanBase64 = base64String.replace(/^['"]+|['"]+$/g, '').replace(/\s/g, '')
+    const padding = '='.repeat((4 - cleanBase64.length % 4) % 4)
+    const base64 = (cleanBase64 + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/')
+
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
+  } catch (error) {
+    console.error("Erro ao decodificar a VAPID KEY (VITE_VAPID_PUBLIC_KEY):", base64String);
+    throw new Error("A chave VAPID configurada no sistema não é um Base64 válido. Verifique as variáveis de ambiente (VITE_VAPID_PUBLIC_KEY).");
+  }
+}
 
 interface ChatOnboardingProps {
   onStart: () => void;
@@ -43,8 +66,70 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   const hasFullAccess = userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
   const isTreinamentosAuthorized = isTi || isOpsLeader || hasFullAccess || userSector.includes('rh')
 
+  const [isPushSupported, setIsPushSupported] = useState(false)
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false)
+  const [pushLoading, setPushLoading] = useState(false)
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      setIsPushSupported(true)
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.pushManager.getSubscription().then((subscription) => {
+          setIsPushSubscribed(!!subscription)
+        })
+      })
+    }
+  }, [])
+
+  const handleSubscribeToPush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    
+    try {
+      setPushLoading(true)
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        alert('Permissão de notificação negada. Altere nas configurações do navegador.')
+        return
+      }
+
+      const registration = await navigator.serviceWorker.ready
+      const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY
+      
+      if (!publicVapidKey) {
+        alert('Erro: Chave VAPID não configurada no sistema.')
+        return
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+      })
+
+      const { error } = await supabase.from('push_subscriptions').insert({
+        user_sector: userSector || 'T.I',
+        user_name: userName || 'Usuário Local',
+        subscription: subscription
+      })
+
+      if (error) {
+        console.error('Erro Supabase:', error)
+        alert('Erro ao vincular dispositivo no servidor.')
+      } else {
+        setIsPushSubscribed(true)
+        alert('Dispositivo vinculado com sucesso! Você receberá notificações push.')
+      }
+    } catch (err: any) {
+      console.error(err)
+      alert(`Falha: ${err.message}`)
+    } finally {
+      setPushLoading(false)
+    }
+  }
+
   const fetchNotifications = async () => {
     try {
+      await supabase.auth.getSession()
+      
       // ----------------------------------------------------
       // 1. CHAMADOS DE T.I (Notificações, Redirecionamentos e Fila TI)
       // ----------------------------------------------------
@@ -146,10 +231,16 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'demandas' }, fetchNotifications)
       .subscribe()
 
+    const handleVisibility = () => { if (document.visibilityState === 'visible') fetchNotifications() }
+    window.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', fetchNotifications)
+
     const interval = setInterval(fetchNotifications, 25000) // Fallback 25s
     return () => {
       supabase.removeChannel(channel)
       clearInterval(interval)
+      window.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', fetchNotifications)
     }
   }, [])
 
@@ -399,11 +490,13 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
           )}
 
           {/* Banner de Instrução em Destaque Neon Premium */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 text-blue-950 text-xs sm:text-sm font-bold shadow-xs transition-all hover:border-blue-300">
-            <div className="w-6 h-6 rounded-lg bg-[#1f29de] text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <Sparkles size={13} />
+          <div className="flex justify-center w-full">
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-blue-50/90 border border-blue-200/80 text-blue-950 text-xs sm:text-sm font-bold shadow-xs transition-all hover:border-blue-300">
+              <div className="w-6 h-6 rounded-lg bg-[#1f29de] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Sparkles size={13} />
+              </div>
+              <span>Clique diretamente em qualquer card abaixo para abrir o módulo desejado</span>
             </div>
-            <span>Clique diretamente em qualquer card abaixo para abrir o módulo desejado</span>
           </div>
         </div>
 
@@ -531,6 +624,27 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Floating Push Notification Button */}
+      {isPushSupported && !isPushSubscribed && (
+        <motion.div 
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.8 }}
+          className="fixed bottom-6 right-6 z-50"
+        >
+          <button
+            onClick={handleSubscribeToPush}
+            disabled={pushLoading}
+            className="group flex items-center gap-3 px-2 pr-5 py-2 rounded-[28px] bg-white/90 backdrop-blur-md border border-slate-200/90 text-slate-800 text-sm font-bold shadow-xl shadow-slate-300/40 transition-all duration-300 hover:shadow-2xl hover:bg-white hover:-translate-y-1 active:scale-95 whitespace-nowrap cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <div className="w-10 h-10 rounded-[20px] bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300 shadow-inner">
+              <BellRing size={18} className={pushLoading ? 'animate-pulse' : 'animate-bounce'} />
+            </div>
+            <span className="tracking-tight">{pushLoading ? 'Ativando Alertas...' : 'Ativar Notificações'}</span>
+          </button>
+        </motion.div>
+      )}
 
     </motion.div>
   )

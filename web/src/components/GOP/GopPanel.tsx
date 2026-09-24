@@ -21,7 +21,7 @@ export const GopPanel: React.FC<GopPanelProps> = ({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [userName, setUserName] = useState<string>('Usuário')
   const [userInitials, setUserInitials] = useState<string>('US')
-  const [activeTab, setActiveTab] = useState<'coo' | 'demandas'>('coo')
+  const [activeTab, setActiveTab] = useState<'coo' | 'lider' | 'demandas'>('coo')
   const [userSector, setUserSector] = useState<string>('')
   const [userLevel, setUserLevel] = useState<string>('lider')
   const [ready, setReady] = useState(false)
@@ -40,10 +40,12 @@ export const GopPanel: React.FC<GopPanelProps> = ({
                        savedSector.toLowerCase().includes('qualidade') ||
                        savedLevel === 'coo'
 
-    if (savedLevel === 'colaborador' || !isCooGroup) {
+    if (savedLevel === 'colaborador') {
       setActiveTab('demandas')
-    } else {
+    } else if (isCooGroup) {
       setActiveTab('coo')
+    } else {
+      setActiveTab('lider')
     }
 
     setReady(true)
@@ -126,6 +128,28 @@ export const GopPanel: React.FC<GopPanelProps> = ({
                   Revisão COO / Qualidade
                 </button>
               )}
+              
+              {userLevel === 'lider' && !(
+                userSector === 'Operações' || 
+                userSector === 'Gestor (Diogo)' || 
+                userSector === 'Gestor/Diretoria' ||
+                userSector.toLowerCase().includes('gestor') ||
+                userSector.toLowerCase().includes('diretoria') ||
+                userSector.toLowerCase().includes('qualidade')
+              ) && (
+                <button 
+                  type="button"
+                  onClick={() => { setActiveTab('lider'); setSelectedId(null); }}
+                  className={`px-3 sm:px-4 py-1.5 rounded-[8px] text-xs font-bold cursor-pointer transition-all shrink-0 whitespace-nowrap ${
+                    activeTab === 'lider' 
+                      ? 'bg-[#1f29de] text-white shadow-xs' 
+                      : 'text-[#5b6276] hover:text-[#14161f] hover:bg-slate-100/60'
+                  }`}
+                >
+                  Minhas Não Conformidades
+                </button>
+              )}
+
               <button 
                 type="button"
                 onClick={() => setActiveTab('demandas')}
@@ -149,7 +173,7 @@ export const GopPanel: React.FC<GopPanelProps> = ({
               <div className="hidden md:flex flex-col shrink-0 text-left max-w-[130px]">
                 <span className="text-xs font-bold text-[#14161f] whitespace-nowrap leading-tight truncate">{userName}</span>
                 <span className="text-[10px] text-[#5b6276] font-semibold whitespace-nowrap leading-tight truncate">
-                  {userLevel === 'colaborador' ? 'Colaborador' : 'Diretor de Operações / Gestor'}
+                  {userLevel === 'coo' ? 'COO / Diretoria' : userLevel === 'lider' ? 'Líder de Setor' : 'Colaborador'}
                 </span>
               </div>
             </div>
@@ -207,6 +231,19 @@ export const GopPanel: React.FC<GopPanelProps> = ({
               ) && (
                 <div className={activeTab === 'coo' ? 'block' : 'hidden'}>
                   <GopList onSelect={setSelectedId} userRole="coo" userSector={userSector} />
+                </div>
+              )}
+
+              {userLevel === 'lider' && !(
+                userSector === 'Operações' || 
+                userSector === 'Gestor (Diogo)' || 
+                userSector === 'Gestor/Diretoria' ||
+                userSector.toLowerCase().includes('gestor') ||
+                userSector.toLowerCase().includes('diretoria') ||
+                userSector.toLowerCase().includes('qualidade')
+              ) && (
+                <div className={activeTab === 'lider' ? 'block' : 'hidden'}>
+                  <GopList onSelect={setSelectedId} userRole="lider" userSector={userSector} />
                 </div>
               )}
               {/* Demandas tab - always mounted, hidden when not active */}

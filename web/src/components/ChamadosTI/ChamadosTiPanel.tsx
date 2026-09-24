@@ -190,58 +190,62 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({
 
   // Carregar setor/nível e nome do usuário a partir do localStorage e sessão, com auto-recuperação
   useEffect(() => {
-    const updateUserInfo = () => {
+    const updateUserInfo = async () => {
       let savedSector = localStorage.getItem('userSector') || ''
       let savedLevel = localStorage.getItem('userLevel') || 'lider'
 
-      supabase.auth.getSession().then(({ data: { session } }: any) => {
-        if (session?.user) {
-          const metaSector = session.user.user_metadata?.sector || session.user.user_metadata?.department
-          const emailSector = inferSectorFromEmail(session.user.email)
-          const effectiveSector = (savedSector && savedSector !== 'Geral')
-            ? savedSector
-            : (metaSector || emailSector || 'T.I')
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        const metaSector = session.user.user_metadata?.sector || session.user.user_metadata?.department
+        const emailSector = inferSectorFromEmail(session.user.email)
+        const effectiveSector = (savedSector && savedSector !== 'Geral')
+          ? savedSector
+          : (metaSector || emailSector || 'T.I')
 
-          if (effectiveSector && effectiveSector !== savedSector) {
-            localStorage.setItem('userSector', effectiveSector)
-            savedSector = effectiveSector
-          }
-
-          setUserSector(effectiveSector)
-          setUserLevel(savedLevel)
-
-          const levelLabel =
-            savedLevel === 'coo' ? 'COO/Diretoria' :
-            savedLevel === 'lider' ? 'Líder de Setor' :
-            'Colaborador'
-
-          const metaName = session.user.user_metadata?.full_name as string | undefined
-          const displayName = (metaName && metaName.trim())
-            ? metaName.trim()
-            : `${levelLabel} - ${effectiveSector}`
-          setUserName(displayName)
-          const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
-          setUserInitials(initials)
-        } else {
-          const effectiveSector = savedSector || 'T.I'
-          setUserSector(effectiveSector)
-          setUserLevel(savedLevel)
-
-          const levelLabel =
-            savedLevel === 'coo' ? 'COO/Diretoria' :
-            savedLevel === 'lider' ? 'Líder de Setor' :
-            'Colaborador'
-
-          const displayName = `${levelLabel} - ${effectiveSector}`
-          setUserName(displayName)
-          const initials = effectiveSector.substring(0, 2).toUpperCase()
-          setUserInitials(initials)
+        if (effectiveSector && effectiveSector !== savedSector) {
+          localStorage.setItem('userSector', effectiveSector)
+          savedSector = effectiveSector
         }
-      })
+
+        setUserSector(effectiveSector)
+        setUserLevel(savedLevel)
+
+        const levelLabel =
+          savedLevel === 'coo' ? 'COO/Diretoria' :
+          savedLevel === 'lider' ? 'Líder de Setor' :
+          'Colaborador'
+
+        const metaName = session.user.user_metadata?.full_name as string | undefined
+        const displayName = (metaName && metaName.trim())
+          ? metaName.trim()
+          : `${levelLabel} - ${effectiveSector}`
+        setUserName(displayName)
+        const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+        setUserInitials(initials)
+      } else {
+        const effectiveSector = savedSector || 'T.I'
+        setUserSector(effectiveSector)
+        setUserLevel(savedLevel)
+
+        const levelLabel =
+          savedLevel === 'coo' ? 'COO/Diretoria' :
+          savedLevel === 'lider' ? 'Líder de Setor' :
+          'Colaborador'
+
+        const displayName = `${levelLabel} - ${effectiveSector}`
+        setUserName(displayName)
+        const initials = effectiveSector.substring(0, 2).toUpperCase()
+        setUserInitials(initials)
+      }
     }
 
-    updateUserInfo()
-    loadData()
+    const initData = async () => {
+      await updateUserInfo()
+      await loadData()
+    }
+
+    initData()
 
     // Inscreve no Supabase Realtime para receber atualizações instantâneas no banco
     const channel = supabase
@@ -261,10 +265,16 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({
 
     window.addEventListener('storage', updateUserInfo)
 
+    const handleVisibility = () => { if (document.visibilityState === 'visible') loadData() }
+    window.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', loadData)
+
     return () => {
       clearInterval(interval)
       window.removeEventListener('storage', updateUserInfo)
       supabase.removeChannel(channel)
+      window.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', loadData)
     }
   }, [])
 
@@ -279,6 +289,19 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({
 
     if (data) {
       setNotifications(prev => [mapToNotification(data), ...prev])
+
+      // Dispara a Notificação Push
+      import('../../lib/push').then(({ sendPushNotification }) => {
+        sendPushNotification(
+          {
+            title: notif.title,
+            body: notif.message,
+            url: '/'
+          },
+          notif.targetSector,
+          notif.targetUser
+        )
+      })
     }
   }
 

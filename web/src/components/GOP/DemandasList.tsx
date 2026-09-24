@@ -18,10 +18,23 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
   
   useEffect(() => {
     fetchDemandas()
+    
+    const handleVisibility = () => { if (document.visibilityState === 'visible') fetchDemandas() }
+    window.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', fetchDemandas)
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', fetchDemandas)
+    }
   }, [userSector, userRole])
 
   const fetchDemandas = async () => {
     setLoading(true)
+    
+    // Força a validação da sessão para evitar erros de token expirado
+    await supabase.auth.getSession()
+
     let query = supabase
       .from('demandas')
       .select('*')
@@ -101,7 +114,7 @@ export const DemandasList: React.FC<DemandasListProps> = ({ userSector = 'T.I', 
         </div>
         <button 
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer shrink-0"
+          className="bg-[#1f29de] hover:bg-[#151c9c] text-white font-bold text-sm py-3 px-6 rounded-xl flex items-center gap-2 shadow-md shadow-[#1f29de]/20 transition-all cursor-pointer shrink-0 border-none"
         >
           <Plus size={18} strokeWidth={2.5} />
           Nova Demanda

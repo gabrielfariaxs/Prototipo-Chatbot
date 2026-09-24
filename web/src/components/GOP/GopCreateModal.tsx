@@ -125,6 +125,18 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
       alert(`Ocorreu um erro ao registrar a não conformidade: ${error.message || JSON.stringify(error)}`)
       console.error(error)
     } else {
+      // Dispara Push para a Diretoria/Operações
+      import('../../lib/push').then(({ sendPushNotification }) => {
+        sendPushNotification(
+          {
+            title: 'Nova Não Conformidade (NCO)',
+            body: `${setor} registrou uma nova NCO: "${nome}"`,
+            url: '/'
+          },
+          'Gestor/Diretoria'
+        )
+      })
+
       alert('Não conformidade reportada com sucesso!')
       onSuccess()
     }
