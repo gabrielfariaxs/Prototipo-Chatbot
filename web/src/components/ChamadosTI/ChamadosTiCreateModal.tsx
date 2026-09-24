@@ -19,7 +19,8 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 }) => {
   const defaultSector = userSector === 'T.I' ? 'none' : 'none'
   const [title, setTitle] = useState('')
-  const [empresa, setEmpresa] = useState('Todas')
+  const [empresa, setEmpresa] = useState('Todas (Geral)')
+  const [sistema, setSistema] = useState('Todos (Geral)')
   const defaultRequester = (userName && !userName.startsWith('Líder') && !userName.startsWith('Colaborador') && !userName.startsWith('COO')) ? userName : ''
   const [requesterName, setRequesterName] = useState(defaultRequester)
   const [priority, setPriority] = useState<ChamadoPriority>('media')
@@ -140,7 +141,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
         title: title.trim(),
         priority,
         status: isDirectToTi ? 'aprovado' : 'pendente_aprovacao',
-        description: `Empresa: ${empresa}\n----------------------------------------\n\n${description.trim()}`,
+        description: `Empresa: ${empresa}\nSistema: ${sistema}\n----------------------------------------\n\n${description.trim()}`,
         creatorName: requesterName.trim(),
         creatorSector: userSector || 'Geral',
         approverSector: isDirectToTi ? 'Sem Aprovação (Direto T.I)' : approverSector,
@@ -192,39 +193,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
             </div>
           )}
 
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Título do Chamado *
-            </label>
-            <input 
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Lentidão no ERP Protheus ao faturar nota"
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all"
-            />
-          </div>
-
-          {/* Empresa */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Empresa Relacionada *
-            </label>
-            <select
-              value={empresa}
-              onChange={(e) => setEmpresa(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all cursor-pointer"
-            >
-              <option value="Todas">Todas (Geral)</option>
-              <option value="H91 - MEDIC PE">H91 - MEDIC PE</option>
-              <option value="H92 - MEDIC PA">H92 - MEDIC PA</option>
-              <option value="H93 - ARTHROMED PE">H93 - ARTHROMED PE</option>
-              <option value="H94 - ARTHROMED RN">H94 - ARTHROMED RN</option>
-            </select>
-          </div>
-
-          {/* Grid Solicitante & Setor */}
+          {/* 1. Grid Solicitante & Setor */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -255,6 +224,55 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
                 <span className="text-[10px] text-slate-400 font-bold uppercase">(Automático)</span>
               </div>
             </div>
+          </div>
+
+          {/* 2. Grid Empresa & Sistema */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Empresa Relacionada *
+              </label>
+              <select
+                value={empresa}
+                onChange={(e) => setEmpresa(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all cursor-pointer"
+              >
+                <option value="Todas (Geral)">Todas (Geral)</option>
+                <option value="H91 - MEDIC PE">H91 - MEDIC PE</option>
+                <option value="H92 - MEDIC PA">H92 - MEDIC PA</option>
+                <option value="H93 - ARTHROMED PE">H93 - ARTHROMED PE</option>
+                <option value="H94 - ARTHROMED RN">H94 - ARTHROMED RN</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Sistema *
+              </label>
+              <select
+                value={sistema}
+                onChange={(e) => setSistema(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all cursor-pointer"
+              >
+                <option value="Todos (Geral)">Todos (Geral)</option>
+                <option value="SYSWEB">SYSWEB</option>
+                <option value="SURGIFLOW">SURGIFLOW</option>
+                <option value="ARKO">ARKO</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 3. Title */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Título do Chamado *
+            </label>
+            <input 
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Lentidão no ERP Protheus ao faturar nota"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all"
+            />
           </div>
 
           {/* Prioridade */}
