@@ -390,7 +390,7 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <div>
+                <div className="flex flex-col justify-end">
                   <label className="block text-[13px] font-black text-slate-700 uppercase tracking-widest mb-2">Data da Sessão</label>
                   <input 
                     required type="date" value={dateInputVal} 
@@ -403,21 +403,21 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" 
                   />
                 </div>
-                <div>
+                <div className="flex flex-col justify-end">
                   <label className="block text-[13px] font-black text-slate-700 uppercase tracking-widest mb-2">Horário Início</label>
                   <input 
                     required type="time" value={formData.horario} onChange={e => setFormData({...formData, horario: e.target.value})} 
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" 
                   />
                 </div>
-                <div>
+                <div className="flex flex-col justify-end">
                   <label className="block text-[13px] font-black text-slate-700 uppercase tracking-widest mb-2">Término <span className="text-slate-400 font-normal normal-case">(Previsto)</span></label>
                   <input 
                     required type="time" value={formData.horarioFim} onChange={e => setFormData({...formData, horarioFim: e.target.value})} 
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" 
                   />
                 </div>
-                <div>
+                <div className="flex flex-col justify-end">
                   <label className="block text-[13px] font-black text-slate-700 uppercase tracking-widest mb-2">Link da Chamada <span className="text-slate-400 font-normal normal-case">(Opcional)</span></label>
                   <input 
                     type="url" value={formData.link_video} onChange={e => setFormData({...formData, link_video: e.target.value})} 
