@@ -315,60 +315,23 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       badgeColor: 'bg-indigo-500',
       action: handleOpenNoc
     },
-    ...(import.meta.env.DEV ? [
-      {
-        id: 'portfolios',
-        icon: <BookOpen size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
-        tag: 'Catálogo de Produtos',
-        title: 'Portfólios Corporativos',
-        description: 'Catálogos completos de produtos, soluções tecnológicas, especificações técnicas e instrumentais do grupo.',
-        actionText: 'Selecionar Portfólio',
-        actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
-        tagTheme: 'bg-teal-50 text-teal-700 border-teal-200/70',
-        iconTheme: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-md shadow-teal-500/20',
-        hoverGlow: 'hover:border-teal-500/50 hover:shadow-[0_16px_36px_rgba(20,184,166,0.14)]',
-        hoverTitle: 'group-hover:text-teal-600',
-        actionTextColor: 'text-teal-600',
-        hasBadge: false,
-        badgeColor: 'bg-teal-500',
-        action: () => setShowPortfolioSelection(true)
-      }
-    ] : [
-      {
-        id: 'portfolio',
-        icon: <BookOpen size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
-        tag: 'Catálogo de Produtos',
-        title: 'Portfólio Arthromed',
-        description: 'Catálogo de implantes ortopédicos, artroscopia e especificações.',
-        actionText: 'Acessar Portfólio',
-        actionIcon: <ExternalLink size={15} className="group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />,
-        tagTheme: 'bg-teal-50 text-teal-700 border-teal-200/70',
-        iconTheme: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-md shadow-teal-500/20',
-        hoverGlow: 'hover:border-teal-500/50 hover:shadow-[0_16px_36px_rgba(20,184,166,0.14)]',
-        hoverTitle: 'group-hover:text-teal-600',
-        actionTextColor: 'text-teal-600',
-        hasBadge: false,
-        badgeColor: 'bg-teal-500',
-        action: handlePortfolioClick
-      },
-      {
-        id: 'portfolio-medic',
-        icon: <FolderKanban size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
-        tag: 'Catálogo de Soluções',
-        title: 'Portfólio Medic',
-        description: 'Soluções bucomaxilofaciais e tecnologias cirúrgicas exclusivas.',
-        actionText: 'Acessar Portfólio Medic',
-        actionIcon: <ExternalLink size={15} className="group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />,
-        tagTheme: 'bg-sky-50 text-sky-700 border-sky-200/70',
-        iconTheme: 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20',
-        hoverGlow: 'hover:border-sky-500/50 hover:shadow-[0_16px_36px_rgba(14,165,233,0.14)]',
-        hoverTitle: 'group-hover:text-sky-600',
-        actionTextColor: 'text-sky-600',
-        hasBadge: false,
-        badgeColor: 'bg-sky-500',
-        action: handleMedicPortfolioClick
-      }
-    ]),
+    {
+      id: 'portfolios',
+      icon: <BookOpen size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Catálogo de Produtos',
+      title: 'Portfólios Corporativos',
+      description: 'Catálogos completos de produtos, soluções tecnológicas, especificações técnicas e instrumentais do grupo.',
+      actionText: 'Selecionar Portfólio',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-teal-50 text-teal-700 border-teal-200/70',
+      iconTheme: 'bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-md shadow-teal-500/20',
+      hoverGlow: 'hover:border-teal-500/50 hover:shadow-[0_16px_36px_rgba(20,184,166,0.14)]',
+      hoverTitle: 'group-hover:text-teal-600',
+      actionTextColor: 'text-teal-600',
+      hasBadge: false,
+      badgeColor: 'bg-teal-500',
+      action: () => setShowPortfolioSelection(true)
+    },
     ...(import.meta.env.DEV && (isTreinamentosAuthorized || !userSector) ? [{
       id: 'treinamentos',
       icon: <Users size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
