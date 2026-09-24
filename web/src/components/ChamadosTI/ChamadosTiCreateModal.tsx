@@ -19,6 +19,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
 }) => {
   const defaultSector = userSector === 'T.I' ? 'none' : 'none'
   const [title, setTitle] = useState('')
+  const [empresa, setEmpresa] = useState('Todas')
   const defaultRequester = (userName && !userName.startsWith('Líder') && !userName.startsWith('Colaborador') && !userName.startsWith('COO')) ? userName : ''
   const [requesterName, setRequesterName] = useState(defaultRequester)
   const [priority, setPriority] = useState<ChamadoPriority>('media')
@@ -139,7 +140,7 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
         title: title.trim(),
         priority,
         status: isDirectToTi ? 'aprovado' : 'pendente_aprovacao',
-        description: description.trim(),
+        description: `Empresa: ${empresa}\n----------------------------------------\n\n${description.trim()}`,
         creatorName: requesterName.trim(),
         creatorSector: userSector || 'Geral',
         approverSector: isDirectToTi ? 'Sem Aprovação (Direto T.I)' : approverSector,
@@ -203,6 +204,24 @@ export const ChamadosTiCreateModal: React.FC<ChamadosTiCreateModalProps> = ({
               placeholder="Ex: Lentidão no ERP Protheus ao faturar nota"
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all"
             />
+          </div>
+
+          {/* Empresa */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Empresa Relacionada *
+            </label>
+            <select
+              value={empresa}
+              onChange={(e) => setEmpresa(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all cursor-pointer"
+            >
+              <option value="Todas">Todas (Geral)</option>
+              <option value="H91 - MEDIC PE">H91 - MEDIC PE</option>
+              <option value="H92 - MEDIC PA">H92 - MEDIC PA</option>
+              <option value="H93 - ARTHROMED PE">H93 - ARTHROMED PE</option>
+              <option value="H94 - ARTHROMED RN">H94 - ARTHROMED RN</option>
+            </select>
           </div>
 
           {/* Grid Solicitante & Setor */}

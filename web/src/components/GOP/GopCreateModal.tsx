@@ -16,6 +16,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
   const [dataOcorrencia, setDataOcorrencia] = useState('')
   const [dataRegistro, setDataRegistro] = useState(new Date().toISOString().split('T')[0])
   const [nome, setNome] = useState('')
+  const [empresa, setEmpresa] = useState('Todas')
   const [descricao, setDescricao] = useState('')
   const [consequencias, setConsequencias] = useState('')
   const [causa, setCausa] = useState('')
@@ -109,7 +110,7 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
       data_ocorrencia: dataOcorrencia || null,
       data_registro: dataRegistro,
       titulo: nome,
-      descricao,
+      descricao: `Empresa: ${empresa}\n----------------------------------------\n\n${descricao}`,
       consequencias,
       causa_provavel: causa,
       sugestao_lider: '',
@@ -232,6 +233,20 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
                     placeholder="Ex.: Atraso na aprovação de pedidos de compra"
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Empresa Relacionada *</label>
+                  <select 
+                    value={empresa} 
+                    onChange={e => setEmpresa(e.target.value)}
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[15px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-white cursor-pointer"
+                  >
+                    <option value="Todas">Todas (Geral)</option>
+                    <option value="H91 - MEDIC PE">H91 - MEDIC PE</option>
+                    <option value="H92 - MEDIC PA">H92 - MEDIC PA</option>
+                    <option value="H93 - ARTHROMED PE">H93 - ARTHROMED PE</option>
+                    <option value="H94 - ARTHROMED RN">H94 - ARTHROMED RN</option>
+                  </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-bold text-[#1a2332] dark:text-slate-200">Descrição do Problema *</label>
