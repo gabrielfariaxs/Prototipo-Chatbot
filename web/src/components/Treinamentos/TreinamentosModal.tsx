@@ -499,6 +499,27 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
     if (!selectedTreinamento) return null
     const checkinUrl = `${window.location.origin}/checkin/${selectedTreinamento.id}`
 
+    const checkinAvailable = () => {
+      const [startStr, endStr] = selectedTreinamento.horario.split(' às ')
+      if (!startStr || !endStr) return true
+      
+      const now = new Date()
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+      
+      // Se não for hoje, já bloqueia
+      if (selectedTreinamento.data !== todayStr) return false
+      
+      const currentTime = now.getHours() * 60 + now.getMinutes()
+      const [startH, startM] = startStr.split(':').map(Number)
+      const startTime = startH * 60 + startM
+      const [endH, endM] = endStr.split(':').map(Number)
+      const endTime = endH * 60 + endM
+      
+      return currentTime >= startTime && currentTime <= endTime
+    }
+
+    const isAvailable = checkinAvailable()
+
     return (
       <div className="p-6 h-full flex flex-col">
         <div className="flex items-center justify-between mb-6">
@@ -509,22 +530,44 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
               <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Treinamento Ativo</p>
             </div>
           </div>
-          <button onClick={handleDownloadAta} className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-900 transition-colors text-sm font-bold">
+          <button onClick={handleDownloadAta} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-bold shadow-sm">
             <Download size={16} /> Baixar Ata
           </button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 flex-1">
           {/* QR Code Section */}
-          <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-6 bg-slate-50 border border-slate-200 rounded-3xl">
-            <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-100 mb-4">
-              <QRCodeSVG value={checkinUrl} size={200} level="H" includeMargin={false} />
-            </div>
-            <h3 className="font-black text-lg text-slate-800 mb-1 flex items-center gap-2"><QrCode size={18}/> Check-in Digital</h3>
-            <p className="text-sm text-slate-500 text-center">Peça aos colaboradores para escanear o código com a câmera do celular.</p>
-            <div className="mt-4 p-2 bg-slate-200 rounded text-[10px] break-all text-center text-slate-600 font-mono">
-              {checkinUrl}
-            </div>
+          <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-6 bg-slate-50 border border-slate-200 rounded-3xl text-center">
+            {isAvailable ? (
+              <>
+                <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-100 mb-4">
+                  <QRCodeSVG value={checkinUrl} size={200} level="H" includeMargin={false} />
+                </div>
+                <h3 className="font-black text-lg text-slate-800 mb-1 flex items-center gap-2 justify-center"><QrCode size={18}/> Check-in Digital</h3>
+                <p className="text-sm text-slate-500 mb-4">Peça aos colaboradores para escanear o código com a câmera do celular ou compartilhe o link abaixo.</p>
+                
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(checkinUrl);
+                    alert('Link copiado para a área de transferência!');
+                  }}
+                  className="w-full py-2.5 px-4 bg-white border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                >
+                  <LinkIcon size={16} /> Copiar Link de Check-in
+                </button>
+              </>
+            ) : (
+              <div className="py-12 flex flex-col items-center">
+                <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+                  <Clock size={32} className="text-slate-400" />
+                </div>
+                <h3 className="font-black text-lg text-slate-800 mb-2">Check-in Indisponível</h3>
+                <p className="text-sm text-slate-500">
+                  O check-in só estará liberado durante o horário do treinamento:<br/>
+                  <strong className="text-slate-700">{selectedTreinamento.horario}</strong>
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Lista de Presenças */}
