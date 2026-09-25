@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Clock, Link as LinkIcon, Play, Download, QrCode, CheckCircle2 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import * as ExcelJS from 'exceljs'
+import PizZip from 'pizzip'
+import Docxtemplater from 'docxtemplater'
+import { saveAs } from 'file-saver'
 import { supabase } from '../../lib/supabase'
 import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas, updateTreinamento } from '../../lib/trainings-service'
 import type { Treinamento, Presenca } from '../../lib/trainings-service'
@@ -146,32 +149,74 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
 
   const handleDownloadAta = async () => {
     if (!selectedTreinamento) return
-    const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet('Ata de Presença')
     
-    worksheet.columns = [
-      { header: 'Nome do Colaborador', key: 'nome', width: 30 },
-      { header: 'Setor', key: 'setor', width: 25 },
-      { header: 'Data do Check-in', key: 'data', width: 15 },
-      { header: 'Hora do Check-in', key: 'hora', width: 15 }
-    ]
-
-    presencas.forEach(p => {
-      const d = new Date(p.horario_checkin)
-      worksheet.addRow({
-        nome: p.nome,
-        setor: p.setor,
-        data: d.toLocaleDateString('pt-BR'),
-        hora: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    try {
+      // Tentar buscar o template docx primeiro
+      const response = await fetch('/RQ TREIN01.docx')
+      
+      // Se não encontrar ou der erro, lança exceção para cair no catch e usar Excel
+      if (!response.ok) throw new Error('Template docx não encontrado')
+      
+      const arrayBuffer = await response.arrayBuffer()
+      const zip = new PizZip(arrayBuffer)
+      const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
       })
-    })
+      
+      // Formatar dados para o template
+      const templateData = {
+        data: selectedTreinamento.data.split('-').reverse().join('/'),
+        presencas: presencas.map(p => {
+          const d = new Date(p.horario_checkin)
+          return {
+            nome: p.nome,
+            setor: p.setor,
+            horario: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          }
+        })
+      }
+      
+      doc.render(templateData)
+      
+      const out = doc.getZip().generate({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      })
+      
+      saveAs(out, `Ata_Treinamento_${selectedTreinamento.titulo.replace(/\s+/g, '_')}.docx`)
+      
+    } catch (err) {
+      console.warn('Template Word (.docx) não encontrado, gerando Excel padrão:', err)
+      
+      // Fallback para Excel
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet('Ata de Presença')
+      
+      worksheet.columns = [
+        { header: 'Nome do Colaborador', key: 'nome', width: 30 },
+        { header: 'Setor', key: 'setor', width: 25 },
+        { header: 'Data do Check-in', key: 'data', width: 15 },
+        { header: 'Hora do Check-in', key: 'hora', width: 15 }
+      ]
 
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `Ata_Treinamento_${selectedTreinamento.titulo.replace(/\s+/g, '_')}.xlsx`
-    link.click()
+      presencas.forEach(p => {
+        const d = new Date(p.horario_checkin)
+        worksheet.addRow({
+          nome: p.nome,
+          setor: p.setor,
+          data: d.toLocaleDateString('pt-BR'),
+          hora: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        })
+      })
+
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `Ata_Treinamento_${selectedTreinamento.titulo.replace(/\s+/g, '_')}.xlsx`
+      link.click()
+    }
   }
 
   // Renders
