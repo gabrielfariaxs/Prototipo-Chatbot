@@ -8,7 +8,7 @@ export const BIRTHDAYS: Birthday[] = [
   // Janeiro
   { name: 'DIEGO LUIZ - ARTHROMED', day: 4, month: 1 },
   { name: 'LUIS AUGUSTO (MA)', day: 9, month: 1 },
-  { name: 'LEO (ARTHOMED)', day: 9, month: 1 },
+  { name: 'LEO (ARTHROMED)', day: 9, month: 1 },
   { name: 'ELAYNE - BELEM', day: 15, month: 1 },
   { name: 'NETO', day: 18, month: 1 },
   { name: 'PEDROSA', day: 29, month: 1 },
@@ -22,11 +22,11 @@ export const BIRTHDAYS: Birthday[] = [
   { name: 'EVELLYN LUNA - INSTRUMENTADORA PB', day: 27, month: 3 },
 
   // Abril
-  { name: 'VANESSA COSTA -- ARTHRO', day: 8, month: 4 },
+  { name: 'VANESSA COSTA - ARTHROMED', day: 8, month: 4 },
   { name: 'GILMAR', day: 9, month: 4 },
-  { name: 'DIEGO DE LIMA -- ARTHRO', day: 20, month: 4 },
+  { name: 'DIEGO DE LIMA - ARTHROMED', day: 20, month: 4 },
   { name: 'GEORGE BOTELHO - PA', day: 28, month: 4 },
-  { name: 'CLAYTON -- ARTHRO', day: 29, month: 4 },
+  { name: 'CLAYTON - ARTHROMED', day: 29, month: 4 },
 
   // Maio
   { name: 'JACKSON', day: 7, month: 5 },
@@ -63,11 +63,11 @@ export const BIRTHDAYS: Birthday[] = [
   { name: 'MARIA', day: 31, month: 8 },
 
   // Setembro
-  { name: 'GABRIEL FARIAS - ARTHRO', day: 14, month: 9 },
+  { name: 'GABRIEL FARIAS - ARTHROMED', day: 14, month: 9 },
   { name: 'RAFAEL DE SOUZA DUARTE - CAMPINA', day: 15, month: 9 },
   { name: 'CATARINA', day: 20, month: 9 },
   { name: 'ALINE - CE', day: 21, month: 9 },
-  { name: 'ALESSANDRA DE LIMA - ARTHRO', day: 25, month: 9 },
+  { name: 'ALESSANDRA DE LIMA - ARTHROMED', day: 25, month: 9 },
 
   // Outubro
   { name: 'FRANCISCA - RN', day: 4, month: 10 },
