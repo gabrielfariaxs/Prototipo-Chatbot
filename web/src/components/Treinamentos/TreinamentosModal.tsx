@@ -129,12 +129,19 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
   }
 
   const handleStartMeeting = async (t: Treinamento) => {
-    if (t.status === 'agendado') {
-      await updateTreinamentoStatus(t.id, 'em_andamento')
-      t.status = 'em_andamento'
+    try {
+      console.log('Iniciando treinamento:', t)
+      if (t.status === 'agendado') {
+        await updateTreinamentoStatus(t.id, 'em_andamento')
+        t.status = 'em_andamento'
+      }
+      setSelectedTreinamento(t)
+      setView('meeting_active')
+      console.log('View alterada para meeting_active')
+    } catch (error: any) {
+      console.error('Erro ao iniciar treinamento:', error)
+      alert('Erro ao iniciar treinamento: ' + (error.message || 'Erro desconhecido. Verifique o console.'))
     }
-    setSelectedTreinamento(t)
-    setView('meeting_active')
   }
 
   const handleDownloadAta = async () => {
