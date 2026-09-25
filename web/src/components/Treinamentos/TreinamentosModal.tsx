@@ -78,17 +78,7 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
   const fetchPresencas = async () => {
     if (!selectedTreinamento) return
     const data = await getPresencas(selectedTreinamento.id)
-    
-    // MOCK DE DADOS PARA TESTE
-    if (data.length === 0) {
-      setPresencas([
-        { id: 'fake1', treinamento_id: selectedTreinamento.id, nome: 'João Silva Teste', setor: 'Tecnologia', horario_checkin: new Date().toISOString() },
-        { id: 'fake2', treinamento_id: selectedTreinamento.id, nome: 'Maria Souza Falsa', setor: 'RH', horario_checkin: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-        { id: 'fake3', treinamento_id: selectedTreinamento.id, nome: 'Carlos Pereira (Teste)', setor: 'Financeiro', horario_checkin: new Date(Date.now() - 1000 * 60 * 15).toISOString() }
-      ])
-    } else {
-      setPresencas(data)
-    }
+    setPresencas(data)
   }
 
   // Helpers do Calendário
