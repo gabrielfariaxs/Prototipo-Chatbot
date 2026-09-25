@@ -537,9 +537,21 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
               <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Treinamento Ativo</p>
             </div>
           </div>
-          <button onClick={handleDownloadAta} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-bold shadow-sm">
-            <Download size={16} /> Baixar Ata
-          </button>
+          <div className="flex items-center gap-3">
+            {selectedTreinamento.link_video && (
+              <a 
+                href={selectedTreinamento.link_video.startsWith('http') ? selectedTreinamento.link_video : `https://${selectedTreinamento.link_video}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-200 transition-colors text-sm font-bold shadow-sm"
+              >
+                <Play size={16} /> Entrar na Reunião
+              </a>
+            )}
+            <button onClick={handleDownloadAta} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-bold shadow-sm">
+              <Download size={16} /> Baixar Ata
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 flex-1">
