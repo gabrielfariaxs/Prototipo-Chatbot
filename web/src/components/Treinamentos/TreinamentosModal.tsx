@@ -347,16 +347,32 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
           </div>
         ) : (
           <div className="space-y-4">
-            {dayTrainings.map(t => (
+            {dayTrainings.map(t => {
+              const now = new Date()
+              const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+              let isPast = t.data < todayStr
+              if (t.data === todayStr) {
+                const parts = t.horario.split(' às ')
+                if (parts[1]) {
+                  const [endH, endM] = parts[1].split(':').map(Number)
+                  if (now.getHours() * 60 + now.getMinutes() > endH * 60 + endM) isPast = true
+                } else {
+                  const [startH, startM] = parts[0].split(':').map(Number)
+                  if (now.getHours() * 60 + now.getMinutes() > (startH + 1) * 60 + startM) isPast = true
+                }
+              }
+              const concluded = t.status === 'finalizado' || isPast
+
+              return (
               <div key={t.id} className="border border-slate-200 rounded-2xl p-5 hover:border-indigo-300 transition-colors bg-white shadow-xs">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-bold text-lg text-slate-800">{t.titulo}</h3>
                   <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wide ${
-                    t.status === 'em_andamento' ? 'bg-emerald-100 text-emerald-700' :
-                    t.status === 'finalizado' ? 'bg-slate-100 text-slate-600' :
+                    !concluded && t.status === 'em_andamento' ? 'bg-emerald-100 text-emerald-700' :
+                    concluded ? 'bg-slate-100 text-slate-600' :
                     'bg-indigo-100 text-indigo-700'
                   }`}>
-                    {t.status.replace('_', ' ')}
+                    {concluded ? 'FINALIZADO' : t.status.replace('_', ' ')}
                   </span>
                 </div>
                 <p className="text-sm text-slate-600 mb-4">{t.descricao}</p>
@@ -370,10 +386,11 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                   <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
                     <button 
                       onClick={() => handleStartMeeting(t)}
-                      style={{ backgroundColor: '#4f46e5', color: '#ffffff' }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-md"
+                      style={{ backgroundColor: concluded ? '#f1f5f9' : '#4f46e5', color: concluded ? '#475569' : '#ffffff' }}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-md ${concluded ? 'border border-slate-300' : ''}`}
                     >
-                      <Play size={16} /> Iniciar Treinamento
+                      {concluded ? <CheckCircle2 size={16} /> : <Play size={16} />} 
+                      {concluded ? 'Ver Ata e Presenças' : 'Iniciar Treinamento'}
                     </button>
                     <button 
                       onClick={() => {
@@ -407,7 +424,7 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                   </div>
                 )}
               </div>
-            ))}
+            )})}
           </div>
         )}
 
