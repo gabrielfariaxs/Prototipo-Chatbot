@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Clock, Link as LinkIcon, Play, Download, QrCode, CheckCircle2 } from 'lucide-react'
+import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Clock, Link as LinkIcon, Play, Download, QrCode, CheckCircle2, LogOut } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import * as ExcelJS from 'exceljs'
 import PizZip from 'pizzip'
@@ -756,9 +756,22 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
             <p className="text-xs text-slate-500">Agendamentos, calendário e atas de presença</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={async () => {
+              if (confirm('Deseja realmente sair da sua conta?')) {
+                await supabase.auth.signOut();
+                window.location.reload();
+              }
+            }} 
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+          >
+            <LogOut size={14} /> Sair
+          </button>
+          <button onClick={onClose} className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-[#f8fafc]">
