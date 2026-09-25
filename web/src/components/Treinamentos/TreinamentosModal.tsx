@@ -42,7 +42,13 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
   const [loading, setLoading] = useState(false)
   const [feriados, setFeriados] = useState<any[]>([])
 
-  const isLeader = userLevel === 'coo' || userLevel === 'lider' || userSector.includes('ti') || userSector.includes('gestor') || userSector.toLowerCase().includes('opera')
+  const levelLow = userLevel.toLowerCase();
+  const sectorLow = userSector.toLowerCase();
+  
+  const isGestorOrDiretor = levelLow.includes('gestor') || levelLow.includes('diretor') || levelLow.includes('coo') || levelLow.includes('diretoria') || sectorLow.includes('gestor') || sectorLow.includes('diretoria');
+  const isLiderTiOrOperacoes = (levelLow.includes('lider') || levelLow.includes('líder')) && (sectorLow.includes('ti') || sectorLow.includes('opera'));
+  
+  const isLeader = isGestorOrDiretor || isLiderTiOrOperacoes;
 
   useEffect(() => {
     fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1)
