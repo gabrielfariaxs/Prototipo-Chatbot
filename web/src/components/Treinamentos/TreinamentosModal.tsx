@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Clock, Link as LinkIcon, Play, Download, QrCode, CheckCircle2, LogOut } from 'lucide-react'
+import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Clock, Link as LinkIcon, Play, Download, QrCode, CheckCircle2, LogOut, Gift } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import * as ExcelJS from 'exceljs'
 import PizZip from 'pizzip'
@@ -9,6 +9,7 @@ import { saveAs } from 'file-saver'
 import { supabase } from '../../lib/supabase'
 import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas, updateTreinamento } from '../../lib/trainings-service'
 import type { Treinamento, Presenca } from '../../lib/trainings-service'
+import { BIRTHDAYS } from '../../data/birthdays'
 
 interface TreinamentosModalProps {
   onClose: () => void
@@ -242,6 +243,8 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
       const dayTrainings = treinamentos.filter(t => t.data === dateStr)
       const hasTraining = dayTrainings.length > 0
       const holiday = feriados.find(f => f.date === dateStr)
+      const monthNum = currentDate.getMonth() + 1
+      const dayBirthdays = BIRTHDAYS.filter(b => b.month === monthNum && b.day === dayNumber)
       
       const isToday = dayNumber === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear()
 
@@ -254,12 +257,15 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
               ? 'bg-gradient-to-br from-indigo-50/80 to-blue-50/50 border-indigo-200 shadow-md ring-1 ring-indigo-100' 
               : holiday
                 ? 'bg-red-50/20 border-red-100 hover:border-red-300 hover:shadow-lg hover:-translate-y-0.5 hover:bg-red-50/40'
-                : 'bg-white border-slate-200/80 shadow-xs hover:border-indigo-400 hover:shadow-lg hover:-translate-y-0.5 hover:bg-slate-50/50'
+                : dayBirthdays.length > 0
+                  ? 'bg-amber-50/30 border-amber-200 hover:border-amber-300 hover:shadow-lg hover:-translate-y-0.5 hover:bg-amber-50/50'
+                  : 'bg-white border-slate-200/80 shadow-xs hover:border-indigo-400 hover:shadow-lg hover:-translate-y-0.5 hover:bg-slate-50/50'
             }`}
         >
           <span className={`text-[13px] font-black w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-300 ${
             isToday ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-110' : 
             holiday ? 'text-red-700 bg-red-100 group-hover:bg-red-200' :
+            dayBirthdays.length > 0 ? 'text-amber-700 bg-amber-100 group-hover:bg-amber-200' :
             'text-slate-600 bg-slate-100/80 group-hover:bg-indigo-100 group-hover:text-indigo-700'
           }`}>
             {dayNumber}
@@ -271,6 +277,12 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                 <span className="truncate">{holiday.name}</span>
               </div>
             )}
+            {dayBirthdays.map((b, idx) => (
+              <div key={`b-${idx}`} className="w-full truncate text-[10px] font-extrabold px-2 py-1 rounded-lg border bg-amber-50 text-amber-700 border-amber-200/60 flex items-center gap-1.5" title={`Aniversário: ${b.name}`}>
+                <Gift size={10} className="shrink-0 text-amber-500" />
+                <span className="truncate">{b.name}</span>
+              </div>
+            ))}
             {dayTrainings.slice(0, 2).map((t, idx) => (
               <div key={idx} className={`w-full truncate text-[10px] font-extrabold px-2 py-1 rounded-lg border flex items-center gap-1.5 ${t.status === 'em_andamento' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-indigo-50 text-indigo-700 border-indigo-200/60'}`}>
                 <span className={`w-1 h-1 rounded-full ${t.status === 'em_andamento' ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500'}`}></span>
@@ -336,6 +348,9 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
     if (!selectedDate) return null
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
     const dayTrainings = treinamentos.filter(t => t.data === dateStr)
+    const monthNum = selectedDate.getMonth() + 1
+    const dayNum = selectedDate.getDate()
+    const dayBirthdays = BIRTHDAYS.filter(b => b.month === monthNum && b.day === dayNum)
 
     return (
       <div className="p-6">
@@ -345,6 +360,27 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
             Treinamentos: {selectedDate.toLocaleDateString('pt-BR')}
           </h2>
         </div>
+
+        {dayBirthdays.length > 0 && (
+          <div className="mb-6 space-y-3">
+            <h3 className="text-sm font-bold text-amber-700 flex items-center gap-2 uppercase tracking-wider">
+              <Gift size={16} /> Aniversariantes do Dia
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {dayBirthdays.map((b, idx) => (
+                <div key={`bdetail-${idx}`} className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+                    <Gift size={20} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-800">{b.name}</div>
+                    <div className="text-xs font-semibold text-amber-600">Parabéns pelo seu dia! 🎉</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {dayTrainings.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
