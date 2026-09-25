@@ -45,6 +45,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const [rejectionInput, setRejectionInput] = useState('')
   const [resolutionInput, setResolutionInput] = useState('')
   const [commentInput, setCommentInput] = useState('')
+  const [logInput, setLogInput] = useState('')
   const [redirectSector, setRedirectSector] = useState('Operações')
   const [redirectReason, setRedirectReason] = useState('')
   
@@ -281,6 +282,13 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
     if (!commentInput.trim() || !onAddComment) return
     onAddComment(chamado.id, commentInput.trim())
     setCommentInput('')
+  }
+
+  const handleSendLog = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!logInput.trim() || !onAddComment) return
+    onAddComment(chamado.id, '[LOG]: ' + logInput.trim())
+    setLogInput('')
   }
 
   const handleConfirmRedirect = () => {
@@ -1043,80 +1051,142 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
 
           </div>
 
-          {/* Interactive Internal Chat Section */}
-          <div className="pt-6 border-t border-slate-200 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <MessageSquare size={16} className="text-[#1a2332]" />
-                <h4 className="text-xs font-bold text-[#1a2332] uppercase tracking-wider">
-                  Histórico & Chat do Chamado ({chamado.comments?.length || 0})
-                </h4>
-              </div>
-              {bd.isWaitingResponse && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
-                  </span>
-                  <span>Aguardando resposta do solicitante</span>
-                </span>
-              )}
-            </div>
-
-            {/* Comments List */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 max-h-60 overflow-y-auto">
-              {(!chamado.comments || chamado.comments.length === 0) ? (
-                <div className="text-center py-4 text-xs text-slate-400">
-                  Nenhuma mensagem enviada ainda. Digite uma mensagem abaixo para se comunicar sobre este chamado.
+          {/* Interactive Internal Chat Section - DUPLO (Log e Chat) */}
+          <div className="pt-6 border-t border-slate-200">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* OCORRÊNCIAS (Log Interno T.I) */}
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-orange-600" />
+                  <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider">
+                    Log de Ocorrências (Interno T.I)
+                  </h4>
                 </div>
-              ) : (
-                chamado.comments.map((msg) => {
-                  const isMe = msg.authorName === userName
-                  return (
-                    <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-bold text-slate-700">{msg.authorName}</span>
-                        <span className="text-[9px] font-bold text-blue-600 uppercase bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
-                          {msg.authorSector}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {formatCommentDateTime(msg.createdAt)}
-                        </span>
-                      </div>
-                      <div className={`p-3 rounded-2xl text-xs max-w-[85%] font-medium leading-relaxed ${
-                        msg.text.startsWith('🔄') 
-                          ? 'bg-purple-100 text-purple-900 border border-purple-200 w-full' 
-                          : isMe 
-                            ? 'bg-[#1a2332] text-white rounded-tr-xs shadow-xs' 
-                            : 'bg-white border border-slate-200 text-slate-800 rounded-tl-xs shadow-xs'
-                      }`}>
-                        <LinkifiedText text={msg.text} isDarkBg={isMe} />
-                      </div>
+                
+                <div className="bg-orange-50/50 border border-orange-200/60 rounded-xl p-4 space-y-3 h-60 overflow-y-auto flex-1">
+                  {(!chamado.comments || chamado.comments.filter(c => c.text.startsWith('[LOG]: ')).length === 0) ? (
+                    <div className="text-center py-4 text-xs text-orange-400 font-medium">
+                      Nenhuma ocorrência registrada.<br/>Use este espaço para relatar o andamento do atendimento.
                     </div>
-                  )
-                })
-              )}
-            </div>
+                  ) : (
+                    chamado.comments.filter(c => c.text.startsWith('[LOG]: ')).map((msg) => {
+                      const text = msg.text.replace('[LOG]: ', '')
+                      return (
+                        <div key={msg.id} className="flex flex-col items-start">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-[10px] font-bold text-slate-700">{msg.authorName}</span>
+                            <span className="text-[9px] font-bold text-blue-600 uppercase bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
+                              {msg.authorSector}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {formatCommentDateTime(msg.createdAt)}
+                            </span>
+                          </div>
+                          <div className="p-3 rounded-2xl text-xs max-w-[95%] font-medium leading-relaxed bg-white border-l-2 border-l-orange-400 border border-slate-200 text-slate-700 rounded-tl-none shadow-xs">
+                            <LinkifiedText text={text} isDarkBg={false} />
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
 
-            {/* Send Comment Input */}
-            <form onSubmit={handleSendComment} className="flex gap-2">
-              <input
-                type="text"
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                placeholder="Digite uma mensagem (ex: Oi Jailton, aguardando seu retorno)..."
-                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all"
-              />
-              <button
-                type="submit"
-                disabled={!commentInput.trim()}
-                className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                style={{ backgroundColor: '#1a2332', color: '#ffffff' }}
-              >
-                <span>Enviar</span>
-                <Send size={14} />
-              </button>
-            </form>
+                {userSector === 'T.I' && (
+                  <form onSubmit={handleSendLog} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={logInput}
+                      onChange={(e) => setLogInput(e.target.value)}
+                      placeholder="Registrar ocorrência/andamento..."
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!logInput.trim()}
+                      className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer bg-orange-600 hover:bg-orange-700"
+                    >
+                      <span>Registrar</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {/* CHAT NORMAL (Com Solicitante) */}
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare size={16} className="text-[#1a2332]" />
+                    <h4 className="text-xs font-bold text-[#1a2332] uppercase tracking-wider">
+                      Chat com Solicitante
+                    </h4>
+                  </div>
+                  {bd.isWaitingResponse && (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
+                      </span>
+                      <span>Aguardando resposta</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 h-60 overflow-y-auto flex-1">
+                  {(!chamado.comments || chamado.comments.filter(c => !c.text.startsWith('[LOG]: ')).length === 0) ? (
+                    <div className="text-center py-4 text-xs text-slate-400 font-medium">
+                      Nenhuma mensagem enviada ainda.<br/>Digite abaixo para se comunicar.
+                    </div>
+                  ) : (
+                    chamado.comments.filter(c => !c.text.startsWith('[LOG]: ')).map((msg) => {
+                      const isMe = msg.authorName === userName
+                      return (
+                        <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-[10px] font-bold text-slate-700">{msg.authorName}</span>
+                            <span className="text-[9px] font-bold text-blue-600 uppercase bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
+                              {msg.authorSector}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {formatCommentDateTime(msg.createdAt)}
+                            </span>
+                          </div>
+                          <div className={`p-3 rounded-2xl text-xs max-w-[85%] font-medium leading-relaxed ${
+                            msg.text.startsWith('🔄') 
+                              ? 'bg-purple-100 text-purple-900 border border-purple-200 w-full' 
+                              : isMe 
+                                ? 'bg-[#1a2332] text-white rounded-tr-xs shadow-xs' 
+                                : 'bg-white border border-slate-200 text-slate-800 rounded-tl-xs shadow-xs'
+                          }`}>
+                            <LinkifiedText text={msg.text} isDarkBg={isMe} />
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+
+                <form onSubmit={handleSendComment} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    placeholder="Digite uma mensagem para o solicitante..."
+                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-[#1a2332] focus:ring-1 focus:ring-[#1a2332] transition-all"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!commentInput.trim()}
+                    className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                    style={{ backgroundColor: '#1a2332', color: '#ffffff' }}
+                  >
+                    <span>Enviar</span>
+                    <Send size={14} />
+                  </button>
+                </form>
+              </div>
+
+            </div>
           </div>
 
         </div>
