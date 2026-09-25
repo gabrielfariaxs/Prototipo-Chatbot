@@ -1110,7 +1110,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                         <button
                           type="submit"
                           disabled={!logInput.trim()}
-                          className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer bg-orange-600 hover:bg-orange-700"
+                          className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                          style={{ backgroundColor: '#ea580c' }}
                         >
                           <span>Registrar</span>
                         </button>
