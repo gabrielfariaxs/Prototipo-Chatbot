@@ -52,6 +52,7 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const [showRejectForm, setShowRejectForm] = useState(false)
   const [showResolveForm, setShowResolveForm] = useState(false)
   const [showRedirectForm, setShowRedirectForm] = useState(false)
+  const [isLogOpen, setIsLogOpen] = useState(false)
 
   // Lightbox de preview de anexos
   const [previewFile, setPreviewFile] = useState<{ name: string; base64: string; type: string } | null>(null)
@@ -1053,62 +1054,69 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
 
           {/* Interactive Internal Chat Section - DUPLO (Log e Chat) */}
           <div className="pt-6 border-t border-slate-200">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className={`grid grid-cols-1 ${isLogOpen ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
               
               {/* OCORRÊNCIAS (Log Interno T.I) */}
               <div className="flex flex-col space-y-4">
-                <div className="flex items-center gap-2">
-                  <FileText size={16} className="text-orange-600" />
-                  <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider">
-                    Log de Ocorrências (Interno T.I)
+                <div 
+                  className="flex items-center gap-2 cursor-pointer group w-fit" 
+                  onClick={() => setIsLogOpen(!isLogOpen)}
+                >
+                  <FileText size={16} className="text-orange-600 group-hover:scale-110 transition-transform" />
+                  <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider group-hover:text-orange-800 transition-colors">
+                    Log de Ocorrências (Interno T.I) {isLogOpen ? '[-]' : '[+]'}
                   </h4>
                 </div>
                 
-                <div className="bg-orange-50/50 border border-orange-200/60 rounded-xl p-4 space-y-3 h-60 overflow-y-auto flex-1">
-                  {(!chamado.comments || chamado.comments.filter(c => c.text.startsWith('[LOG]: ')).length === 0) ? (
-                    <div className="text-center py-4 text-xs text-orange-400 font-medium">
-                      Nenhuma ocorrência registrada.<br/>Use este espaço para relatar o andamento do atendimento.
-                    </div>
-                  ) : (
-                    chamado.comments.filter(c => c.text.startsWith('[LOG]: ')).map((msg) => {
-                      const text = msg.text.replace('[LOG]: ', '')
-                      return (
-                        <div key={msg.id} className="flex flex-col items-start">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="text-[10px] font-bold text-slate-700">{msg.authorName}</span>
-                            <span className="text-[9px] font-bold text-blue-600 uppercase bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
-                              {msg.authorSector}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {formatCommentDateTime(msg.createdAt)}
-                            </span>
-                          </div>
-                          <div className="p-3 rounded-2xl text-xs max-w-[95%] font-medium leading-relaxed bg-white border-l-2 border-l-orange-400 border border-slate-200 text-slate-700 rounded-tl-none shadow-xs">
-                            <LinkifiedText text={text} isDarkBg={false} />
-                          </div>
+                {isLogOpen && (
+                  <div className="flex flex-col flex-1 space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="bg-orange-50/50 border border-orange-200/60 rounded-xl p-4 space-y-3 h-60 overflow-y-auto flex-1">
+                      {(!chamado.comments || chamado.comments.filter(c => c.text.startsWith('[LOG]: ')).length === 0) ? (
+                        <div className="text-center py-4 text-xs text-orange-400 font-medium">
+                          Nenhuma ocorrência registrada.<br/>Use este espaço para relatar o andamento do atendimento.
                         </div>
-                      )
-                    })
-                  )}
-                </div>
+                      ) : (
+                        chamado.comments.filter(c => c.text.startsWith('[LOG]: ')).map((msg) => {
+                          const text = msg.text.replace('[LOG]: ', '')
+                          return (
+                            <div key={msg.id} className="flex flex-col items-start">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-[10px] font-bold text-slate-700">{msg.authorName}</span>
+                                <span className="text-[9px] font-bold text-blue-600 uppercase bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100">
+                                  {msg.authorSector}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {formatCommentDateTime(msg.createdAt)}
+                                </span>
+                              </div>
+                              <div className="p-3 rounded-2xl text-xs max-w-[95%] font-medium leading-relaxed bg-white border-l-2 border-l-orange-400 border border-slate-200 text-slate-700 rounded-tl-none shadow-xs">
+                                <LinkifiedText text={text} isDarkBg={false} />
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
 
-                {userSector === 'T.I' && (
-                  <form onSubmit={handleSendLog} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={logInput}
-                      onChange={(e) => setLogInput(e.target.value)}
-                      placeholder="Registrar ocorrência/andamento..."
-                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!logInput.trim()}
-                      className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer bg-orange-600 hover:bg-orange-700"
-                    >
-                      <span>Registrar</span>
-                    </button>
-                  </form>
+                    {userSector === 'T.I' && (
+                      <form onSubmit={handleSendLog} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={logInput}
+                          onChange={(e) => setLogInput(e.target.value)}
+                          placeholder="Registrar ocorrência/andamento..."
+                          className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!logInput.trim()}
+                          className="px-4 py-2.5 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer bg-orange-600 hover:bg-orange-700"
+                        >
+                          <span>Registrar</span>
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 )}
               </div>
 
