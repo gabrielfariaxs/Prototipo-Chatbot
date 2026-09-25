@@ -332,7 +332,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       badgeColor: 'bg-teal-500',
       action: () => setShowPortfolioSelection(true)
     },
-    ...(import.meta.env.DEV && (isTreinamentosAuthorized || !userSector) ? [{
+    ...(isTreinamentosAuthorized || !userSector ? [{
       id: 'treinamentos',
       icon: <Users size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'Capacitação',
