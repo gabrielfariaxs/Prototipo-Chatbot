@@ -761,6 +761,10 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
             onClick={async () => {
               if (confirm('Deseja realmente sair da sua conta?')) {
                 await supabase.auth.signOut();
+                localStorage.removeItem('userSector');
+                localStorage.removeItem('userLevel');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userRole');
                 window.location.reload();
               }
             }} 
