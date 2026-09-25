@@ -423,6 +423,19 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                     </button>
                   </div>
                 )}
+                {!isLeader && t.link_video && !concluded && (
+                  <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
+                    <a 
+                      href={t.link_video.startsWith('http') ? t.link_video : `https://${t.link_video}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ backgroundColor: '#d1fae5', color: '#047857', borderColor: '#a7f3d0' }}
+                      className="flex items-center gap-2 px-4 py-2 border rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-sm"
+                    >
+                      <Play size={16} /> Entrar na Reunião
+                    </a>
+                  </div>
+                )}
               </div>
             )})}
           </div>
