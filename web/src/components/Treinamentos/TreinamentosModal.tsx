@@ -42,7 +42,7 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
   const [loading, setLoading] = useState(false)
   const [feriados, setFeriados] = useState<any[]>([])
 
-  const isLeader = userLevel === 'coo' || userLevel === 'lider' || userSector.includes('ti') || userSector.includes('gestor')
+  const isLeader = userLevel === 'coo' || userLevel === 'lider' || userSector.includes('ti') || userSector.includes('gestor') || userSector.toLowerCase().includes('opera')
 
   useEffect(() => {
     fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1)
@@ -618,6 +618,26 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
             >
               <Download size={16} /> Baixar Ata
             </button>
+            {isLeader && selectedTreinamento.status !== 'finalizado' && (
+              <button 
+                onClick={async () => {
+                  if (confirm('Tem certeza que deseja encerrar este treinamento antes do horário previsto?')) {
+                    try {
+                      await updateTreinamentoStatus(selectedTreinamento.id, 'finalizado');
+                      selectedTreinamento.status = 'finalizado';
+                      fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1);
+                      setView('day_details');
+                    } catch (e: any) {
+                      alert('Erro ao encerrar treinamento: ' + e.message);
+                    }
+                  }
+                }} 
+                style={{ backgroundColor: '#fee2e2', color: '#b91c1c', borderColor: '#fecaca' }}
+                className="flex items-center gap-2 px-4 py-2 border rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-sm"
+              >
+                <X size={16} /> Encerrar
+              </button>
+            )}
           </div>
         </div>
 
