@@ -598,12 +598,17 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                 href={selectedTreinamento.link_video.startsWith('http') ? selectedTreinamento.link_video : `https://${selectedTreinamento.link_video}`}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-200 transition-colors text-sm font-bold shadow-sm"
+                style={{ backgroundColor: '#d1fae5', color: '#047857', borderColor: '#a7f3d0' }}
+                className="flex items-center gap-2 px-4 py-2 border rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-sm"
               >
                 <Play size={16} /> Entrar na Reunião
               </a>
             )}
-            <button onClick={handleDownloadAta} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-bold shadow-sm">
+            <button 
+              onClick={handleDownloadAta} 
+              style={{ backgroundColor: '#4f46e5', color: '#ffffff' }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-sm"
+            >
               <Download size={16} /> Baixar Ata
             </button>
           </div>
