@@ -392,24 +392,26 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                       {concluded ? <CheckCircle2 size={16} /> : <Play size={16} />} 
                       {concluded ? 'Ver Ata e Presenças' : 'Iniciar Treinamento'}
                     </button>
-                    <button 
-                      onClick={() => {
-                        const [horarioInicio, horarioFim] = t.horario.split(' às ')
-                        setFormData({
-                          titulo: t.titulo,
-                          descricao: t.descricao,
-                          horario: horarioInicio || '14:00',
-                          horarioFim: horarioFim || '15:00',
-                          colaboradores: t.colaboradores || '',
-                          link_video: t.link_video || ''
-                        })
-                        setSelectedTreinamento(t)
-                        setView('create_form')
-                      }}
-                      className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors text-sm font-bold"
-                    >
-                      Editar
-                    </button>
+                    {!concluded && (
+                      <button 
+                        onClick={() => {
+                          const [horarioInicio, horarioFim] = t.horario.split(' às ')
+                          setFormData({
+                            titulo: t.titulo,
+                            descricao: t.descricao,
+                            horario: horarioInicio || '14:00',
+                            horarioFim: horarioFim || '15:00',
+                            colaboradores: t.colaboradores || '',
+                            link_video: t.link_video || ''
+                          })
+                          setSelectedTreinamento(t)
+                          setView('create_form')
+                        }}
+                        className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors text-sm font-bold"
+                      >
+                        Editar
+                      </button>
+                    )}
                     <button 
                       onClick={async () => {
                         if (confirm('Deletar este agendamento?')) {
