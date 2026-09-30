@@ -188,13 +188,12 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
   const canTakeTicket = hasFullAccess || isTiTeam
   const canResolve = hasFullAccess || userName === chamado.creatorName || (chamado.assignedTech && chamado.assignedTech === userName)
   
-  // Pode editar se for o criador (ou do mesmo setor) E o chamado ainda NÃO tiver sido assumido pela T.I (status 'pendente_aprovacao' ou 'aprovado')
+  // Pode editar se for o criador (antes do atendimento T.I) OU se tiver acesso total (Líder T.I., Gestor, etc) a qualquer momento
   const isBeforeTiAssumption = chamado.status === 'pendente_aprovacao' || chamado.status === 'aprovado'
-  const canEdit = isBeforeTiAssumption && (
+  const canEdit = hasFullAccess || (isBeforeTiAssumption && (
     isSameSec(rawSec, chamado.creatorSector) || 
-    hasFullAccess ||
     userName === chamado.creatorName
-  )
+  ))
 
   const bd = getChamadoTimeBreakdown(chamado)
   const completionDateStr = getEffectiveCompletionDate(chamado)
@@ -563,10 +562,10 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-extrabold text-blue-950 flex items-center gap-2">
                   <Edit size={16} className="text-blue-600" />
-                  Editar Solicitação (Antes do Atendimento T.I)
+                  Editar Solicitação
                 </h4>
                 <span className="text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full border border-blue-200">
-                  Edição liberada antes da T.I assumir
+                  {hasFullAccess ? 'Modo Edição Avançado (T.I/Gestão)' : 'Edição liberada antes da T.I assumir'}
                 </span>
               </div>
 
@@ -704,7 +703,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                     setEditDescription(chamado.description)
                     setEditEvidenceFiles(chamado.evidenceFiles || [])
                   }}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-colors"
+                  className="px-4 py-2 border rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  style={{ borderColor: '#e2e8f0', color: '#475569', backgroundColor: '#ffffff' }}
                 >
                   Cancelar
                 </button>
@@ -723,7 +723,8 @@ export const ChamadosTiDetailModal: React.FC<ChamadosTiDetailModalProps> = ({
                     }
                     setIsEditing(false)
                   }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                  className="px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
                 >
                   Salvar Alterações
                 </button>

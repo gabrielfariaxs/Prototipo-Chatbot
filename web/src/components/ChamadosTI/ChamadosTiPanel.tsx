@@ -145,6 +145,7 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({
   const setShowShortcuts = setShowShortcutsDropdown
   const [activeTab, setActiveTab] = useState<'meus' | 'aprovacoes' | 'ti' | 'historico'>('meus')
   const [historySearch, setHistorySearch] = useState('')
+  const [historyPriorityFilter, setHistoryPriorityFilter] = useState('todos')
 
   const [userSector, setUserSector] = useState<string>('')
   const [userLevel, setUserLevel] = useState<string>('lider')
@@ -515,11 +516,32 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({
   ) => {
     const targetItem = chamados.find(c => c.id === id)
     if (!targetItem) return
+    
+    // Gerar diff das alterações
+    const diffs: string[] = []
+    if (targetItem.title !== updatedFields.title) {
+      diffs.push(`- **Título**: "${targetItem.title}" ➔ "${updatedFields.title}"`)
+    }
+    if (targetItem.priority !== updatedFields.priority) {
+      diffs.push(`- **Prioridade**: "${targetItem.priority}" ➔ "${updatedFields.priority}"`)
+    }
+    if (updatedFields.approverSector !== undefined && targetItem.approverSector !== updatedFields.approverSector) {
+      diffs.push(`- **Aprovador**: "${targetItem.approverSector || 'Nenhum'}" ➔ "${updatedFields.approverSector}"`)
+    }
+    if (targetItem.description !== updatedFields.description) {
+      diffs.push(`- **Descrição** foi alterada.`)
+    }
+    if (updatedFields.evidenceFiles && updatedFields.evidenceFiles.length !== (targetItem.evidenceFiles?.length || 0)) {
+      diffs.push(`- **Anexos**: Quantidade alterada de ${targetItem.evidenceFiles?.length || 0} para ${updatedFields.evidenceFiles.length}.`)
+    }
+
+    const diffText = diffs.length > 0 ? diffs.join('\n') : '- Nenhuma alteração significativa identificada.'
+
     const newComment = {
       id: Date.now().toString(),
       authorName: userName,
       authorSector: userSector,
-      text: `✏️ Solicitação editada pelo criador/setor antes do atendimento T.I.`,
+      text: `✏️ **Solicitação Editada**\nO usuário realizou as seguintes alterações no chamado:\n\n${diffText}`,
       createdAt: new Date().toISOString()
     }
     const updatedComments = [...(targetItem.comments || []), newComment]
@@ -711,20 +733,36 @@ export const ChamadosTiPanel: React.FC<ChamadosTiPanelProps> = ({
                 <h2 className="text-lg font-bold text-slate-800">Histórico de Chamados (Base de Conhecimento)</h2>
                 <p className="text-xs text-slate-500 mt-1">Busque por chamados antigos concluídos ou recusados para consultar resoluções anteriores.</p>
               </div>
-              <div className="relative w-72">
-                <input
-                  type="text"
-                  placeholder="Buscar por título, código ou resolução..."
-                  value={historySearch}
-                  onChange={(e) => setHistorySearch(e.target.value)}
-                  className="w-full pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-blue-500 shadow-sm transition-all"
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="w-full sm:w-48">
+                  <select
+                    value={historyPriorityFilter}
+                    onChange={(e) => setHistoryPriorityFilter(e.target.value)}
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer focus:border-blue-500 shadow-sm transition-all"
+                  >
+                    <option value="todos">Todas Prioridades</option>
+                    <option value="baixa">Baixa</option>
+                    <option value="media">Média</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">Crítica</option>
+                  </select>
+                </div>
+                <div className="relative w-full sm:w-72">
+                  <input
+                    type="text"
+                    placeholder="Buscar por título, código ou resolução..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="w-full pl-4 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-blue-500 shadow-sm transition-all"
+                  />
+                </div>
               </div>
             </div>
             
             <div className="flex flex-col space-y-3 pb-8">
               {chamados
                 .filter(c => (c.status === 'concluido' || c.status === 'recusado'))
+                .filter(c => historyPriorityFilter === 'todos' || c.priority === historyPriorityFilter)
                 .filter(c => 
                   historySearch === '' || 
                   c.title.toLowerCase().includes(historySearch.toLowerCase()) || 
