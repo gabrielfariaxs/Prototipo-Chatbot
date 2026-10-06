@@ -8,6 +8,7 @@ import Docxtemplater from 'docxtemplater'
 import fileSaver from 'file-saver'
 const { saveAs } = fileSaver
 import { supabase } from '../../lib/supabase'
+import { salvarDocumento } from '../../lib/storage'
 import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas, updateTreinamento, getAllAgendados } from '../../lib/trainings-service'
 import type { Treinamento, Presenca } from '../../lib/trainings-service'
 import { BIRTHDAYS } from '../../data/birthdays'
@@ -234,7 +235,13 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       })
       
-      saveAs(out, `Ata_Treinamento_${selectedTreinamento.titulo.replace(/\s+/g, '_')}.docx`)
+      const nomeAta = `Ata_Treinamento_${selectedTreinamento.titulo.replace(/\s+/g, '_')}.docx`
+      saveAs(out, nomeAta)
+
+      // Arquiva cópia no bucket privado (não bloqueia o download)
+      salvarDocumento(nomeAta, out, 'atas').catch((e) =>
+        console.warn('[storage] Ata não arquivada:', e?.message)
+      )
       
     } catch (err) {
       console.warn('Template Word (.docx) não encontrado, gerando Excel padrão:', err)

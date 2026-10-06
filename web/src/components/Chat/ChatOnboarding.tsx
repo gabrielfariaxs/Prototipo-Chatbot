@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles, Mail, X, Users } from 'lucide-react'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles, Mail, X, Users, Terminal } from 'lucide-react'
 import { BrandLockup } from '../common/BrandLockup'
 import { supabase } from '../../lib/supabase'
 import { getTodaysBirthdays } from '../../data/birthdays'
@@ -40,6 +40,7 @@ interface ChatOnboardingProps {
   onOpenOutlookEmails?: () => void;
   onOpenTreinamentos?: () => void;
   onOpenTreinaFlix?: () => void;
+  onOpenDevDocs?: () => void;
 }
 
 export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ 
@@ -51,7 +52,8 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenChamadosTi,
   onOpenOutlookEmails,
   onOpenTreinamentos,
-  onOpenTreinaFlix
+  onOpenTreinaFlix,
+  onOpenDevDocs
 }) => {
   const [unreadTi, setUnreadTi] = useState(false)
   const [unreadTiCount, setUnreadTiCount] = useState(0)
@@ -350,6 +352,23 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       badgeColor: 'bg-fuchsia-500',
       action: () => { if (onOpenTreinamentos) onOpenTreinamentos() }
     },
+    {
+      id: 'treinaflix',
+      icon: <Sparkles size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
+      tag: 'Vídeos & Aulas',
+      title: 'TreinaFlix',
+      description: 'Catálogo de videoaulas corporativas, procedimentos gravados e materiais de capacitação contínua.',
+      actionText: 'Assistir Aulas',
+      actionIcon: <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />,
+      tagTheme: 'bg-amber-50 text-amber-700 border-amber-200/70',
+      iconTheme: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/20',
+      hoverGlow: 'hover:border-amber-500/50 hover:shadow-[0_16px_36px_rgba(245,158,11,0.14)]',
+      hoverTitle: 'group-hover:text-amber-600',
+      actionTextColor: 'text-amber-600',
+      hasBadge: false,
+      badgeColor: 'bg-amber-500',
+      action: () => { if (onOpenTreinaFlix) onOpenTreinaFlix() }
+    },
 
     {
       id: 'solicitacao',
@@ -523,6 +542,22 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
             </motion.div>
           ))}
         </div>
+
+        {/* Link sutil no canto para Documentação e API Reference */}
+        {onOpenDevDocs && (
+          <div className="w-full flex justify-end items-center mt-6 pt-3 px-1">
+            <button
+              type="button"
+              onClick={onOpenDevDocs}
+              className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-[#1f29de] hover:bg-white border border-transparent hover:border-slate-200/80 hover:shadow-2xs transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 select-none"
+              title="Abrir Documentação Técnica e Referência de APIs"
+            >
+              <Terminal size={13} className="text-slate-400 group-hover:text-[#1f29de] transition-colors shrink-0" />
+              <span>Documentação & API Reference</span>
+              <ArrowRight size={12} className="text-slate-400 group-hover:text-[#1f29de] group-hover:translate-x-0.5 transition-all shrink-0" />
+            </button>
+          </div>
+        )}
 
       </div>
 

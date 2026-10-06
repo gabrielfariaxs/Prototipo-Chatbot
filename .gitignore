@@ -1,21 +1,64 @@
-# Variáveis de ambiente (Segurança)
+# ==========================================
+# 🔒 Segurança & Variáveis de Ambiente
+# ==========================================
 .env
-.env.local
-/venv/
+.env.*
+!.env.example
+.dev.vars
+*.pem
+*.key
+*.cert
 
-# Web (TanStack Start)
-web/node_modules/
-web/dist/
-web/.tanstack/
-web/.wrangler/
-web/.dev.vars
+# ==========================================
+# 📦 Dependências (Node & Python)
+# ==========================================
+node_modules/
+**/node_modules/
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# ==========================================
+# 🚀 Build & Saídas de Compilação
+# ==========================================
+dist/
+dist-ssr/
+build/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
+.vercel/
 .wrangler/
-.wrangler
+web/.wrangler/
+web/.tanstack/
+web/.output/
+web/.vinxi/
+web/dist/
+web/dist-ssr/
+__unconfig*
 
-# IDEs
-.vscode/
-.idea/
+# ==========================================
+# 📝 Logs & Depuração
+# ==========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# 💻 IDEs & Sistema Operacional
+# ==========================================
 .DS_Store
-
-.vercel
-.env*
+Thumbs.db
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, X, Send, User, Layers, ArrowLeft, FileText, Paperclip, Shield, Clock, Lightbulb, ThumbsUp, ThumbsDown, Copy, Landmark, Activity, Volume2, VolumeX, BarChart2, Trash2, FileSpreadsheet, Plus, Edit3, Image as ImageIcon, Maximize2, History, Bot, Stethoscope, KeyRound, Mail } from 'lucide-react'
+import { MessageCircle, X, FileText, User, Shield, Landmark, Activity, Layers, Clock, Copy, ThumbsUp, ThumbsDown, Maximize2, Image as ImageIcon, Bot } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getContext, generateResponse, getSectors } from '../lib/chat'
 import { cn } from '../lib/utils'
@@ -22,7 +22,10 @@ import { HospedagemModal } from './common/HospedagemModal'
 import { TreinamentosModal } from './Treinamentos/TreinamentosModal'
 import { CatalogoVideosModal } from './Treinamentos/CatalogoVideosModal'
 import { supabase } from '../lib/supabase'
-import { LinkifiedText } from './common/LinkifiedText'
+import { ChatHeader } from './Chat/ChatHeader'
+import { ChatMessageItem } from './Chat/ChatMessageItem'
+import { ChatInputBar } from './Chat/ChatInputBar'
+import { DeveloperDocsModal } from './common/DeveloperDocsModal'
 import type { Session } from '@supabase/supabase-js'
 
 type Message = {
@@ -45,6 +48,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [previewFile, setPreviewFile] = useState<{ name: string; base64: string; type: string; originalPdfBase64?: string; url?: string } | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [imgZoom, setImgZoom] = useState<number>(1)
+  const [isDevDocsModalOpen, setIsDevDocsModalOpen] = useState(false)
 
   useEffect(() => {
     setImgZoom(1)
@@ -134,7 +138,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }
   const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix'>('onboarding')
   const [session, setSession] = useState<Session | null>(null)
-  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | null>(null)
+  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | 'dev_docs' | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
@@ -200,6 +204,15 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     }
   }
 
+  const handleSelectDevDocs = () => {
+    if (session || localStorage.getItem('userSector')) {
+      setIsDevDocsModalOpen(true)
+    } else {
+      setPendingModule('dev_docs')
+      setStep('login')
+    }
+  }
+
   const handleLoginSuccess = () => {
     if (pendingModule === 'noc') {
       setStep('gop')
@@ -211,6 +224,9 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       setStep('treinamentos')
     } else if (pendingModule === 'treinaflix') {
       setStep('treinaflix')
+    } else if (pendingModule === 'dev_docs') {
+      setIsDevDocsModalOpen(true)
+      setStep('onboarding')
     } else {
       handleStart()
     }
@@ -219,7 +235,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
 
   const [sector, setSector] = useState<string | null>(null)
   const [availableSectors, setAvailableSectors] = useState<string[]>([])
-  const [stepSession, setStepSession] = useState<{
+  const [, setStepSession] = useState<{
     steps: string[]
     current: number
     intro: string
@@ -256,15 +272,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   useEffect(() => {
     loadProcedures(sector || undefined)
   }, [sector])
-
-  const hasProcedureContent = (txt: string) => {
-    if (!txt) return false
-    return /^\s*\d+[\.)\-]\s+/m.test(txt) || 
-      txt.toLowerCase().includes('passo a passo') || 
-      txt.toLowerCase().includes('procedimento') ||
-      txt.toLowerCase().includes('acesse o sistema') ||
-      txt.includes('![')
-  }
 
   const handleOpenEditProcedure = (botText: string) => {
     const match = customProcedures.find(p => 
@@ -1162,145 +1169,39 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 : 'fixed inset-0 z-50 md:bottom-24 md:right-8 md:w-[420px] md:h-[680px] md:inset-auto md:rounded-[1.5rem] md:border md:border-slate-200/60'
             )}
           >
-            {/* Unified Corporate Header */}
+            {/* Modular Corporate Header */}
             {step !== 'chamados_ti' && step !== 'gop' && step !== 'treinamentos' && step !== 'treinaflix' && (
-              <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between z-10 shrink-0 gap-2 min-h-[56px]">
-              <div className="flex items-center gap-2 sm:gap-4 flex-1 flex-wrap sm:flex-nowrap">
-                {step !== 'onboarding' && (
-                  <button 
-                    onClick={() => setStep('onboarding')}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-700 hover:text-[#1a2332] bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer shrink-0 font-bold text-xs shadow-2xs"
-                    title="Voltar ao Menu Principal"
-                  >
-                    <ArrowLeft size={16} />
-                    <span>Voltar ao Menu</span>
-                  </button>
-                )}
-                {step === 'chat' && sector && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1f29de] to-[#4338ca] text-white flex items-center justify-center shadow-2xs shrink-0">
-                      <Bot size={15} />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Setor:</span>
-                    <div className="bg-blue-50 text-[#1f29de] px-2.5 py-1 rounded-md text-xs font-bold border border-blue-200/80">
-                      {sector}
-                    </div>
-                  </div>
-                )}
-                {step === 'doc_clinica' && (
-                  <div className="flex items-center gap-2">
-                    <div className="bg-rose-50 text-rose-800 px-2.5 py-1.5 rounded-lg text-xs font-bold border border-rose-200/80 flex items-center gap-1.5 shadow-2xs">
-                      <Stethoscope size={15} className="text-rose-600" />
-                      <span>Solicitação Médica Padronizada</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {step === 'chat' && (
-                  <>
-                    {canShowHistoryButton() && (
-                      <button
-                        onClick={() => setIsHistoryModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-700/60 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
-                        style={{ backgroundColor: '#1e1b4b', color: '#e0e7ff' }} /* indigo-950 and indigo-100 */
-                        title="Histórico de adições, edições e exclusões de procedimentos (Gestor/Operações/TI)"
-                      >
-                        <History size={14} className="text-indigo-300" />
-                        <span className="hidden sm:inline">Histórico</span>
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setProcedureModalData(null)
-                        setProcedureModalMode('create')
-                        setIsProcedureModalOpen(true)
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
-                      style={{ backgroundColor: '#1a2332', color: '#ffffff' }}
-                      title="Adicionar ou cadastrar novo procedimento com fotos de passo a passo"
-                    >
-                      <Plus size={14} />
-                      <span className="hidden sm:inline">Adicionar Procedimento</span>
-                    </button>
-                    <button
-                      onClick={toggleSpeech}
-                      className={cn(
-                        "p-2 rounded-lg transition-all border shadow-sm cursor-pointer flex-shrink-0",
-                        isSpeechEnabled
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700"
-                          : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:text-slate-600"
-                      )}
-                      title={isSpeechEnabled ? "Desativar leitura de voz" : "Ativar leitura de voz"}
-                    >
-                      {isSpeechEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                    </button>
-                    <button
-                      onClick={() => setStep('dashboard')}
-                      className="p-2 border border-slate-200 text-blue-600 hover:text-blue-700 bg-white hover:bg-blue-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
-                      title="Métricas e Analytics"
-                    >
-                      <BarChart2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => setStep('fature_ia')}
-                      className="p-2 border border-slate-200 text-emerald-600 hover:text-emerald-700 bg-white hover:bg-emerald-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
-                      title="FatureIA Automação"
-                    >
-                      <FileSpreadsheet size={16} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Deseja limpar o histórico desta conversa?')) {
-                          setMessages([{
-                            id: 'initial',
-                            role: 'bot',
-                            text: `Olá! Sou o MedIA, seu assistente da Arthromed no setor ${sector}. Como posso ajudar hoje?`,
-                            timestamp: new Date(),
-                          }])
-                          localStorage.removeItem(`media_chat_history_${sector}`)
-                        }
-                      }}
-                      className="p-2 border border-slate-200 text-red-500 hover:text-red-600 bg-white hover:bg-red-50 rounded-lg transition-colors shadow-sm cursor-pointer flex-shrink-0"
-                      title="Limpar Histórico do Chat"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </>
-                )}
-                {(step === 'sector' || step === 'login' || step === 'chat') && (
-                  <>
-                    {/* Ocultado para não ir para o deploy em produção 
-                    <button
-                      type="button"
-                      onClick={() => setIsOutlookModalOpen(true)}
-                      className="p-2 border border-blue-200 text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full transition-all shadow-2xs cursor-pointer flex-shrink-0"
-                      title="Central de E-mails Outlook"
-                    >
-                      <Mail size={18} />
-                    </button>
-                    */}
-                    <button
-                      type="button"
-                      onClick={() => setIsPortalPasswordsModalOpen(true)}
-                      className="p-2 border border-amber-200 text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-full transition-all shadow-2xs cursor-pointer flex-shrink-0"
-                      title="Senhas dos Portais"
-                    >
-                      <KeyRound size={18} />
-                    </button>
-                  </>
-                )}
-                {step !== 'onboarding' && (
-                  <button
-                    onClick={handleClose}
-                    className="bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 p-2 rounded-full transition-all shadow-sm border border-slate-100 cursor-pointer"
-                    title={isDesktop ? "Encerrar Programa" : "Fechar Chat"}
-                  >
-                    <X size={20} />
-                  </button>
-                )}
-              </div>
-            </div>
+              <ChatHeader
+                step={step}
+                sector={sector || undefined}
+                onBackToMenu={() => setStep('onboarding')}
+                onClose={handleClose}
+                isDesktop={isDesktop}
+                canShowHistory={canShowHistoryButton()}
+                onOpenHistory={() => setIsHistoryModalOpen(true)}
+                onOpenAddProcedure={() => {
+                  setProcedureModalData(null)
+                  setProcedureModalMode('create')
+                  setIsProcedureModalOpen(true)
+                }}
+                isSpeechEnabled={isSpeechEnabled}
+                onToggleSpeech={toggleSpeech}
+                onOpenDashboard={() => setStep('dashboard')}
+                onOpenFatureIA={() => setStep('fature_ia')}
+                onClearHistory={() => {
+                  if (confirm('Deseja limpar o histórico desta conversa?')) {
+                    setMessages([{
+                      id: 'initial',
+                      role: 'bot',
+                      text: `Olá! Sou o MedIA, seu assistente da Arthromed no setor ${sector}. Como posso ajudar hoje?`,
+                      timestamp: new Date(),
+                    }])
+                    localStorage.removeItem(`media_chat_history_${sector}`)
+                  }
+                }}
+                onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
+                onOpenDevDocs={handleSelectDevDocs}
+              />
             )}
 
             <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -1322,6 +1223,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     onOpenOutlookEmails={() => setIsOutlookModalOpen(true)}
                     onOpenTreinamentos={handleSelectTreinamentosModule}
                     onOpenTreinaFlix={handleSelectTreinaFlixModule}
+                    onOpenDevDocs={handleSelectDevDocs}
                   />
                 )}
 
@@ -1388,108 +1290,22 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f8fafc] dark:bg-[#090d16] transition-colors"
                     >
                       {messages.map((msg) => (
-                        <div
+                        <ChatMessageItem
                           key={msg.id}
-                          className={cn(
-                            'flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300',
-                            msg.role === 'user' ? 'ml-auto flex-row-reverse max-w-[60%]' : 'items-start max-w-[85%]'
-                          )}
-                        >
-                          {msg.role !== 'user' && (
-                            <div className="p-2 rounded-full shrink-0 flex items-center justify-center w-9 h-9 bg-gradient-to-br from-[#1f29de] to-[#4338ca] text-white shadow-xs mt-1">
-                              <Bot size={16} />
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-1.5 min-w-0">
-                            <div
-                              className={cn(
-                                'p-4 text-[14px] leading-relaxed',
-                                msg.role === 'user'
-                                  ? 'bg-[#1f29de] text-white rounded-[16px_16px_4px_16px] shadow-xs font-medium'
-                                  : 'bg-white dark:bg-slate-800 border border-[#e6e9f2] dark:border-slate-700 text-[#14161f] dark:text-slate-100 rounded-[16px_16px_16px_4px] shadow-xs'
-                              )}
-                            >
-                              {msg.role === 'user' ? (
-                                <div className="flex flex-col gap-3">
-                                  <LinkifiedText text={msg.text} isDarkBg={true} />
-                                  {msg.files && msg.files.length > 0 && (
-                                    <div className="flex flex-col gap-2 w-full mt-1">
-                                      {msg.files.map((file, idx) => (
-                                        <button
-                                          key={idx}
-                                          onClick={() => setPreviewFile(file)}
-                                          className="flex items-center gap-3 p-3 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-white transition-all text-left group cursor-pointer w-full"
-                                        >
-                                          <div className="p-2 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors shrink-0">
-                                            {file.type === 'application/pdf' ? (
-                                              <FileText size={18} />
-                                            ) : (
-                                              <Paperclip size={18} />
-                                            )}
-                                          </div>
-                                          <div className="flex flex-col flex-1 overflow-hidden">
-                                            <span className="text-xs font-semibold truncate">{file.name}</span>
-                                            <span className="text-[9px] text-white/60 uppercase tracking-widest mt-0.5 font-bold">Clique para pré-visualizar</span>
-                                          </div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                renderMessageContent(msg)
-                              )}
-                            </div>
-                            {msg.role !== 'user' && (
-                              <div className="flex items-center justify-between gap-3 px-1 pt-0.5">
-                                <div className="flex items-center gap-3">
-                                  <span className="font-mono text-[12.5px] text-[#9097aa]">
-                                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsUp size={12} /></button>
-                                    <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><ThumbsDown size={12} /></button>
-                                    <button type="button" className="text-[#9097aa] hover:text-[#5b6276] transition-colors"><Copy size={12} /></button>
-                                  </div>
-                                </div>
-
-                                {hasProcedureContent(msg.text) && (
-                                  <div className="flex items-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenEditProcedure(msg.text)}
-                                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 border border-slate-200 transition-colors cursor-pointer"
-                                      title="Editar ou atualizar este procedimento com fotos e passos"
-                                    >
-                                      <Edit3 size={11} />
-                                      <span>Editar Procedimento</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenDeleteProcedure(msg.text)}
-                                      className="flex items-center gap-1 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                      title="Excluir procedimento"
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            {msg.role === 'user' && (
-                              <span className="font-mono text-[12.5px] text-[#9097aa] text-right px-1">
-                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                          message={msg}
+                          onPreviewFile={setPreviewFile}
+                          onFeedback={saveGlobalFeedback}
+                          onOpenEditProcedure={handleOpenEditProcedure}
+                          onOpenDeleteProcedure={handleOpenDeleteProcedure}
+                          renderCustomContent={(m) => renderMessageContent(m)}
+                        />
                       ))}
                       {isLoading && (
                         <div className="flex items-start gap-3 animate-pulse">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1f29de] to-[#4338ca] flex items-center justify-center text-white shrink-0 mt-1 shadow-2xs">
                             <Bot size={14} />
                           </div>
-                          <div className="bg-white p-4 rounded-2xl rounded-tl-sm border border-slate-200 shadow-sm flex gap-1.5 h-12 items-center">
+                          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-tl-sm border border-slate-200 dark:border-slate-700 shadow-sm flex gap-1.5 h-12 items-center">
                             <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
                             <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
                             <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
@@ -1498,86 +1314,20 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                       )}
                     </div>
 
-                    <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 border-t border-[#e6e9f2] dark:border-slate-800 transition-colors">
-                      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                        {(attachedFiles.length > 0 
-                           ? ["Resumir Pedido", "Checar Autorização", "Extrair apenas CID", "Extrair Materiais"]
-                           : messages.length < 3 ? ["Análise de Pendências", "Emissão de Nota Fiscal", "Consultar Glosas", "Status de Orçamento"] : []
-                        ).map((sug) => (
-                          <button
-                            key={sug}
-                            onClick={() => { setInput(''); handleSend(sug) }}
-                            className="whitespace-nowrap px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-xs font-medium hover:border-[#1f29de] dark:hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-2xs cursor-pointer"
-                          >
-                            {sug}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-[52px] bg-white dark:bg-slate-800 border border-[#e6e9f2] dark:border-slate-700 rounded-[11px] flex items-center px-3 focus-within:border-[#1f29de] dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-[#1f29de]/16 transition-all shadow-2xs">
-                          <button 
-                            type="button"
-                            className={cn(
-                              "p-2 transition-colors relative rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer",
-                              attachedFiles.length > 0 ? "text-[#1f29de] dark:text-blue-400" : "text-[#9097aa] dark:text-slate-400"
-                            )}
-                            title="Adicionar Anexo"
-                            onClick={() => document.getElementById('file-upload')?.click()}
-                          >
-                            <Paperclip size={18} />
-                            {attachedFiles.length > 0 && (
-                              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#06df82] rounded-full border-2 border-white" />
-                            )}
-                            <input 
-                              type="file" 
-                              id="file-upload" 
-                              className="hidden" 
-                              multiple
-                              onChange={handleFileUpload}
-                              accept=".pdf,image/*"
-                            />
-                          </button>
-
-                          <input
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder={
-                              attachedFiles.length > 0
-                                ? `${attachedFiles.length} arquivo(s) selecionado(s)` 
-                                : "Descreva sua solicitação ou dúvida..."
-                            }
-                            disabled={isLoading}
-                            className="flex-1 border-none bg-transparent outline-none text-sm text-[#14161f] dark:text-white placeholder-[#9097aa] dark:placeholder:text-slate-400 px-2 disabled:opacity-75 font-medium"
-                          />
-                          
-                          {attachedFiles.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setAttachedFiles([])}
-                              className="p-1.5 text-[#9097aa] hover:text-[#dc2f2f] rounded-lg hover:bg-[#feecec] transition-colors"
-                              title="Remover arquivos"
-                            >
-                              <X size={16} />
-                            </button>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleSend()}
-                          disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-                          className="h-[52px] w-[52px] bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-[11px] disabled:opacity-50 transition-all shadow-xs flex items-center justify-center cursor-pointer shrink-0"
-                        >
-                          <Send size={18} />
-                        </button>
-                      </div>
-                      <div className="text-center mt-3">
-                        <p className="eyebrow m-0 text-[10px] text-slate-400 dark:text-slate-500">
-                          MEDIA CORPORATE ASSISTANT &bull; POWERED BY ARTHROMED & MEDIC
-                        </p>
-                      </div>
-                    </div>
+                    <ChatInputBar
+                      input={input}
+                      setInput={setInput}
+                      onSend={(text) => handleSend(text)}
+                      isLoading={isLoading}
+                      attachedFiles={attachedFiles}
+                      onFileUpload={handleFileUpload}
+                      onRemoveFile={(idx) => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
+                      suggestions={
+                        attachedFiles.length > 0
+                          ? ["Resumir Pedido", "Checar Autorização", "Extrair apenas CID", "Extrair Materiais"]
+                          : messages.length < 3 ? ["Análise de Pendências", "Emissão de Nota Fiscal", "Consultar Glosas", "Status de Orçamento"] : []
+                      }
+                    />
                   </motion.div>
                 )}
 
@@ -1672,6 +1422,12 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
         imgZoom={imgZoom}
         setImgZoom={setImgZoom}
         onClose={() => setPreviewFile(null)}
+      />
+
+      {/* Modal de Documentação Técnica & API Reference (Devs) */}
+      <DeveloperDocsModal
+        isOpen={isDevDocsModalOpen}
+        onClose={() => setIsDevDocsModalOpen(false)}
       />
 
       {/* Toggle Button */}

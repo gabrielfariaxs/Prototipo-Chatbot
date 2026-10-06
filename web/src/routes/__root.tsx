@@ -7,6 +7,7 @@ if (typeof process !== 'undefined' && typeof process.umask !== 'function') {
 
 
 import appCss from '../styles.css?url'
+import { useInactivityLogout } from '../lib/inactivity'
 
 const THEME_INIT_SCRIPT = `(function(){try{window.localStorage.removeItem('theme');var root=document.documentElement;root.classList.remove('dark');root.classList.add('light');root.removeAttribute('data-theme');root.style.colorScheme='light';}catch(e){}})();`
 
@@ -76,6 +77,7 @@ export const Route = createRootRoute({
 })
 
 function RootComponent() {
+  useInactivityLogout()
   return (
     <RootDocument>
       <Outlet />

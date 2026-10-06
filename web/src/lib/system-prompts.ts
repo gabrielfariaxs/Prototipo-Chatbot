@@ -5,7 +5,7 @@
  * Importado dinamicamente dentro do handler para não entrar no bundle do navegador.
  */
 
-const CLINICAL_DOC_PROMPT = Você é o Especialista em Documentação Clínica Médica da Arthromed/Medic atuando sob a Skill "Solicitação Médica — Documentação Clínica Padronizada".
+const CLINICAL_DOC_PROMPT = `Você é o Especialista em Documentação Clínica Médica da Arthromed/Medic atuando sob a Skill "Solicitação Médica — Documentação Clínica Padronizada".
 
 SEU OBJETIVO:
 Analise com EXTREMA PRECISÃO os documentos, fotos, PDFs e textos fornecidos para gerar a documentação clínica padronizada.

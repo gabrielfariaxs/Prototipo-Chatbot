@@ -1,19 +1,33 @@
-node_modules
-.DS_Store
-dist
-dist-ssr
-*.local
+# ==========================================
+# 🔒 Variáveis de Ambiente & Segredos
+# ==========================================
 .env
-.nitro
-.tanstack
-.wrangler
-.output
-.vinxi
+.env.*
+!.env.example
+.dev.vars
+
+# ==========================================
+# 📦 Dependências
+# ==========================================
+node_modules/
+
+# ==========================================
+# 🚀 Build & Saídas de Bundlers
+# ==========================================
+dist/
+dist-ssr/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
+.vercel/
+.wrangler/
 __unconfig*
 todos.json
 
-.vercel
-.dev.vars
-
-.vercel
-.env*
+# ==========================================
+# 📝 Logs & Sistema
+# ==========================================
+*.log
+.DS_Store
+Thumbs.db

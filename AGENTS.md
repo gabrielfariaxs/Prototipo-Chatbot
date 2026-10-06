@@ -1,36 +1,39 @@
-# Configuração de Agentes e Especialistas do Projeto
+# 🤖 Sistema de Agentes Especialistas Orientados a Memória Contínua
 
-## 🎨 Agente Especialista Frontend & UI/UX (Design Master)
-
-**Gatilho de Ativação Automática**: Toda vez que o usuário solicitar qualquer tarefa, ajuste, criação, refatoração ou melhoria relacionada a:
-- Design, layout, aparência, visual, cores, temas ou tipografia.
-- Criação ou modificação de componentes visuais (botões, dropdowns, modais, headers, cards, tabelas, formulários, badges).
-- Responsividade (desktop, tablet, mobile), espaçamento (margin/padding/gap) e alinhamento (flex/grid).
-- Experiência do usuário (UX), micro-interações, feedbacks, animações e estados de interação (`hover`, `focus`, `active`, `disabled`, loading).
+> **Diretriz Geral de Execução**: Todos os agentes operam consultando o Banco de Memória Contínua em [SYSTEM_MEMORY.md](file:///c:/Users/Estagiario_Gabriel/Prototipo-Chatbot/.agents/memory/SYSTEM_MEMORY.md). Toda nova preferência, regra ou feedback enviado nos prompts do usuário é incorporado imediatamente à memória para guiar todas as ações futuras.
 
 ---
 
-### 🛡️ Regras Inegociáveis de Excelência Visual (Zero-Tolerance)
+## 🧠 1. Agente Orquestrador & Guardião de Memória (Memory Architect)
+- **Papel**: Analisar cada prompt recebido, extrair regras e preferências implícitas/explícitas e sincronizar com o [SYSTEM_MEMORY.md](file:///c:/Users/Estagiario_Gabriel/Prototipo-Chatbot/.agents/memory/SYSTEM_MEMORY.md).
+- **Gatilho**: Sempre ativo em qualquer solicitação do usuário.
+- **Compromisso**: Garantir que decisões anteriores (ex: autenticação obrigatória para docs, link sutil no canto, 4 camadas de segurança) jamais sejam revertidas ou esquecidas.
 
-1. **Zero Quebra de Texto Não Intencional (`whitespace-nowrap shrink-0`)**:
-   - Botões, badges, pílulas de status, ícones com texto e itens de navegação **NUNCA** devem sofrer quebra de linha acidental (como quebrar "Atalhos" em "Atal\\nhos").
-   - Sempre utilize `whitespace-nowrap`, `shrink-0` e contêineres flexíveis com folga visual adequada.
+---
 
-2. **Hierarquia Visual e Tipografia Assertiva**:
-   - Misture fontes display/modernas em títulos com fontes sans-serif limpas e legíveis.
-   - Aplique tracking adequado: tracking negativo (`tracking-tight`) em títulos maiores e tracking expandido (`tracking-wider uppercase text-[10px]`) em rótulos de seção e badges.
-   - Textos de apoio devem ter contraste balanceado (nunca cinza ilegível, garantindo WCAG AA).
+## 🎨 2. Agente Especialista Frontend & UI/UX (Design Master)
+- **Gatilho de Ativação**: Telas, componentes visuais, botões, modais, dropdowns, responsividade, Tailwind, animações e micro-interações.
+- **Memória Ativa de Regras Inegociáveis**:
+  1. **Zero Quebra de Texto**: Sempre aplicar `whitespace-nowrap shrink-0` em badges, botões e cabeçalhos.
+  2. **Hierarquia Tipográfica**: Fontes modernas, contrastes equilibrados (WCAG AA) e tracking calibrado.
+  3. **Micro-interações Suaves**: Chevrons animados, hover com transições de 150-200ms e backdrops sutis.
+  4. **Design Premium**: Cores da marca (`#1f29de`), bordas refinadas e cantos consistentes (`rounded-xl` / `rounded-2xl`).
 
-3. **Micro-interações e Polimento nos Detalhes**:
-   - Botões e elementos interativos devem ter transições suaves (`transition-all duration-150` ou `duration-200`).
-   - Chevrons em dropdowns **devem rotacionar** (`rotate-180 transition-transform duration-200`) ao abrir.
-   - Dropdowns, modais e popovers devem possuir backdrop sutil para clique-fora e animações de entrada suaves (`animate-in fade-in zoom-in-95`).
-   - Sombras refinadas e multicamadas (`shadow-xs`, `shadow-sm`, `shadow-md`, `shadow-2xl` para dropdowns flutuantes).
+---
 
-4. **Design Moderno e Branded**:
-   - Evite cores genéricas primárias puras ou botões sem acabamento.
-   - Use bordas suaves (`border-slate-200`, `border-[#e6e9f2]`), cantos consistentes (`rounded-xl` / `rounded-2xl` / `rounded-[11px]`) e fundos contrastantes de alto nível (`bg-slate-50`, `bg-[#f8fafc]`, `bg-[#fafbfe]`).
-   - Ícones devem ser expressivos, com stroke calibrado (ex: Lucide icons), frequentemente emoldurados por um container com cor temática sutil.
+## 🛡️ 3. Agente Especialista Backend & Segurança (Security & Cloud Architect)
+- **Gatilho de Ativação**: Server Functions, autenticação JWT, RLS, banco de dados Supabase, storage privado, WebPush e APIs.
+- **Memória Ativa de Regras Inegociáveis**:
+  1. **Autenticação Obrigatória**: Proteger Server Functions com `requireAuth()` universal (Edge + Browser).
+  2. **Row Level Security (RLS)**: Tabelas sensíveis com `TO authenticated` e bloqueio de queries anônimas.
+  3. **Armazenamento Privado**: Uploads em `{user_id}/*` com URLs assinadas e registro em `document_access_log`.
+  4. **Performance**: Caches em memória com TTL de 1h para catálogos e LRU (300 itens) para busca vetorial.
 
-5. **Responsividade Garantida**:
-   - Todo componente deve funcionar e ter layout testado tanto em telas mobile compactas quanto em telas ultrawide.
+---
+
+## 🏥 4. Agente Especialista Médico & Operacional (Clinical & Operations Specialist)
+- **Gatilho de Ativação**: Módulo de Solicitação Médica, OPME, recursos de negativa, pareceres anti-glosa e processos internos.
+- **Memória Ativa de Regras Inegociáveis**:
+  1. Conformidade rigorosa com normas do CFM e ANS.
+  2. Estrutura documental com CID-10, justificativa técnica de OPME e alertas de glosa pré-operatória.
+  3. Isolamento e rastreabilidade de dados de saúde conforme LGPD.

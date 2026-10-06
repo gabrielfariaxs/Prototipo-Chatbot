@@ -15,42 +15,137 @@ const normalizeString = (str: string) => {
     .trim()
 }
 
+// --- CACHES EM MEMÓRIA PARA OTIMIZAÇÃO DE LATÊNCIA (FASE 2) ---
+const embeddingCache = new Map<string, number[]>()
+const MAX_EMBEDDING_CACHE = 300
+
+interface CatalogItem {
+  title: string
+  spec: string
+  brand: string
+  tag: string
+  searchable: string
+}
+
+let catalogCache: {
+  items: CatalogItem[]
+  expiresAt: number
+} = {
+  items: [],
+  expiresAt: 0
+}
+
+/**
+ * Obtém os itens dos catálogos Arthromed e Medic em cache de memória (TTL de 1 hora).
+ * Evita fazer scraping HTTP a cada mensagem do usuário.
+ */
+async function getCachedCatalogItems(): Promise<CatalogItem[]> {
+  const now = Date.now()
+  if (catalogCache.items.length > 0 && catalogCache.expiresAt > now) {
+    return catalogCache.items
+  }
+
+  const catalogUrls = [
+    'https://portifolioarthromed-medic.vercel.app/',
+    'https://medic-portfolio.vercel.app/'
+  ]
+
+  const items: CatalogItem[] = []
+
+  try {
+    await Promise.all(
+      catalogUrls.map(async (url) => {
+        try {
+          const res = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'Accept': 'text/html'
+            }
+          })
+          if (!res.ok) return
+          const html = await res.text()
+          const cardMatches = html.match(/<div class="cbody">[\s\S]*?<\/div><\/div>/gi) || []
+
+          for (const card of cardMatches) {
+            const titleMatch = card.match(/<h3>(.*?)<\/h3>/i)
+            const tagMatch = card.match(/<p class="tag">(.*?)<\/p>/i)
+            const brandMatch = card.match(/<span class="brand-l">(.*?)<\/span>/i)
+            const specMatch = card.match(/<span class="spec-line">(.*?)<\/span>/i)
+
+            if (titleMatch && titleMatch[1]) {
+              const title = titleMatch[1].replace(/<[^>]+>/g, '').trim()
+              const tag = tagMatch ? tagMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+              const brand = brandMatch ? brandMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+              const spec = specMatch ? specMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+              const searchable = normalizeString(`${title} ${tag} ${brand} ${spec}`)
+
+              items.push({ title, tag, brand, spec, searchable })
+            }
+          }
+        } catch {
+          // Ignora falha de download individual
+        }
+      })
+    )
+
+    if (items.length > 0) {
+      catalogCache = {
+        items,
+        expiresAt: now + 1000 * 60 * 60 // 1 hora de cache
+      }
+    }
+  } catch (err) {
+    console.warn('[chat] Falha ao atualizar cache de catálogos:', err)
+  }
+
+  return catalogCache.items
+}
+
 /**
  * Realiza busca vetorial no banco de dados do Supabase.
- * Gera o embedding da pergunta do usuário via OpenAI/OpenRouter e executa uma busca RPC 'match_documents'.
- * @param queryText O texto de pesquisa (pergunta do usuário).
- * @param apiKey A chave de API do OpenAI/OpenRouter para gerar o embedding.
+ * Utiliza cache em memória para não gastar chamadas de embedding repetidas.
  */
 export async function searchVectorSupabase(queryText: string, apiKey: string, sector: string): Promise<string | null> {
   try {
     if (!supabase || supabase.auth.signInWithPassword.toString().includes('Supabase não configurado')) {
-      console.warn('Supabase não está configurado ou está em modo simulador para busca vetorial.')
       return null
     }
 
-    // 1. Gerar o embedding da pergunta do usuário via OpenRouter
-    const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'openai/text-embedding-3-small',
-        input: queryText
+    const cacheKey = queryText.trim().toLowerCase()
+    let queryEmbedding = embeddingCache.get(cacheKey)
+
+    if (!queryEmbedding) {
+      // 1. Gerar o embedding da pergunta do usuário via OpenRouter
+      const response = await fetch('https://openrouter.ai/api/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'openai/text-embedding-3-small',
+          input: queryText
+        })
       })
-    })
 
-    if (!response.ok) {
-      throw new Error(`Falha ao gerar embeddings via OpenRouter (Status: ${response.status})`)
+      if (!response.ok) {
+        throw new Error(`Falha ao gerar embeddings via OpenRouter (Status: ${response.status})`)
+      }
+
+      const resJson = await response.json()
+      if (!resJson.data || !resJson.data[0] || !resJson.data[0].embedding) {
+        throw new Error(`Resposta inválida de embeddings do OpenRouter: ${JSON.stringify(resJson)}`)
+      }
+      queryEmbedding = resJson.data[0].embedding
+
+      if (embeddingCache.size >= MAX_EMBEDDING_CACHE) {
+        const firstKey = embeddingCache.keys().next().value
+        if (firstKey) embeddingCache.delete(firstKey)
+      }
+      embeddingCache.set(cacheKey, queryEmbedding!)
     }
 
-    const resJson = await response.json()
-    if (!resJson.data || !resJson.data[0] || !resJson.data[0].embedding) {
-      throw new Error(`Resposta inválida de embeddings do OpenRouter: ${JSON.stringify(resJson)}`)
-    }
-    const queryEmbedding = resJson.data[0].embedding
-    return await queryRpcMatchDocuments(queryEmbedding, sector)
+    return await queryRpcMatchDocuments(queryEmbedding!, sector)
   } catch (err) {
     console.error('Erro na busca vetorial RAG do Supabase:', err)
     return null
@@ -80,9 +175,7 @@ async function queryRpcMatchDocuments(queryEmbedding: number[], sector: string):
 }
 
 /**
- * Realiza busca em tempo real nos Catálogos Online Oficiais da Arthromed e Medic e na Web.
- * Catalogo Arthromed: https://portifolioarthromed-medic.vercel.app/
- * Catalogo Medic: https://medic-portfolio.vercel.app/
+ * Realiza busca inteligente nos Catálogos em cache e, apenas se necessário, na Web.
  */
 export async function fetchWebSearchRealtime(queryText: string): Promise<string> {
   if (!queryText || queryText.trim().length < 3) return ''
@@ -90,86 +183,62 @@ export async function fetchWebSearchRealtime(queryText: string): Promise<string>
   const cleanTerm = queryText.replace(/\[.*?\]/g, '').replace(/https?:\/\/\S+/g, '').trim().slice(0, 150)
   if (!cleanTerm) return ''
 
-  try {
-    // 1. Busca direta nos catálogos Vercel da Arthromed e Medic em tempo real
-    const catalogUrls = [
-      'https://portifolioarthromed-medic.vercel.app/',
-      'https://medic-portfolio.vercel.app/'
-    ]
+  const normTerm = normalizeString(cleanTerm)
+  const searchWords = normTerm.split(/\s+/).filter(w => w.length >= 3)
 
-    const catalogPromises = catalogUrls.map(async (url) => {
+  try {
+    // 1. Busca nos itens dos catálogos em CACHE de alta velocidade (< 1ms)
+    const catalogItems = await getCachedCatalogItems()
+    const matchedItems: string[] = []
+
+    for (const item of catalogItems) {
+      if (item.searchable.includes(normTerm) || searchWords.some(w => item.searchable.includes(w))) {
+        matchedItems.push(`- **${item.title}** (${item.spec}${item.brand ? ' · Fabricante: ' + item.brand : ''}): ${item.tag}`)
+        if (matchedItems.length >= 8) break
+      }
+    }
+
+    // 2. Busca externa na web APENAS se o usuário pedir explicitamente ou se for busca de marca não encontrada
+    let webSnippetText = ''
+    const isExplicitWebSearch = 
+      normTerm.includes('web') || 
+      normTerm.includes('internet') || 
+      normTerm.includes('pesquise') || 
+      normTerm.includes('noticia') ||
+      normTerm.includes('anvisa') ||
+      normTerm.includes('concorrente')
+
+    if (isExplicitWebSearch && matchedItems.length === 0) {
       try {
-        const res = await fetch(url, {
+        const encodedQuery = encodeURIComponent(`"Medic" OR "Arthromed" OPME ortopedia ${cleanTerm}`)
+        const ddgRes = await fetch(`https://html.duckduckgo.com/html/?q=${encodedQuery}`, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
             'Accept': 'text/html'
           }
         })
-        if (!res.ok) return []
-        const html = await res.text()
-        
-        const cardMatches = html.match(/<div class="cbody">[\s\S]*?<\/div><\/div>/gi) || []
-        const normTerm = cleanTerm.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        
-        const matchedItems: string[] = []
-        for (const card of cardMatches) {
-          const normCard = card.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-          if (normCard.includes(normTerm) || normTerm.split(/\s+/).some(w => w.length >= 3 && normCard.includes(w))) {
-            const titleMatch = card.match(/<h3>(.*?)<\/h3>/i)
-            const tagMatch = card.match(/<p class="tag">(.*?)<\/p>/i)
-            const brandMatch = card.match(/<span class="brand-l">(.*?)<\/span>/i)
-            const specMatch = card.match(/<span class="spec-line">(.*?)<\/span>/i)
-
-            if (titleMatch && titleMatch[1]) {
-              const title = titleMatch[1].replace(/<[^>]+>/g, '').trim()
-              const tag = tagMatch ? tagMatch[1].replace(/<[^>]+>/g, '').trim() : ''
-              const brand = brandMatch ? brandMatch[1].replace(/<[^>]+>/g, '').trim() : ''
-              const spec = specMatch ? specMatch[1].replace(/<[^>]+>/g, '').trim() : ''
-              
-              matchedItems.push(`- **${title}** (${spec}${brand ? ' · Fabricante/Marca: ' + brand : ''}): ${tag}`)
-            }
+        if (ddgRes.ok) {
+          const html = await ddgRes.text()
+          const snippets = html.match(/<a class="result__snippet[^>]*>(.*?)<\/a>/gi) || []
+          const cleanSnippets = snippets.map(m => m.replace(/<[^>]+>/g, '').trim()).filter(Boolean).slice(0, 3)
+          if (cleanSnippets.length > 0) {
+            webSnippetText = cleanSnippets.map(s => `• ${s}`).join('\n')
           }
         }
-        return matchedItems
-      } catch (e) {
-        return []
-      }
-    })
-
-    const catalogResults = (await Promise.all(catalogPromises)).flat()
-    const uniqueCatalogResults = Array.from(new Set(catalogResults)).slice(0, 8)
-
-    // 2. Busca suplementar na web (DuckDuckGo)
-    let webSnippetText = ''
-    try {
-      const encodedQuery = encodeURIComponent(`"Medic" OR "Arthromed" OPME ortopedia ${cleanTerm}`)
-      const ddgRes = await fetch(`https://html.duckduckgo.com/html/?q=${encodedQuery}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-          'Accept': 'text/html'
-        }
-      })
-      if (ddgRes.ok) {
-        const html = await ddgRes.text()
-        const snippets = html.match(/<a class="result__snippet[^>]*>(.*?)<\/a>/gi) || []
-        const cleanSnippets = snippets.map(m => m.replace(/<[^>]+>/g, '').trim()).filter(Boolean).slice(0, 3)
-        if (cleanSnippets.length > 0) {
-          webSnippetText = cleanSnippets.map(s => `• ${s}`).join('\n')
-        }
-      }
-    } catch (e) {}
+      } catch {}
+    }
 
     const parts: string[] = []
-    if (uniqueCatalogResults.length > 0) {
-      parts.push(`[CATÁLOGOS ONLINE EM TEMPO REAL - ARTHROMED & MEDIC (portifolioarthromed-medic.vercel.app / medic-portfolio.vercel.app)]:\n` + uniqueCatalogResults.join('\n'))
+    if (matchedItems.length > 0) {
+      parts.push(`[CATÁLOGOS OFICIAIS ARTHROMED & MEDIC]:\n` + matchedItems.join('\n'))
     }
     if (webSnippetText) {
-      parts.push(`[BUSCA WEB ADICIONAL]:\n` + webSnippetText)
+      parts.push(`[INFORMAÇÃO COMPLEMENTAR DA WEB]:\n` + webSnippetText)
     }
 
     return parts.join('\n\n')
   } catch (err) {
-    console.warn('Erro ao realizar busca web nos catálogos Arthromed/Medic:', err)
+    console.warn('Erro na busca de catálogos:', err)
     return ''
   }
 }
@@ -535,6 +604,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
   .validator(z.object({
     text: z.string(),
     context: z.string().optional().default(''),
+    systemPromptOverride: z.string().optional(),
     history: z.array(z.object({
       role: z.enum(['user', 'bot']),
       text: z.string(),
@@ -549,7 +619,7 @@ export const generateResponse = createServerFn({ method: 'POST' })
     // 🔥 CAMADA DE SEGURANÇA JWT: Bloqueia geração de IA anônima
     await requireAuth()
 
-    const { text, context, history = [], filesData } = data
+    const { text, context, history = [], filesData, systemPromptOverride } = data
 
     try {
       // Importa dinamicamente o arquivo servidor-only que nunca é enviado para o cliente
