@@ -44,6 +44,19 @@ const DASHBOARDS = [
     textColor: 'text-indigo-800',
     hoverBorder: 'hover:border-indigo-400',
     ip: '192.168.100.73:3001'
+  },
+  {
+    id: 'srvdns',
+    name: 'Serviço DNS',
+    subtitle: 'Monitoramento SRVDNS',
+    url: 'http://192.168.100.73:3001/status/srvdns',
+    color: 'cyan',
+    bgColor: 'bg-cyan-600',
+    lightBg: 'bg-cyan-50',
+    borderColor: 'border-cyan-200',
+    textColor: 'text-cyan-800',
+    hoverBorder: 'hover:border-cyan-400',
+    ip: '192.168.100.73:3001'
   }
 ]
 

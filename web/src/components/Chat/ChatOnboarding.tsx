@@ -39,6 +39,7 @@ interface ChatOnboardingProps {
   onOpenChamadosTi?: () => void;
   onOpenOutlookEmails?: () => void;
   onOpenTreinamentos?: () => void;
+  onOpenTreinaFlix?: () => void;
 }
 
 export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ 
@@ -49,7 +50,8 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenSolicitacaoMedica,
   onOpenChamadosTi,
   onOpenOutlookEmails,
-  onOpenTreinamentos
+  onOpenTreinamentos,
+  onOpenTreinaFlix
 }) => {
   const [unreadTi, setUnreadTi] = useState(false)
   const [unreadTiCount, setUnreadTiCount] = useState(0)
@@ -64,7 +66,6 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   const isTi = userSector.includes('ti') || userSector.includes('t.i') || userSector.includes('tecnologia') || userSector.includes('suporte')
   const isOpsLeader = userSector.includes('operaç') || userSector.includes('operac') || userSector.includes('gop') || userSector.includes('noc') || userLevel === 'coo' || userLevel === 'lider'
   const hasFullAccess = userSector.includes('gestor') || userSector.includes('diretoria') || userLevel === 'coo'
-  const isTreinamentosAuthorized = isTi || isOpsLeader || hasFullAccess || userSector.includes('rh')
 
   const [isPushSupported, setIsPushSupported] = useState(false)
   const [isPushSubscribed, setIsPushSubscribed] = useState(false)
@@ -332,7 +333,7 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       badgeColor: 'bg-teal-500',
       action: () => setShowPortfolioSelection(true)
     },
-    ...(isTreinamentosAuthorized || !userSector ? [{
+    {
       id: 'treinamentos',
       icon: <Users size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,
       tag: 'Capacitação',
@@ -348,7 +349,8 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
       hasBadge: false,
       badgeColor: 'bg-fuchsia-500',
       action: () => { if (onOpenTreinamentos) onOpenTreinamentos() }
-    }] : []),
+    },
+
     {
       id: 'solicitacao',
       icon: <Stethoscope size={22} strokeWidth={2.2} className="w-[22px] h-[22px] shrink-0" />,

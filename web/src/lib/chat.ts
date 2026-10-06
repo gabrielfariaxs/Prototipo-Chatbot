@@ -3,6 +3,7 @@ import { z } from 'zod'
 import processosJson from './processos_internos.json'
 import { supabase } from './supabase'
 import produtosEmultec from './produtos_emultec.json'
+import { requireAuth } from './security'
 
 let isOutOfCreditsGlobal = false
 
@@ -174,7 +175,7 @@ export async function fetchWebSearchRealtime(queryText: string): Promise<string>
 }
 
 export const getContext = createServerFn({ method: 'GET' })
-  .inputValidator(z.object({
+  .validator(z.object({
     text: z.string(),
     sector: z.string(),
     history: z.string().optional(),
@@ -188,6 +189,9 @@ export const getContext = createServerFn({ method: 'GET' })
     })).optional()
   }))
   .handler(async ({ data }) => {
+    // 🔥 CAMADA DE SEGURANÇA JWT: Bloqueia acessos anônimos
+    await requireAuth()
+
     const { text, sector, history = '', customProcedures = [] } = data
 
     try {
@@ -528,10 +532,9 @@ async function callClaudeApi(apiKey: string, messages: any[]): Promise<string> {
 }
 
 export const generateResponse = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({
+  .validator(z.object({
     text: z.string(),
     context: z.string().optional().default(''),
-    systemPromptOverride: z.string().optional(),
     history: z.array(z.object({
       role: z.enum(['user', 'bot']),
       text: z.string(),
@@ -543,7 +546,10 @@ export const generateResponse = createServerFn({ method: 'POST' })
     })).optional(),
   }))
   .handler(async ({ data }) => {
-    const { text, context, systemPromptOverride, history = [], filesData } = data
+    // 🔥 CAMADA DE SEGURANÇA JWT: Bloqueia geração de IA anônima
+    await requireAuth()
+
+    const { text, context, history = [], filesData } = data
 
     try {
       // Importa dinamicamente o arquivo servidor-only que nunca é enviado para o cliente
@@ -903,11 +909,13 @@ export const getSectors = createServerFn({ method: 'GET' })
   })
 
 export const transcribeAudio = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({
+  .validator(z.object({
     base64Audio: z.string(),
     mimeType: z.string(),
   }))
   .handler(async ({ data }) => {
+    // 🔥 CAMADA DE SEGURANÇA JWT: Bloqueia transcrição anônima
+    await requireAuth()
     const { base64Audio, mimeType } = data
     try {
       const { transcribeAudioOnServer } = await import('./chat-server')

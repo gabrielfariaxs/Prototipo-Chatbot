@@ -35,3 +35,16 @@ export const supabase = isConfigured
       }
     }) 
   : (mockSupabase as any)
+
+// Sincroniza a sessão do localStorage com um Cookie para as Server Functions (API) lerem
+if (typeof window !== 'undefined' && isConfigured) {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      const maxAge = 60 * 60 * 24 * 7; // 7 dias
+      document.cookie = `sb-access-token=${session?.access_token}; path=/; max-age=${maxAge}; SameSite=Lax; secure`;
+    } else if (event === 'SIGNED_OUT') {
+      document.cookie = `sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    }
+  });
+}
+

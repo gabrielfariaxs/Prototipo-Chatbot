@@ -333,7 +333,13 @@ export const ProcedureHistoryModal: React.FC<ProcedureHistoryModalProps> = ({ on
                                     }
                                   }
                                   return (
-                                    <p key={i} className="text-slate-700 whitespace-pre-wrap text-sm" dangerouslySetInnerHTML={{ __html: paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                    <p key={i} className="text-slate-700 whitespace-pre-wrap text-sm">
+                                      {paragraph.split(/(\*\*.*?\*\*)/g).map((part, partIndex) => 
+                                        part.startsWith('**') && part.endsWith('**') 
+                                          ? <strong key={partIndex}>{part.slice(2, -2)}</strong>
+                                          : part
+                                      )}
+                                    </p>
                                   );
                                 })}
                               </div>

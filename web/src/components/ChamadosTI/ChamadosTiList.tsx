@@ -22,6 +22,7 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('todos')
+  const [priorityFilter, setPriorityFilter] = useState<string>('todos')
   const [metricsPeriod, setMetricsPeriod] = useState<'24h' | '7d' | '30d' | '3m' | '6m' | 'todos'>('todos')
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({})
@@ -80,8 +81,9 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
       item.description.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesStatus = statusFilter === 'todos' || item.status === statusFilter
+    const matchesPriority = priorityFilter === 'todos' || item.priority === priorityFilter
 
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesPriority
   })
 
   const getStatusBadge = (status: ChamadoStatus, approverSector: string) => {
@@ -281,6 +283,21 @@ export const ChamadosTiList: React.FC<ChamadosTiListProps> = ({
               <option value="em_atendimento">Em Atendimento</option>
               <option value="concluido">Concluídos</option>
               <option value="recusado">Recusados</option>
+            </select>
+          </div>
+
+          {/* Priority Filter */}
+          <div className="flex-1 sm:flex-initial min-w-[120px]">
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="w-full px-2.5 sm:px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer truncate"
+            >
+              <option value="todos">Todas as Prioridades</option>
+              <option value="baixa">Baixa</option>
+              <option value="media">Média</option>
+              <option value="alta">Alta</option>
+              <option value="critica">Crítica</option>
             </select>
           </div>
 

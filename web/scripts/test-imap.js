@@ -1,7 +1,7 @@
 import tls from 'tls';
 
 const email = 'orcamento@medicpe.com.br';
-const password = 'Medic@#2024OR'; // Using a password found in the previous file for testing
+const password = process.env.IMAP_PASSWORD || '';
 
 const socket = tls.connect(993, 'email-ssl.com.br', { rejectUnauthorized: false });
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from '@tanstack/react-router'
 import { CheckCircle2, User, Building2, MapPin, LogOut } from 'lucide-react'
-import { registrarPresenca } from '../lib/trainings-service'
+import { registrarPresenca, getTreinamentoById } from '../lib/trainings-service'
 import { LoginScreen } from '../components/common/LoginScreen'
 
 export const CheckinPage: React.FC = () => {
@@ -12,6 +12,9 @@ export const CheckinPage: React.FC = () => {
   const [setor, setSetor] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [loadingTreinamento, setLoadingTreinamento] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -25,7 +28,22 @@ export const CheckinPage: React.FC = () => {
         setNome(storedName)
       }
     }
-  }, [])
+    setMounted(true)
+
+    if (id) {
+      getTreinamentoById(id as string).then(t => {
+        if (!t) {
+          setErrorMessage('Treinamento não encontrado.')
+        } else if (t.status !== 'em_andamento') {
+          setErrorMessage('Este treinamento não está aberto para check-in neste momento.')
+        }
+        setLoadingTreinamento(false)
+      })
+    } else {
+      setErrorMessage('Link inválido.')
+      setLoadingTreinamento(false)
+    }
+  }, [id])
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true)
@@ -61,6 +79,28 @@ export const CheckinPage: React.FC = () => {
             <p className="font-bold text-slate-700">{nome}</p>
             <p className="text-xs text-slate-400 font-medium uppercase mt-1">{setor}</p>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!mounted || loadingTreinamento) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-red-100 flex flex-col items-center text-center">
+          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6 border border-red-100">
+            <LogOut size={32} />
+          </div>
+          <h2 className="text-2xl font-black text-slate-800 mb-2">Acesso Negado</h2>
+          <p className="text-slate-500">{errorMessage}</p>
         </div>
       </div>
     )
@@ -124,7 +164,8 @@ export const CheckinPage: React.FC = () => {
           <button
             disabled={loading}
             type="submit"
-            className="w-full p-4 mt-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
+            style={{ backgroundColor: '#4f46e5', color: '#ffffff' }}
+            className="w-full p-4 mt-4 rounded-2xl font-black hover:opacity-90 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
           >
             {loading ? 'Confirmando...' : 'Confirmar Presença'}
           </button>

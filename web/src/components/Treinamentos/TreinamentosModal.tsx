@@ -5,9 +5,10 @@ import { QRCodeSVG } from 'qrcode.react'
 import * as ExcelJS from 'exceljs'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
-import { saveAs } from 'file-saver'
+import fileSaver from 'file-saver'
+const { saveAs } = fileSaver
 import { supabase } from '../../lib/supabase'
-import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas, updateTreinamento } from '../../lib/trainings-service'
+import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas, updateTreinamento, getAllAgendados } from '../../lib/trainings-service'
 import type { Treinamento, Presenca } from '../../lib/trainings-service'
 import { BIRTHDAYS } from '../../data/birthdays'
 
@@ -23,6 +24,7 @@ const DAYS_OF_WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, userLevel, userSector, userName }) => {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [calendarMode, setCalendarMode] = useState<'month' | 'week' | 'list'>('month')
   const [treinamentos, setTreinamentos] = useState<Treinamento[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   
@@ -46,13 +48,22 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
   const levelLow = userLevel.toLowerCase();
   const sectorLow = userSector.toLowerCase();
   
-  const isGestorOrDiretor = levelLow.includes('gestor') || levelLow.includes('diretor') || levelLow.includes('coo') || levelLow.includes('diretoria') || sectorLow.includes('gestor') || sectorLow.includes('diretoria');
-  const isLiderTiOrOperacoes = (levelLow.includes('lider') || levelLow.includes('líder')) && (sectorLow.includes('ti') || sectorLow.includes('opera'));
+  const normalizedSec = sectorLow.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  const isGestorOrDiretor = levelLow.includes('gestor') || levelLow.includes('diretor') || levelLow.includes('coo') || levelLow.includes('diretoria') || normalizedSec.includes('gestor') || normalizedSec.includes('diretoria');
+  const isLider = levelLow.includes('lider') || levelLow.includes('líder');
+  const isTi = normalizedSec.includes('ti') || normalizedSec.includes('tecnologia');
+  const isOperacoes = normalizedSec.includes('operac');
+  
+  const isLiderTiOrOperacoes = isLider && (isTi || isOperacoes);
   
   const isLeader = isGestorOrDiretor || isLiderTiOrOperacoes;
 
   useEffect(() => {
-    fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    if (calendarMode === 'list') {
+      fetchAgendados()
+    } else {
+      fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    }
     
     // Buscar feriados do ano atual
     fetch(`https://brasilapi.com.br/api/feriados/v1/${currentDate.getFullYear()}`)
@@ -61,24 +72,37 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
         if (Array.isArray(data)) setFeriados(data)
       })
       .catch(() => console.log('Erro ao buscar feriados'))
-  }, [currentDate])
+  }, [currentDate, calendarMode])
 
   useEffect(() => {
     if (view === 'meeting_active' && selectedTreinamento) {
       fetchPresencas()
+      
+      const intervalId = setInterval(() => {
+        fetchPresencas()
+      }, 10000)
+
       // Realtime para presenças
       const channel = supabase
         .channel('presencas_realtime')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'presencas', filter: `treinamento_id=eq.${selectedTreinamento.id}` }, (payload) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'presencas', filter: `treinamento_id=eq.${selectedTreinamento.id}` }, (payload: any) => {
           setPresencas(prev => [payload.new as Presenca, ...prev])
         })
         .subscribe()
-      return () => { supabase.removeChannel(channel) }
+      return () => { 
+        supabase.removeChannel(channel)
+        clearInterval(intervalId)
+      }
     }
   }, [view, selectedTreinamento])
 
   const fetchMonthData = async (ano: number, mes: number) => {
     const data = await getTreinamentosMes(ano, mes)
+    setTreinamentos(data)
+  }
+
+  const fetchAgendados = async () => {
+    const data = await getAllAgendados()
     setTreinamentos(data)
   }
 
@@ -92,11 +116,23 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate()
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay()
 
-  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+  const handlePrevMonth = () => {
+    if (calendarMode === 'week') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7))
+    } else {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+    }
+  }
+  const handleNextMonth = () => {
+    if (calendarMode === 'week') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7))
+    } else {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+    }
+  }
 
-  const handleDayClick = (day: number) => {
-    setSelectedDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day))
+  const handleDayClick = (dayDate: Date) => {
+    setSelectedDate(dayDate)
     setView('day_details')
   }
 
@@ -173,7 +209,14 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
       
       // Formatar dados para o template
       const templateData = {
-        data: selectedTreinamento.data.split('-').reverse().join('/'),
+        area: selectedTreinamento?.titulo || 'Título não encontrado',
+        Area: selectedTreinamento?.titulo || 'Título não encontrado',
+        'ÁREA': selectedTreinamento?.titulo || 'Título não encontrado',
+        'Área': selectedTreinamento?.titulo || 'Título não encontrado',
+        'área': selectedTreinamento?.titulo || 'Título não encontrado',
+        titulo: selectedTreinamento?.titulo || 'Título não encontrado',
+        Titulo: selectedTreinamento?.titulo || 'Título não encontrado',
+        data: selectedTreinamento?.data?.split('-').reverse().join('/') || '',
         presencas: presencas.map(p => {
           const d = new Date(p.horario_checkin)
           return {
@@ -228,44 +271,110 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
 
   // Renders
   const renderCalendar = () => {
-    const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth())
-    const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth())
-    
-    // Total cells in a 6-row grid = 42
-    const totalCells = 42
-    const blanks = Array.from({ length: firstDay }).map((_, i) => (
-      <div key={`blank-${i}`} className="min-h-[110px] p-2 sm:p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 border-dashed"></div>
+    if (calendarMode === 'list') {
+      return (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 h-full bg-[#f8fafc]">
+          <div className="flex items-center gap-4 mb-6">
+            <button 
+              onClick={() => setCalendarMode('month')} 
+              className="p-2 rounded-xl hover:bg-white text-slate-500 bg-white/50 shadow-sm border border-slate-200 transition-all hover:shadow-md hover:text-indigo-600"
+            >
+              <ChevronLeft size={24} strokeWidth={2.5} />
+            </button>
+            <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-inner">
+                <CalendarIcon size={20} strokeWidth={2.5} />
+              </div>
+              Todos os Agendamentos
+            </h2>
+          </div>
+          
+          {treinamentos.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <CalendarIcon size={48} className="mx-auto mb-4 opacity-20" />
+              <p>Nenhum treinamento agendado encontrado.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {treinamentos.map(t => {
+                const parts = t.data.split('-')
+                const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      const d = new Date(t.data + 'T12:00:00')
+                      handleDayClick(d)
+                    }}
+                    className="w-full text-left bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all shadow-xs group"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-lg text-slate-800 group-hover:text-indigo-600 transition-colors">{t.titulo}</h3>
+                      <span className="px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wide bg-indigo-100 text-indigo-700">
+                        {t.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-500">
+                      <div className="flex items-center gap-1.5"><CalendarIcon size={14} className="text-slate-400" /> {formattedDate}</div>
+                      <div className="flex items-center gap-1.5"><Clock size={14} className="text-slate-400" /> {t.horario}</div>
+                      <div className="flex items-center gap-1.5"><Users size={14} className="text-slate-400" /> {t.colaboradores || 'Todos'}</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    let calendarDays: Date[] = []
+    let blanksCount = 0
+
+    if (calendarMode === 'month') {
+      const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth())
+      blanksCount = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth())
+      for (let i = 1; i <= daysInMonth; i++) {
+        calendarDays.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), i))
+      }
+    } else {
+      const startOfWeek = new Date(currentDate)
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay())
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startOfWeek)
+        d.setDate(startOfWeek.getDate() + i)
+        calendarDays.push(d)
+      }
+    }
+
+    const blanks = Array.from({ length: blanksCount }).map((_, i) => (
+      <div key={`blank-${i}`} className={`p-2 sm:p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 border-dashed ${calendarMode === 'week' ? 'min-h-[220px]' : 'min-h-[110px]'}`}></div>
     ))
     
-    const days = Array.from({ length: daysInMonth }).map((_, i) => {
-      const dayNumber = i + 1
-      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`
+    const days = calendarDays.map((d, i) => {
+      const dayNumber = d.getDate()
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`
       const dayTrainings = treinamentos.filter(t => t.data === dateStr)
       const hasTraining = dayTrainings.length > 0
       const holiday = feriados.find(f => f.date === dateStr)
-      const monthNum = currentDate.getMonth() + 1
-      const dayBirthdays = BIRTHDAYS.filter(b => b.month === monthNum && b.day === dayNumber)
       
-      const isToday = dayNumber === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear()
+      const isToday = dayNumber === new Date().getDate() && d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear()
 
       return (
         <button
-          key={dayNumber}
-          onClick={() => handleDayClick(dayNumber)}
-          className={`min-h-[110px] p-3 transition-all flex flex-col items-start justify-start relative group rounded-2xl border
+          key={dateStr}
+          onClick={() => handleDayClick(d)}
+          className={`p-3 transition-all flex flex-col items-start justify-start relative group rounded-2xl border ${calendarMode === 'week' ? 'min-h-[220px]' : 'min-h-[110px]'}
             ${isToday 
               ? 'bg-gradient-to-br from-indigo-50/80 to-blue-50/50 border-indigo-200 shadow-md ring-1 ring-indigo-100' 
               : holiday
-                ? 'bg-red-50/20 border-red-100 hover:border-red-300 hover:shadow-lg hover:-translate-y-0.5 hover:bg-red-50/40'
-                : dayBirthdays.length > 0
-                  ? 'bg-amber-50/30 border-amber-200 hover:border-amber-300 hover:shadow-lg hover:-translate-y-0.5 hover:bg-amber-50/50'
-                  : 'bg-white border-slate-200/80 shadow-xs hover:border-indigo-400 hover:shadow-lg hover:-translate-y-0.5 hover:bg-slate-50/50'
+                ? 'bg-red-50/20 border-red-200 hover:border-red-300 hover:shadow-lg hover:-translate-y-0.5 hover:bg-red-50/40'
+                : 'bg-white border-slate-300 shadow-sm hover:border-indigo-400 hover:shadow-lg hover:-translate-y-0.5 hover:bg-slate-50'
             }`}
         >
           <span className={`text-[13px] font-black w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-300 ${
             isToday ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-110' : 
             holiday ? 'text-red-700 bg-red-100 group-hover:bg-red-200' :
-            dayBirthdays.length > 0 ? 'text-amber-700 bg-amber-100 group-hover:bg-amber-200' :
             'text-slate-600 bg-slate-100/80 group-hover:bg-indigo-100 group-hover:text-indigo-700'
           }`}>
             {dayNumber}
@@ -277,12 +386,6 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                 <span className="truncate">{holiday.name}</span>
               </div>
             )}
-            {dayBirthdays.map((b, idx) => (
-              <div key={`b-${idx}`} className="w-full truncate text-[10px] font-extrabold px-2 py-1 rounded-lg border bg-amber-50 text-amber-700 border-amber-200/60 flex items-center gap-1.5" title={`Aniversário: ${b.name}`}>
-                <Gift size={10} className="shrink-0 text-amber-500" />
-                <span className="truncate">{b.name}</span>
-              </div>
-            ))}
             {dayTrainings.slice(0, 2).map((t, idx) => (
               <div key={idx} className={`w-full truncate text-[10px] font-extrabold px-2 py-1 rounded-lg border flex items-center gap-1.5 ${t.status === 'em_andamento' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-indigo-50 text-indigo-700 border-indigo-200/60'}`}>
                 <span className={`w-1 h-1 rounded-full ${t.status === 'em_andamento' ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500'}`}></span>
@@ -295,15 +398,28 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
       )
     })
 
+    const totalCells = calendarMode === 'week' ? 7 : 42
     const trailingBlanksCount = totalCells - (blanks.length + days.length)
     const trailingBlanks = Array.from({ length: trailingBlanksCount }).map((_, i) => (
-      <div key={`trailing-blank-${i}`} className="min-h-[110px] p-2 sm:p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 border-dashed"></div>
+      <div key={`trailing-blank-${i}`} className={`p-2 sm:p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 border-dashed ${calendarMode === 'week' ? 'min-h-[220px]' : 'min-h-[110px]'}`}></div>
     ))
 
     return (
       <div className="p-4 sm:p-8 h-full bg-[#f8fafc]">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] gap-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -ml-10 -mt-10 pointer-events-none"></div>
+        
+        <div className="flex justify-end mb-4">
+          <button 
+            onClick={() => setCalendarMode('list')}
+            className="flex items-center gap-2 px-5 py-2.5 font-bold rounded-2xl transition-all bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-50 hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5"
+          >
+            <CalendarIcon size={18} />
+            Treinamentos agendados
+          </button>
+        </div>
+
+        {calendarMode !== 'list' && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] gap-4 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -ml-10 -mt-10 pointer-events-none"></div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-800 flex items-center gap-3 relative z-10">
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-inner">
               <CalendarIcon size={24} />
@@ -321,23 +437,41 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                 className="flex items-center justify-center gap-2 px-5 py-3 font-extrabold rounded-2xl transition-all shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] hover:-translate-y-0.5 active:translate-y-0 shrink-0 border border-transparent"
               >
                 <Plus size={20} strokeWidth={2.5} />
-                <span>Agendar Treinamento</span>
+                <span className="hidden sm:inline">Agendar Treinamento</span>
               </button>
             )}
-            <div className="flex gap-2 shrink-0 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/60">
-              <button onClick={handlePrevMonth} className="p-2.5 text-slate-500 rounded-xl hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"><ChevronLeft size={20} strokeWidth={2.5} /></button>
-              <button onClick={handleNextMonth} className="p-2.5 text-slate-500 rounded-xl hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"><ChevronRight size={20} strokeWidth={2.5} /></button>
+            
+            <div className="flex gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/60 items-center overflow-x-auto">
+              <button 
+                onClick={() => setCalendarMode('month')} 
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${calendarMode === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Mês
+              </button>
+              <button 
+                onClick={() => setCalendarMode('week')} 
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${calendarMode === 'week' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Semana
+              </button>
+              <div className="w-px h-6 bg-slate-200 mx-1"></div>
+              <button onClick={handlePrevMonth} className="p-2 text-slate-500 rounded-xl hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"><ChevronLeft size={18} strokeWidth={2.5} /></button>
+              <button onClick={handleNextMonth} className="p-2 text-slate-500 rounded-xl hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"><ChevronRight size={18} strokeWidth={2.5} /></button>
             </div>
           </div>
         </div>
-        <div className="bg-white p-5 sm:p-7 rounded-[2rem] border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)]">
-          <div className="grid grid-cols-7 gap-2 sm:gap-4 mb-4">
-            {DAYS_OF_WEEK.map(d => <div key={d} className="text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 gap-3 sm:gap-4">
-            {blanks}
-            {days}
-            {trailingBlanks}
+        )}
+
+        <div className="bg-white p-5 sm:p-7 rounded-[2rem] border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.03)] overflow-x-auto">
+          <div className="min-w-[600px]">
+            <div className="grid grid-cols-7 gap-2 sm:gap-4 mb-4">
+              {DAYS_OF_WEEK.map(d => <div key={d} className="text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">{d}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-3 sm:gap-4">
+              {blanks}
+              {days}
+              {trailingBlanks}
+            </div>
           </div>
         </div>
       </div>
@@ -348,9 +482,6 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
     if (!selectedDate) return null
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
     const dayTrainings = treinamentos.filter(t => t.data === dateStr)
-    const monthNum = selectedDate.getMonth() + 1
-    const dayNum = selectedDate.getDate()
-    const dayBirthdays = BIRTHDAYS.filter(b => b.month === monthNum && b.day === dayNum)
 
     return (
       <div className="p-6">
@@ -360,27 +491,6 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
             Treinamentos: {selectedDate.toLocaleDateString('pt-BR')}
           </h2>
         </div>
-
-        {dayBirthdays.length > 0 && (
-          <div className="mb-6 space-y-3">
-            <h3 className="text-sm font-bold text-amber-700 flex items-center gap-2 uppercase tracking-wider">
-              <Gift size={16} /> Aniversariantes do Dia
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {dayBirthdays.map((b, idx) => (
-                <div key={`bdetail-${idx}`} className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                    <Gift size={20} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-800">{b.name}</div>
-                    <div className="text-xs font-semibold text-amber-600">Parabéns pelo seu dia! 🎉</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {dayTrainings.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
@@ -424,8 +534,8 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                   {t.link_video && <div className="flex items-center gap-1.5"><LinkIcon size={14} className="text-slate-400" /> Link Disponível</div>}
                 </div>
                 
-                {isLeader && (
-                  <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
+                <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100 flex-wrap">
+                  {(isLeader || concluded) && (
                     <button 
                       onClick={() => handleStartMeeting(t)}
                       style={{ backgroundColor: concluded ? '#f1f5f9' : '#4f46e5', color: concluded ? '#475569' : '#ffffff' }}
@@ -434,7 +544,9 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                       {concluded ? <CheckCircle2 size={16} /> : <Play size={16} />} 
                       {concluded ? 'Ver Ata e Presenças' : 'Iniciar Treinamento'}
                     </button>
-                    {!concluded && (
+                  )}
+                  {isLeader && !concluded && (
+                    <>
                       <button 
                         onClick={() => {
                           const [horarioInicio, horarioFim] = t.horario.split(' às ')
@@ -453,33 +565,20 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                       >
                         Editar
                       </button>
-                    )}
-                    <button 
-                      onClick={async () => {
-                        if (confirm('Deletar este agendamento?')) {
-                          await deleteTreinamento(t.id);
-                          fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1);
-                        }
-                      }}
-                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors text-sm font-bold"
-                    >
-                      Excluir
-                    </button>
-                    {t.link_video && !concluded && (
-                      <a 
-                        href={t.link_video.startsWith('http') ? t.link_video : `https://${t.link_video}`}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ backgroundColor: '#d1fae5', color: '#047857', borderColor: '#a7f3d0' }}
-                        className="flex items-center gap-2 px-4 py-2 border rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-sm"
+                      <button 
+                        onClick={async () => {
+                          if (confirm('Deletar este agendamento?')) {
+                            await deleteTreinamento(t.id);
+                            fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1);
+                          }
+                        }}
+                        className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors text-sm font-bold"
                       >
-                        <Play size={16} /> Entrar na Reunião
-                      </a>
-                    )}
-                  </div>
-                )}
-                {!isLeader && t.link_video && !concluded && (
-                  <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
+                        Excluir
+                      </button>
+                    </>
+                  )}
+                  {t.link_video && !concluded && (
                     <a 
                       href={t.link_video.startsWith('http') ? t.link_video : `https://${t.link_video}`}
                       target="_blank" 
@@ -487,10 +586,10 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                       style={{ backgroundColor: '#d1fae5', color: '#047857', borderColor: '#a7f3d0' }}
                       className="flex items-center gap-2 px-4 py-2 border rounded-xl hover:opacity-90 transition-opacity text-sm font-bold shadow-sm"
                     >
-                        <Play size={16} /> Entrar na Reunião
+                      <Play size={16} /> Entrar na Reunião
                     </a>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )})}
           </div>
@@ -609,9 +708,9 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                     <Users size={20} className="text-slate-400" />
                   </div>
                   <input 
-                    type="text" value={formData.colaboradores} onChange={e => setFormData({...formData, colaboradores: e.target.value})} 
+                    required type="text" value={formData.colaboradores} onChange={e => setFormData({...formData, colaboradores: e.target.value})} 
                     className="w-full pl-12 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-medium placeholder-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" 
-                    placeholder="Ex: T.I, Vendas, Faturamento, ou deixe em branco para Todos..." 
+                    placeholder="Ex: T.I, Vendas, Faturamento..." 
                   />
                 </div>
               </div>

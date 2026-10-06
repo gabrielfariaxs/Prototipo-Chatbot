@@ -1,0 +1,13 @@
+name = "whatsapp-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-03-20"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+UAIZAPI_URL = "https://sua-instancia-uaizapi.com"
+UAIZAPI_TOKEN = "seu-token-aqui"
+MAIN_API_URL = "https://seu-assistente-web.com/api"
+
+# Habilite se quiser rodar na porta 8788 localmente
+# [dev]
+# port = 8788

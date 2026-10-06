@@ -45,6 +45,36 @@ export async function getTreinamentosMes(ano: number, mes: number) {
   return data as Treinamento[]
 }
 
+export async function getAllAgendados() {
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await supabase
+    .from('treinamentos')
+    .select('*')
+    .gte('data', today)
+    .order('data', { ascending: true })
+    .order('horario', { ascending: true })
+
+  if (error) {
+    console.error('Erro ao buscar treinamentos agendados:', error)
+    return []
+  }
+  return data as Treinamento[]
+}
+
+export async function getTreinamentoById(id: string) {
+  const { data, error } = await supabase
+    .from('treinamentos')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    console.error('Erro ao buscar treinamento:', error)
+    return null
+  }
+  return data as Treinamento
+}
+
 export async function createTreinamento(treinamento: Omit<Treinamento, 'id' | 'created_at' | 'status'>) {
   const { data, error } = await supabase
     .from('treinamentos')
