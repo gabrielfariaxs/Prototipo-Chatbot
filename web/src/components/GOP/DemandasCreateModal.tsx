@@ -123,10 +123,11 @@ export const DemandasCreateModal: React.FC<DemandasCreateModalProps> = ({ onClos
               type="submit"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-8 py-3 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 cursor-pointer flex items-center gap-2"
+              style={{ backgroundColor: '#1f29de', color: '#ffffff' }}
+              className="px-8 py-3 rounded-xl text-sm font-bold text-white bg-[#1f29de] hover:bg-[#1820b5] disabled:opacity-50 transition-all shadow-lg shadow-[#1f29de]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2"
             >
-              {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-              Registrar Demanda
+              {isSubmitting && <Loader2 size={16} className="animate-spin text-white" />}
+              <span className="text-white whitespace-nowrap">Registrar Demanda</span>
             </button>
         </div>
 

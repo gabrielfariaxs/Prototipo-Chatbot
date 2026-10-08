@@ -365,14 +365,17 @@ export const GopCreateModal: React.FC<GopCreateModalProps> = ({ onClose, onSucce
           <button 
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-8 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-xl flex items-center gap-2.5 transition-colors shadow-lg shadow-blue-600/20 cursor-pointer"
+            style={{ backgroundColor: '#1f29de', color: '#ffffff' }}
+            className="px-8 py-3 text-[15px] font-bold text-white bg-[#1f29de] hover:bg-[#1820b5] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl flex items-center gap-2.5 transition-all shadow-lg shadow-[#1f29de]/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             {isSubmitting ? (
-              <Loader2 size={18} className="animate-spin" />
+              <Loader2 size={18} className="animate-spin text-white" />
             ) : (
-              <Send size={18} />
+              <Send size={18} className="text-white" />
             )}
-            {isSubmitting ? 'Enviando...' : 'Enviar Relato'}
+            <span className="text-white whitespace-nowrap">
+              {isSubmitting ? 'Enviando...' : 'Enviar Relato'}
+            </span>
           </button>
         </div>
       </motion.div>

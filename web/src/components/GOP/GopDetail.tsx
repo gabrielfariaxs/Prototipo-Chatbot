@@ -733,10 +733,11 @@ return (
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[13px] font-bold shadow-lg shadow-indigo-600/20 transition-all cursor-pointer flex justify-center items-center gap-2 disabled:opacity-70"
+                style={{ backgroundColor: '#1f29de', color: '#ffffff' }}
+                className="py-4 bg-[#1f29de] hover:bg-[#1820b5] text-white rounded-xl text-[13px] font-bold shadow-lg shadow-[#1f29de]/25 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex justify-center items-center gap-2 disabled:opacity-50"
               >
-                {saving && <Loader2 size={16} className="animate-spin" />}
-                Salvar Tratativa e Atualizar Status
+                {saving && <Loader2 size={16} className="animate-spin text-white" />}
+                <span className="text-white whitespace-nowrap">Salvar Tratativa e Atualizar Status</span>
               </button>
             </div>
           )}

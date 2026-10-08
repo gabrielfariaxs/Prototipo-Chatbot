@@ -37,6 +37,9 @@ export function useInactivityLogout(timeoutMs = TIMEOUT_MS) {
       if (!data?.session) return
 
       localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem('userSector')
+      localStorage.removeItem('userLevel')
+      localStorage.removeItem('userName')
       await supabase.auth.signOut()
       window.location.replace('/?motivo=inatividade')
     }

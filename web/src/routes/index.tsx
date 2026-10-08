@@ -41,7 +41,11 @@ function App() {
   const isDesktop = !isExtension
 
   const handleLogout = async () => {
+    localStorage.removeItem('userSector')
+    localStorage.removeItem('userLevel')
+    localStorage.removeItem('userName')
     await supabase.auth.signOut()
+    window.location.reload()
   }
 
   // Exibe a aplicação (com o Menu Principal por padrão no ChatWidget)

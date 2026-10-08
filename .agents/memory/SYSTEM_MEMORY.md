@@ -17,8 +17,7 @@
 - **Interface & Layout**:
   - Documentação técnica exibida como **link sutil/frase clicável no canto inferior** no onboarding, e não como um card grande na grade.
   - Toda a documentação técnica vive **exclusivamente dentro do modal da plataforma** (`DeveloperDocsModal`), dispensando arquivos `.md` externos na pasta `docs/`.
-  - Módulo 2.5 (Outlook) removido da documentação técnica.
-  - Ícone discreto no topo do cabeçalho (`<Terminal />`) para acesso rápido.
+  - Ícone de terminal no topo do cabeçalho completamente removido a pedido do usuário; acesso mantido apenas de forma sutil no rodapé da tela inicial.
 
 ---
 
@@ -29,6 +28,23 @@
   2. `requireAuth()` universal (suporte a Edge Server e Client Playground).
   3. PostgreSQL Row Level Security (RLS) habilitado em todas as tabelas.
   4. Log append-only em `document_access_log` (LGPD / CFM).
+- **Catálogo de Treinamentos (Capacitação Interna)**:
+  - Header estilizado com identidade visual corporativa Holding Grupo Medic (gradiente escuro Navy `#121d2b` / `#1b497d` / Teal `#17a398`, ícone de vídeo executivo, badge `CAPACITAÇÃO`).
+  - Barra de filtros rápidos por setor com chips horizontais em azul holding (`#1f29de`) para o item ativo e slate com alto contraste para inativos.
+  - Botões de ação primária com fundo sólido explícito (`#1f29de`) e texto branco para blindagem total contra sobreposição de CSS em Tailwind v4.
+  - **Motor de Thumbnails Cinematográficas**:
+    - Geração automática de capas visuais ricas por setor com gradientes premium, grid tech, ambient glow e marca d'água corporativa.
+    - Captura automática de thumbnail em alta resolução para links do YouTube (`img.youtube.com`).
+    - Suporte a campo de URL de capa personalizada (`thumbnailUrl`) no formulário de criação/edição.
+    - Botão Play central em efeito vidro com iluminação azul (`#1f29de`), badges de Setor e Módulo no topo e duração no rodapé da capa.
+  - Auto-preenchimento inteligente: ao colar o link da gravação (Teams/OneDrive/Drive/YouTube), o sistema extrai o título, detecta o setor por palavras-chave e gera a descrição automaticamente.
+  - Setores oficiais (sincronizados com `LoginScreen`): `Comercial interno`, `Comercial externo`, `Instrumentação`, `T.I`, `Qualidade / RT`, `Gente Gestão`, `Financeiro`, `Estoque e logistica`, `Supply Chain`, `Compras`, `Operações`, `Gestor/Diretoria`, `Geral`.
+  - Estrutura hierárquica de treinamentos: **Setor** (dropdown com setores oficiais do login) + **Módulo / Processo** (campo de texto livre/manual preenchido pelo usuário, ex: `Faturamento`, `Sys Personnalite`, `OPME`).
+  - Edição completa: qualquer colaborador pode criar e editar treinamentos (atualizar link do vídeo, instrutor, setor, módulo, título e descrição).
+  - Proteção anti-compartilhamento: `onContextMenu` bloqueado, `select-none`, iframe sem links expostos e histórico de acessos por colaborador.
+- **Módulo NCO (Não Conformidades)**:
+  - Botão **`+ Nova Não Conformidade`** permanentemente visível tanto no topo quanto na barra de ferramentas para todas as visões/perfis (Líder, COO, Diretoria, etc.).
+  - **Fix de Contraste e Botões em Tailwind v4**: Botões de ação e submissão em modais (`GopCreateModal.tsx`, `DemandasCreateModal.tsx`, `GopDetail.tsx`) possuem estilização explícita com `style={{ backgroundColor: '#1f29de', color: '#ffffff' }}` e `bg-[#1f29de]` para garantir contraste visual perfeito e evitar renderizações transparentes/em branco.
 - **Performance & Cache**:
   - Catálogos cacheados em memória (TTL 1 hora).
   - Embeddings vetoriais em cache LRU (300 itens).

@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, Bot, Stethoscope, History, Plus, Volume2, VolumeX, BarChart2, FileSpreadsheet, Trash2, KeyRound, X, Terminal } from 'lucide-react'
+import { ArrowLeft, Bot, Stethoscope, History, Plus, Volume2, VolumeX, BarChart2, FileSpreadsheet, Trash2, KeyRound, X } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface ChatHeaderProps {
@@ -153,17 +153,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             title="Senhas dos Portais"
           >
             <KeyRound size={18} />
-          </button>
-        )}
-
-        {onOpenDevDocs && (
-          <button
-            type="button"
-            onClick={onOpenDevDocs}
-            className="p-2 border border-slate-200 text-slate-600 hover:text-[#1f29de] bg-slate-50 hover:bg-blue-50 rounded-full transition-all shadow-2xs cursor-pointer shrink-0"
-            title="Documentação Técnica & API Reference"
-          >
-            <Terminal size={17} />
           </button>
         )}
 

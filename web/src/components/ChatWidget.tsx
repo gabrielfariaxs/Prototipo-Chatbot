@@ -16,12 +16,11 @@ import { LoginScreen } from './common/LoginScreen'
 import { ClinicalDocPanel } from './ClinicalDoc/ClinicalDocPanel'
 import { ChamadosTiPanel } from './ChamadosTI/ChamadosTiPanel'
 import { PortalPasswordsModal } from './common/PortalPasswordsModal'
-import { OutlookEmailsModal } from './common/OutlookEmailsModal'
 import { AgendasLocaisModal } from './common/AgendasLocaisModal'
 import { HospedagemModal } from './common/HospedagemModal'
 import { TreinamentosModal } from './Treinamentos/TreinamentosModal'
 import { CatalogoVideosModal } from './Treinamentos/CatalogoVideosModal'
-import { supabase } from '../lib/supabase'
+import { supabase, getSectorFromEmail } from '../lib/supabase'
 import { ChatHeader } from './Chat/ChatHeader'
 import { ChatMessageItem } from './Chat/ChatMessageItem'
 import { ChatInputBar } from './Chat/ChatInputBar'
@@ -141,76 +140,78 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | 'dev_docs' | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-      setSession(session)
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: Session | null) => {
-      setSession(session)
+    const initAuth = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession()
+      setSession(currentSession)
+      if (currentSession?.user?.email) {
+        const savedSector = localStorage.getItem('userSector')
+        if (!savedSector) {
+          const inferred = getSectorFromEmail(currentSession.user.email)
+          if (inferred) localStorage.setItem('userSector', inferred)
+        }
+      }
+    }
+    initAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, currentSession: Session | null) => {
+      setSession(currentSession)
+      if (currentSession?.user?.email) {
+        const savedSector = localStorage.getItem('userSector')
+        if (!savedSector) {
+          const inferred = getSectorFromEmail(currentSession.user.email)
+          if (inferred) localStorage.setItem('userSector', inferred)
+        }
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleSelectChatbotModule = () => {
-    if (session || localStorage.getItem('userSector')) {
-      handleStart()
+  const executeWithAuth = async (moduleKey: 'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | 'dev_docs', action: () => void) => {
+    let activeSession = session
+    if (!activeSession) {
+      const { data: { session: refreshedSession } } = await supabase.auth.getSession()
+      activeSession = refreshedSession
+      if (refreshedSession) setSession(refreshedSession)
+    }
+
+    if (activeSession?.user) {
+      if (activeSession.user.email && !localStorage.getItem('userSector')) {
+        const inferred = getSectorFromEmail(activeSession.user.email)
+        if (inferred) localStorage.setItem('userSector', inferred)
+      }
+      action()
     } else {
-      setPendingModule('chatbot')
+      setPendingModule(moduleKey)
       setStep('login')
     }
+  }
+
+  const handleSelectChatbotModule = () => {
+    executeWithAuth('chatbot', handleStart)
   }
 
   const handleSelectNocModule = () => {
-    if (session || localStorage.getItem('userSector')) {
-      setStep('gop')
-    } else {
-      setPendingModule('noc')
-      setStep('login')
-    }
+    executeWithAuth('noc', () => setStep('gop'))
   }
 
   const handleSelectDocClinicaModule = () => {
-    if (session || localStorage.getItem('userSector')) {
-      setStep('doc_clinica')
-    } else {
-      setPendingModule('doc_clinica')
-      setStep('login')
-    }
+    executeWithAuth('doc_clinica', () => setStep('doc_clinica'))
   }
 
   const handleSelectChamadosTiModule = () => {
-    if (session || localStorage.getItem('userSector')) {
-      setStep('chamados_ti')
-    } else {
-      setPendingModule('chamados_ti')
-      setStep('login')
-    }
+    executeWithAuth('chamados_ti', () => setStep('chamados_ti'))
   }
 
   const handleSelectTreinamentosModule = () => {
-    if (session || localStorage.getItem('userSector')) {
-      setStep('treinamentos')
-    } else {
-      setPendingModule('treinamentos')
-      setStep('login')
-    }
+    executeWithAuth('treinamentos', () => setStep('treinamentos'))
   }
 
   const handleSelectTreinaFlixModule = () => {
-    if (session || localStorage.getItem('userSector')) {
-      setStep('treinaflix')
-    } else {
-      setPendingModule('treinaflix')
-      setStep('login')
-    }
+    executeWithAuth('treinaflix', () => setStep('treinaflix'))
   }
 
   const handleSelectDevDocs = () => {
-    if (session || localStorage.getItem('userSector')) {
-      setIsDevDocsModalOpen(true)
-    } else {
-      setPendingModule('dev_docs')
-      setStep('login')
-    }
+    executeWithAuth('dev_docs', () => setIsDevDocsModalOpen(true))
   }
 
   const handleLoginSuccess = () => {
@@ -250,11 +251,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   const [procedureModalData, setProcedureModalData] = useState<Partial<ProcedureItem> | null>(null)
   const [customProcedures, setCustomProcedures] = useState<ProcedureItem[]>([])
   const [isPortalPasswordsModalOpen, setIsPortalPasswordsModalOpen] = useState(false)
-  const [isOutlookModalOpen, setIsOutlookModalOpen] = useState(false)
   const [isAgendasModalOpen, setIsAgendasModalOpen] = useState(false)
   const [isHospedagemModalOpen, setIsHospedagemModalOpen] = useState(false)
 
   const canShowHistoryButton = () => {
+    if (typeof window === 'undefined') return false
     const userSec = sector || localStorage.getItem('userSector') || ''
     const userRole = localStorage.getItem('userRole') || ''
     return canAccessProcedureHistory(userSec, userRole)
@@ -1220,7 +1221,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                     }}
                     onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
                     onOpenChamadosTi={handleSelectChamadosTiModule}
-                    onOpenOutlookEmails={() => setIsOutlookModalOpen(true)}
                     onOpenTreinamentos={handleSelectTreinamentosModule}
                     onOpenTreinaFlix={handleSelectTreinaFlixModule}
                     onOpenDevDocs={handleSelectDevDocs}
@@ -1391,16 +1391,6 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       <PortalPasswordsModal
         isOpen={isPortalPasswordsModalOpen}
         onClose={() => setIsPortalPasswordsModalOpen(false)}
-      />
-
-      {/* Modal da Central de E-mails Outlook Multicontas */}
-      <OutlookEmailsModal
-        isOpen={isOutlookModalOpen}
-        onClose={() => setIsOutlookModalOpen(false)}
-        onOpenTiTicket={() => {
-          setIsOutlookModalOpen(false)
-          handleSelectChamadosTiModule()
-        }}
       />
 
       {/* Modal de Agendas Locais */}

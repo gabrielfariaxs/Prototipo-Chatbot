@@ -261,16 +261,15 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
             </>
           )}
         </div>
-        {userRole === 'lider' && (
-          <button 
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-[#1b497d] hover:bg-[#12345b] text-white font-bold text-xs py-2.5 px-5 rounded-xl flex items-center justify-center w-full md:w-auto gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            Reportar Nova Não Conformidade
-          </button>
-        )}
+        <button 
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          style={{ backgroundColor: '#1f29de', color: '#ffffff' }}
+          className="px-5 py-2.5 bg-[#1f29de] hover:bg-[#1a22b8] text-white font-bold text-xs rounded-xl flex items-center justify-center w-full md:w-auto gap-2 shadow-md shadow-blue-600/30 transition-all cursor-pointer shrink-0 active:scale-95"
+        >
+          <Plus size={16} strokeWidth={2.5} className="text-white shrink-0" />
+          <span className="text-white whitespace-nowrap">Nova Não Conformidade</span>
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -533,6 +532,17 @@ export const GopList: React.FC<GopListProps> = ({ onSelect, userRole, userSector
           <span className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-extrabold shrink-0 border border-slate-200/60">
             {filteredGargalos.length} relato(s)
           </span>
+
+          {/* Botão de Adicionar na Toolbar */}
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            style={{ backgroundColor: '#1f29de', color: '#ffffff' }}
+            className="px-3.5 py-2 bg-[#1f29de] hover:bg-[#1a22b8] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer active:scale-95"
+          >
+            <Plus size={15} strokeWidth={2.5} className="text-white shrink-0" />
+            <span className="text-white whitespace-nowrap">Nova NCO</span>
+          </button>
         </div>
       </div>
 

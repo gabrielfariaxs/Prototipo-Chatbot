@@ -7,12 +7,14 @@ interface ChatDashboardProps {
 }
 
 export const ChatDashboard: React.FC<ChatDashboardProps> = ({ onClose }) => {
-  const fbs = JSON.parse(localStorage.getItem('media_feedbacks') || '[]');
+  const fbs = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('media_feedbacks') || '[]') : [];
   const defaultFeedbacks = [
     { type: 'down', comment: 'Faltou o CID 10 na guia', date: new Date().toISOString(), messagePreview: 'Paciente: João Silva...' }
   ];
   const all = fbs.length > 0 ? fbs : defaultFeedbacks;
   const negatives = all.filter((f: any) => f.type === 'down' || f.comment).reverse();
+
+  const processedOrders = typeof window !== 'undefined' ? parseInt(localStorage.getItem('media_processed_orders') || '0', 10) : 0;
 
   return (
     <motion.div
@@ -45,7 +47,7 @@ export const ChatDashboard: React.FC<ChatDashboardProps> = ({ onClose }) => {
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Guias Lidas</span>
             </div>
             <span className="text-2xl font-bold text-slate-800">
-              {parseInt(localStorage.getItem('media_processed_orders') || '0', 10) + 142}
+              {processedOrders + 142}
             </span>
           </div>
 
@@ -55,7 +57,7 @@ export const ChatDashboard: React.FC<ChatDashboardProps> = ({ onClose }) => {
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Horas Salvas</span>
             </div>
             <span className="text-2xl font-bold text-slate-800">
-              {Math.floor(((parseInt(localStorage.getItem('media_processed_orders') || '0', 10) + 142) * 3) / 60)}h
+              {Math.floor(((processedOrders + 142) * 3) / 60)}h
             </span>
           </div>
         </div>
