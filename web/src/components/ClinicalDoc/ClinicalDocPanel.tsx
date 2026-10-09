@@ -952,23 +952,38 @@ export function ClinicalDocPanel() {
           </div>
 
           {/* Action Button */}
-          <button
-            onClick={handleGenerateWithAI}
-            disabled={isLoading || (attachedFiles.length === 0 && !rawPrompt.trim())}
-            className="w-full bg-amber-900 hover:bg-amber-950 active:scale-[0.99] text-white py-4 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-4"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 size={18} className="animate-spin text-amber-400" />
-                <span>Processando Documentos e Gerando Solicitação...</span>
-              </>
-            ) : (
-              <>
-                <Send size={16} />
-                <span>Analisar e Gerar Solicitação Completa (.docx)</span>
-              </>
-            )}
-          </button>
+          {(() => {
+            const isDisabled = isLoading || (attachedFiles.length === 0 && !rawPrompt.trim())
+            return (
+              <button
+                type="button"
+                onClick={handleGenerateWithAI}
+                disabled={isDisabled}
+                style={
+                  isDisabled
+                    ? { backgroundColor: '#e2e8f0', color: '#64748b', borderColor: '#cbd5e1' }
+                    : { backgroundColor: '#1f29de', color: '#ffffff' }
+                }
+                className={`w-full py-4 px-6 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all mt-4 border cursor-pointer ${
+                  isDisabled
+                    ? 'border-slate-300 opacity-80 cursor-not-allowed shadow-none'
+                    : 'border-transparent text-white bg-[#1f29de] hover:bg-[#1820b5] active:scale-[0.99] shadow-lg shadow-[#1f29de]/25'
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin text-white shrink-0" />
+                    <span className="whitespace-nowrap">Processando Documentos e Gerando Solicitação...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} className={`shrink-0 ${isDisabled ? 'text-slate-500' : 'text-white'}`} />
+                    <span className="whitespace-nowrap">Analisar e Gerar Solicitação Completa (.docx)</span>
+                  </>
+                )}
+              </button>
+            )
+          })()}
 
         </div>
 
@@ -1029,9 +1044,10 @@ export function ClinicalDocPanel() {
                   key={doc.id}
                   type="button"
                   onClick={() => setActivePatientIdx(idx)}
+                  style={activePatientIdx === idx ? { backgroundColor: '#1f29de', color: '#ffffff' } : undefined}
                   className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all shrink-0 ${
                     activePatientIdx === idx
-                      ? 'bg-amber-900 text-white shadow-2xs'
+                      ? 'bg-[#1f29de] text-white shadow-2xs'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                   }`}
                 >
@@ -1045,7 +1061,7 @@ export function ClinicalDocPanel() {
           <div className="flex-1 bg-[#e2e8f0] p-4 sm:p-6 rounded-2xl overflow-y-auto min-h-[500px] flex justify-center items-start border border-slate-300">
             {isLoading ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 py-28 space-y-3">
-                <Loader2 size={38} className="animate-spin text-amber-600" />
+                <Loader2 size={38} className="animate-spin text-[#1f29de]" />
                 <p className="text-xs font-bold text-slate-700">Lendo exames e agrupando comandas por paciente...</p>
                 <span className="text-[10px] text-slate-500">Consolidando laudos do mesmo paciente e gerando solicitações A4 separadas</span>
               </div>
@@ -1062,7 +1078,7 @@ export function ClinicalDocPanel() {
               )
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 text-center py-28 space-y-2">
-                <Stethoscope size={48} className="mb-2 opacity-25 text-amber-600" />
+                <Stethoscope size={48} className="mb-2 opacity-25 text-[#1f29de]" />
                 <p className="text-xs font-bold text-slate-700">Anexe as fotos ou PDFs das comandas e clique em Gerar.</p>
                 <span className="text-[10px] text-slate-500 max-w-[320px] leading-relaxed">
                   Comandas do mesmo paciente serão unificadas em 1 solicitação. Pacientes diferentes (ex: Gabriel e Laura) gerarão solicitações A4 separadas.
@@ -1075,21 +1091,25 @@ export function ClinicalDocPanel() {
           {generatedDraft && !isLoading && (
             <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
               <button
+                type="button"
                 onClick={() => handleDownloadSingleDocx(currentDoc?.content, currentDoc?.patientName)}
-                className="w-full flex-1 bg-emerald-700 hover:bg-emerald-800 text-white py-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+                style={{ backgroundColor: '#059669', color: '#ffffff' }}
+                className="w-full flex-1 bg-[#059669] hover:bg-[#047857] text-white py-4 px-5 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer border-0"
               >
-                <Download size={16} />
-                <span>Baixar Solicitação de {currentDoc?.patientName || 'Paciente'} (.docx)</span>
+                <Download size={16} className="text-white shrink-0" />
+                <span className="whitespace-nowrap">Baixar Solicitação de {currentDoc?.patientName || 'Paciente'} (.docx)</span>
               </button>
 
               {parsedDocs.length > 1 && (
                 <button
+                  type="button"
                   onClick={handleDownloadAllDocx}
-                  className="w-full sm:w-auto bg-amber-900 hover:bg-amber-950 text-white py-4 px-5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer shrink-0"
+                  style={{ backgroundColor: '#1b497d', color: '#ffffff' }}
+                  className="w-full sm:w-auto bg-[#1b497d] hover:bg-[#12345b] text-white py-4 px-5 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer shrink-0 border-0"
                   title="Baixar todas as solicitações cirúrgicas geradas em arquivos Word separados"
                 >
-                  <Download size={16} />
-                  <span>Baixar Todos ({parsedDocs.length} Pacientes)</span>
+                  <Download size={16} className="text-white shrink-0" />
+                  <span className="whitespace-nowrap">Baixar Todos ({parsedDocs.length} Pacientes)</span>
                 </button>
               )}
             </div>

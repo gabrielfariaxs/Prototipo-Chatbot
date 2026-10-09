@@ -1,0 +1,132 @@
+// Prisma Schema para conexão com o Supabase PostgreSQL (MedIA)
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  // O Supabase utiliza a extensão pgvector para o RAG
+  extensions = [vector]
+}
+
+/// Chamados de Suporte Técnico T.I
+model TiChamado {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creatorName        String    @map("creator_name")
+  creatorSector      String    @map("creator_sector")
+  technicianName     String?   @map("technician_name")
+  title              String
+  description        String
+  priority           String    @default("media") // baixa, media, alta, urgente
+  category           String?
+  status             String    @default("pendente_aprovacao") // pendente_aprovacao, aprovado, em_atendimento, concluido, cancelado
+  evidences          Json      @default("[]")
+  rejectionReason    String?   @map("rejection_reason")
+  solutionNotes      String?   @map("solution_notes")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  finishedAt         DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  @@map("ti_chamados")
+}
+
+/// Gargalos e Não Conformidades (NOC / GOP)
+model Gargalo {
+  id         BigInt   @id @default(autoincrement())
+  setor      String
+  titulo     String
+  descricao  String
+  evidencias Json     @default("[]")
+  status     String   @default("Pendente") // Pendente, Em Andamento, Resolvido
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  @@map("gargalos")
+}
+
+/// Demandas e Planos de Ação Operacionais
+model Demanda {
+  id           BigInt    @id @default(autoincrement())
+  setor        String
+  titulo       String
+  descricao    String
+  responsavel  String?
+  prioridade   String    @default("Média")
+  status       String    @default("A Fazer")
+  dataLimite   DateTime? @map("data_limite") @db.Date
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  @@map("demandas")
+}
+
+/// Telemetria de Uso da Inteligência Artificial MedIA
+model MediaAiUsage {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userName                String   @map("user_name")
+  userSector              String   @map("user_sector")
+  tipoOperacao            String   @map("tipo_operacao") // leitura_guia, chat, solicitacao_medica, analise_opme
+  convenio                String?
+  tempoEconomizadoMinutos Int      @default(3) @map("tempo_economizado_minutos")
+  sucesso                 Boolean  @default(true)
+  metadata                Json     @default("{}")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("media_ai_usage")
+}
+
+/// Auditoria de Feedbacks dos Colaboradores sobre as Respostas da IA
+model MediaAiFeedback {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userName        String   @map("user_name")
+  userSector      String   @map("user_sector")
+  tipo            String   // up, down
+  comentario      String?
+  mensagemPreview String?  @map("mensagem_preview")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("media_ai_feedbacks")
+}
+
+/// Base Vetorial RAG Arthromed (Procedimentos, POPs, Tabelas)
+model DocumentoArthromed {
+  id        String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  processo  String
+  setor     String
+  sistema   String?
+  conteudo  String
+  embedding Unsupported("vector")? // pgvector 1536 dimensões
+  criadoEm  DateTime               @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  @@map("documentos_arthromed")
+}
+
+/// Log de Auditoria LGPD e CFM de Acesso a Documentos Privados
+model DocumentAccessLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @map("user_id") @db.Uuid
+  caminho   String
+  acao      String   // upload, link_gerado, download
+  detalhes  Json     @default("{}")
+  userAgent String?  @map("user_agent")
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  @@map("document_access_log")
+}
+
+/// Cofre de Senhas Criptografadas dos Portais Hospitalares e Convênios
+model PortalPassword {
+  id         BigInt   @id @default(autoincrement())
+  company    String   // medic, arthromed, ambas
+  portalName String   @map("portal_name")
+  url        String?
+  username   String
+  password   String
+  notes      String?
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  @@map("portal_passwords")
+}

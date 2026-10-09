@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Clock, Link as LinkIcon, Play, Download, QrCode, CheckCircle2, LogOut, Gift } from 'lucide-react'
+import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Users, Clock, Link as LinkIcon, Play, Download, QrCode, CheckCircle2, LogOut, MessageCircle, Send, Check, AlertCircle, Loader2, Phone, Search } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import * as ExcelJS from 'exceljs'
 import PizZip from 'pizzip'
@@ -11,7 +11,8 @@ import { supabase } from '../../lib/supabase'
 import { salvarDocumento } from '../../lib/storage'
 import { getTreinamentosMes, createTreinamento, updateTreinamentoStatus, deleteTreinamento, getPresencas, updateTreinamento, getAllAgendados } from '../../lib/trainings-service'
 import type { Treinamento, Presenca } from '../../lib/trainings-service'
-import { BIRTHDAYS } from '../../data/birthdays'
+import { getWhatsAppContacts, matchTargetAudienceContacts, dispatchBatchReminders, formatPhoneNumber, buildTrainingReminderMessage, getContactIdentifier, extractExcludedContactsFromCriadoPor, buildCriadoPorWithExclusions } from '../../lib/uazapi'
+import type { WhatsAppContact } from '../../lib/uazapi'
 
 interface TreinamentosModalProps {
   onClose: () => void
@@ -33,6 +34,20 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
   const [view, setView] = useState<'calendar' | 'day_details' | 'create_form' | 'meeting_active'>('calendar')
   const [selectedTreinamento, setSelectedTreinamento] = useState<Treinamento | null>(null)
   const [presencas, setPresencas] = useState<Presenca[]>([])
+
+  // WhatsApp Integration States
+  const [whatsappContacts, setWhatsappContacts] = useState<WhatsAppContact[]>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false)
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false)
+  const [treinamentoParaLembrete, setTreinamentoParaLembrete] = useState<Treinamento | null>(null)
+  const [matchedReminderContacts, setMatchedReminderContacts] = useState<WhatsAppContact[]>([])
+  const [selectedContactIdsForReminder, setSelectedContactIdsForReminder] = useState<Set<string>>(new Set())
+  const [isDispatchingReminders, setIsDispatchingReminders] = useState(false)
+  const [dispatchProgress, setDispatchProgress] = useState<{ current: number; total: number; contactName: string; success: boolean } | null>(null)
+  const [dispatchResult, setDispatchResult] = useState<{ sent: number; failed: number } | null>(null)
+  const [contactSearchFilter, setContactSearchFilter] = useState('')
+  const [showContactPicker, setShowContactPicker] = useState(false)
+  const [excludedContactIds, setExcludedContactIds] = useState<string[]>([])
 
   // Form State
   const [formData, setFormData] = useState({
@@ -75,6 +90,27 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
       .catch(() => console.log('Erro ao buscar feriados'))
   }, [currentDate, calendarMode])
 
+  // Carrega a agenda de contatos do WhatsApp da Uazapi
+  useEffect(() => {
+    setIsLoadingContacts(true)
+    getWhatsAppContacts()
+      .then(contacts => {
+        setWhatsappContacts(contacts)
+      })
+      .catch(err => console.warn('[WhatsApp] Falha ao carregar contatos:', err))
+      .finally(() => setIsLoadingContacts(false))
+  }, [])
+
+  // Verificador em background a cada 60 segundos para garantir disparo 30 min antes
+  useEffect(() => {
+    const triggerAutoReminderCheck = () => {
+      fetch('/api/cron-treinamentos-whatsapp').catch(() => {})
+    }
+    triggerAutoReminderCheck()
+    const timer = setInterval(triggerAutoReminderCheck, 60000)
+    return () => clearInterval(timer)
+  }, [])
+
   useEffect(() => {
     if (view === 'meeting_active' && selectedTreinamento) {
       fetchPresencas()
@@ -113,6 +149,100 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
     setPresencas(data)
   }
 
+  // Abre o modal de disparo de lembrete no WhatsApp respeitando contatos excluídos
+  const handleOpenWhatsAppReminderModal = (t: Treinamento) => {
+    setTreinamentoParaLembrete(t)
+    setDispatchResult(null)
+    setDispatchProgress(null)
+    
+    // Busca os contatos correspondentes ao público-alvo excluindo os ignorados
+    const excluded = extractExcludedContactsFromCriadoPor(t.criado_por)
+    const { matchedContacts } = matchTargetAudienceContacts(t.colaboradores || '', whatsappContacts, excluded)
+    setMatchedReminderContacts(matchedContacts)
+    setSelectedContactIdsForReminder(new Set(matchedContacts.map(c => getContactIdentifier(c))))
+    setIsWhatsAppModalOpen(true)
+  }
+
+  // Executa o disparo dos lembretes para os contatos selecionados
+  const handleDispatchReminders = async () => {
+    if (!treinamentoParaLembrete) return
+    const contactsToSend = matchedReminderContacts.filter(c => selectedContactIdsForReminder.has(getContactIdentifier(c)))
+    if (contactsToSend.length === 0) {
+      alert('Selecione ao menos um contato para disparar o lembrete.')
+      return
+    }
+
+    setIsDispatchingReminders(true)
+    setDispatchProgress({ current: 0, total: contactsToSend.length, contactName: '', success: true })
+
+    try {
+      const res = await dispatchBatchReminders(
+        treinamentoParaLembrete,
+        contactsToSend,
+        (current, total, contact, success) => {
+          setDispatchProgress({ current, total, contactName: contact.contact_name, success })
+        }
+      )
+      setDispatchResult({ sent: res.sent, failed: res.failed })
+      
+      // Atualiza o estado local para marcar como enviado
+      setTreinamentos(prev => prev.map(item => {
+        if (item.id === treinamentoParaLembrete.id) {
+          const marca = `[whatsapp_lembrete_enviado:${new Date().toISOString()}]`
+          return { ...item, criado_por: item.criado_por ? `${item.criado_por} ${marca}` : marca }
+        }
+        return item
+      }))
+    } catch (err: any) {
+      alert(`Erro durante o disparo: ${err?.message || 'Falha de conexão'}`)
+    } finally {
+      setIsDispatchingReminders(false)
+    }
+  }
+
+  // Adiciona contato selecionado da agenda ao campo de texto do público-alvo
+  const handleAddContactToColaboradores = (contact: WhatsAppContact) => {
+    const contactId = getContactIdentifier(contact)
+    // Se o contato havia sido excluído, desfaz a exclusão automaticamente
+    setExcludedContactIds(prev => prev.filter(id => id !== contactId && id !== contact.jid && id !== contact.phone))
+
+    const currentText = formData.colaboradores.trim()
+    const nameToAdd = contact.contact_name
+    if (!currentText) {
+      setFormData({ ...formData, colaboradores: nameToAdd })
+    } else {
+      if (!currentText.toLowerCase().includes(nameToAdd.toLowerCase())) {
+        setFormData({ ...formData, colaboradores: `${currentText}, ${nameToAdd}` })
+      }
+    }
+  }
+
+  // Remove/tira um contato identificado da lista de lembretes
+  const handleRemoveContact = (contact: WhatsAppContact) => {
+    const contactId = getContactIdentifier(contact)
+    setExcludedContactIds(prev => {
+      if (prev.includes(contactId)) return prev
+      return [...prev, contactId]
+    })
+
+    // Se o nome completo do contato foi digitado/inserido no texto de colaboradores, limpa também
+    if (contact.contact_name && formData.colaboradores.toLowerCase().includes(contact.contact_name.toLowerCase())) {
+      const escaped = contact.contact_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`(?:,\\s*)?${escaped}(?:\\s*,)?`, 'i')
+      const updated = formData.colaboradores
+        .replace(regex, '')
+        .replace(/,\s*,/g, ', ')
+        .replace(/^[,\s]+|[,\s]+$/g, '')
+        .trim()
+      setFormData(prev => ({ ...prev, colaboradores: updated }))
+    }
+  }
+
+  // Restaura contato que havia sido removido
+  const handleRestoreContact = (contactId: string) => {
+    setExcludedContactIds(prev => prev.filter(id => id !== contactId))
+  }
+
   // Helpers do Calendário
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate()
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay()
@@ -144,6 +274,8 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
     try {
       const dataStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
       if (selectedTreinamento) {
+        const baseCriadoPor = selectedTreinamento.criado_por || userName
+        const updatedCriadoPor = buildCriadoPorWithExclusions(baseCriadoPor, excludedContactIds)
         await updateTreinamento(selectedTreinamento.id, {
           titulo: formData.titulo,
           descricao: formData.descricao,
@@ -151,8 +283,10 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
           horario: `${formData.horario} às ${formData.horarioFim}`,
           colaboradores: formData.colaboradores,
           link_video: formData.link_video,
+          criado_por: updatedCriadoPor
         })
       } else {
+        const novoCriadoPor = buildCriadoPorWithExclusions(userName, excludedContactIds)
         await createTreinamento({
           titulo: formData.titulo,
           descricao: formData.descricao,
@@ -160,11 +294,12 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
           horario: `${formData.horario} às ${formData.horarioFim}`,
           colaboradores: formData.colaboradores,
           link_video: formData.link_video,
-          criado_por: userName
+          criado_por: novoCriadoPor
         })
       }
       await fetchMonthData(currentDate.getFullYear(), currentDate.getMonth() + 1)
       setSelectedTreinamento(null)
+      setExcludedContactIds([])
       setView('day_details')
       setFormData({ titulo: '', descricao: '', horario: '14:00', horarioFim: '15:00', colaboradores: '', link_video: '' })
     } catch (e: any) {
@@ -438,6 +573,9 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
               <button 
                 onClick={() => {
                   setSelectedDate(new Date())
+                  setSelectedTreinamento(null)
+                  setExcludedContactIds([])
+                  setFormData({ titulo: '', descricao: '', horario: '14:00', horarioFim: '15:00', colaboradores: '', link_video: '' })
                   setView('create_form')
                 }}
                 style={{ backgroundColor: '#4f46e5', color: '#ffffff' }}
@@ -539,6 +677,15 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                   <div className="flex items-center gap-1.5"><Clock size={14} className="text-slate-400" /> {t.horario}</div>
                   <div className="flex items-center gap-1.5"><Users size={14} className="text-slate-400" /> {t.colaboradores || 'Todos'}</div>
                   {t.link_video && <div className="flex items-center gap-1.5"><LinkIcon size={14} className="text-slate-400" /> Link Disponível</div>}
+                  {t.criado_por?.includes('whatsapp_lembrete_enviado') ? (
+                    <div className="flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
+                      <Check size={12} className="text-emerald-600" /> Lembrete WhatsApp Enviado
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-slate-600 bg-emerald-50/70 border border-emerald-200/60 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
+                      <Clock size={11} className="text-emerald-600" /> Disparo auto 30m antes
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100 flex-wrap">
@@ -565,6 +712,7 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                             colaboradores: t.colaboradores || '',
                             link_video: t.link_video || ''
                           })
+                          setExcludedContactIds(extractExcludedContactsFromCriadoPor(t.criado_por))
                           setSelectedTreinamento(t)
                           setView('create_form')
                         }}
@@ -596,6 +744,18 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                       <Play size={16} /> Entrar na Reunião
                     </a>
                   )}
+                  {!concluded && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenWhatsAppReminderModal(t)}
+                      style={{ backgroundColor: '#25D366', color: '#ffffff' }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all text-sm font-bold shadow-md shadow-emerald-500/20 cursor-pointer"
+                      title="Disparar ou agendar lembrete no WhatsApp com link da reunião para os participantes"
+                    >
+                      <MessageCircle size={16} className="text-white shrink-0" />
+                      <span>{t.criado_por?.includes('whatsapp_lembrete_enviado') ? 'Reenviar WhatsApp' : 'Lembrete WhatsApp'}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             )})}
@@ -604,7 +764,12 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
 
         {isLeader && (
           <button 
-            onClick={() => setView('create_form')}
+            onClick={() => {
+              setSelectedTreinamento(null)
+              setExcludedContactIds([])
+              setFormData({ titulo: '', descricao: '', horario: '14:00', horarioFim: '15:00', colaboradores: '', link_video: '' })
+              setView('create_form')
+            }}
             className="mt-6 w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all font-bold"
           >
             <Plus size={20} /> Agendar Novo Treinamento
@@ -632,6 +797,7 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                 onClick={() => {
                   setView('calendar')
                   setSelectedTreinamento(null)
+                  setExcludedContactIds([])
                   setFormData({ titulo: '', descricao: '', horario: '14:00', horarioFim: '15:00', colaboradores: '', link_video: '' })
                 }} 
                 className="p-3 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 text-slate-500 shadow-sm transition-all hover:-translate-x-1"
@@ -708,18 +874,254 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[13px] font-black text-slate-700 uppercase tracking-widest mb-2">Setores Alvo / Públicos</label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <label className="block text-[13px] font-black text-slate-700 uppercase tracking-widest">
+                      Setores Alvo / Colaboradores (Público)
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Digite os nomes ou use o botão ao lado para buscar na agenda
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Botão de Busca na Agenda com visual blindado */}
+                    <button
+                      type="button"
+                      onClick={() => setShowContactPicker(!showContactPicker)}
+                      style={{ backgroundColor: '#25D366', color: '#ffffff' }}
+                      className="px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/25 hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer border border-transparent"
+                      title="Buscar e adicionar contatos diretamente da agenda do WhatsApp"
+                    >
+                      {isLoadingContacts ? (
+                        <Loader2 size={14} className="text-white animate-spin shrink-0" />
+                      ) : (
+                        <Phone size={14} className="text-white shrink-0" />
+                      )}
+                      <span>
+                        {isLoadingContacts
+                          ? 'Carregando Agenda...'
+                          : (showContactPicker ? 'Fechar Agenda' : '+ Buscar na Agenda WhatsApp')}
+                      </span>
+                    </button>
+
+                    {/* Badge de Integração Uazapi */}
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{whatsappContacts.length > 0 ? `${whatsappContacts.length} contatos` : 'Uazapi'}</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Users size={20} className="text-slate-400" />
                   </div>
                   <input 
-                    required type="text" value={formData.colaboradores} onChange={e => setFormData({...formData, colaboradores: e.target.value})} 
-                    className="w-full pl-12 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-medium placeholder-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" 
-                    placeholder="Ex: T.I, Vendas, Faturamento..." 
+                    required 
+                    type="text" 
+                    value={formData.colaboradores} 
+                    onChange={e => setFormData({ ...formData, colaboradores: e.target.value })} 
+                    className="w-full pl-12 pr-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-medium placeholder-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none" 
+                    placeholder="Ex: Comercial interno: Karen, Thaciana. Financeiro: Maria, Bruna..." 
                   />
                 </div>
+
+                {/* Seletor Suspenso da Agenda do WhatsApp */}
+                {showContactPicker && (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xl space-y-3 animate-fade-in relative z-20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle size={16} className="text-emerald-600" />
+                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                          Contatos da Agenda do WhatsApp ({whatsappContacts.length})
+                        </h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowContactPicker(false)}
+                        className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                      >
+                        Fechar ✕
+                      </button>
+                    </div>
+
+                    <div className="relative">
+                      <Search size={15} className="absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        value={contactSearchFilter}
+                        onChange={e => setContactSearchFilter(e.target.value)}
+                        placeholder="Buscar por nome ou telefone na agenda..."
+                        className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 outline-none focus:bg-white focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto space-y-1 divide-y divide-slate-100 pr-1">
+                      {whatsappContacts
+                        .filter(c => {
+                          if (!contactSearchFilter.trim()) return true
+                          const term = contactSearchFilter.toLowerCase()
+                          return c.contact_name.toLowerCase().includes(term) || c.phone.includes(term)
+                        })
+                        .slice(0, 30)
+                        .map((c, idx) => {
+                          const isAlreadyIn = formData.colaboradores.toLowerCase().includes(c.contact_name.toLowerCase())
+                          const itemKey = `${c.jid}_${c.contact_name}_${idx}`
+                          return (
+                            <button
+                              key={itemKey}
+                              type="button"
+                              onClick={() => {
+                                handleAddContactToColaboradores(c)
+                              }}
+                              className={`w-full text-left p-2 rounded-xl flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                                isAlreadyIn ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px] shrink-0">
+                                  {c.contact_name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="font-semibold">{c.contact_name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-400 font-mono">{formatPhoneNumber(c.phone)}</span>
+                                <span
+                                  style={{
+                                    backgroundColor: isAlreadyIn ? '#d1fae5' : '#059669',
+                                    color: isAlreadyIn ? '#065f46' : '#ffffff'
+                                  }}
+                                  className="text-[10px] px-2.5 py-1 rounded-lg font-black transition-all shrink-0 shadow-2xs"
+                                >
+                                  {isAlreadyIn ? 'Adicionado ✓' : '+ Inserir'}
+                                </span>
+                              </div>
+                            </button>
+                          )
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Auto-Match dos contatos identificados em tempo real com opção de remover */}
+                {(() => {
+                  if (!formData.colaboradores.trim()) return null
+
+                  const allResult = matchTargetAudienceContacts(formData.colaboradores, whatsappContacts, [])
+                  const { matchedContacts, unmatchedNames } = matchTargetAudienceContacts(formData.colaboradores, whatsappContacts, excludedContactIds)
+
+                  // Identifica quais contatos foram tirados/removidos pelo usuário
+                  const excludedList = allResult.matchedContacts.filter(c => {
+                    const cId = getContactIdentifier(c)
+                    const cleanPhone = (c.phone || '').replace(/\D/g, '')
+                    return excludedContactIds.includes(cId) || 
+                           excludedContactIds.includes(c.jid) || 
+                           excludedContactIds.includes(cleanPhone) ||
+                           excludedContactIds.includes(c.contact_name.toLowerCase())
+                  })
+
+                  return (
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="text-[11px] font-extrabold text-slate-700 flex items-center gap-1.5">
+                          <MessageCircle size={14} className="text-emerald-600" />
+                          Contatos da Agenda Identificados para Lembrete ({matchedContacts.length}):
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-semibold">
+                          Disparo automático programado para 30 minutos antes
+                        </span>
+                      </div>
+
+                      {matchedContacts.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {matchedContacts.map(c => {
+                            const cId = getContactIdentifier(c)
+                            return (
+                              <div
+                                key={cId}
+                                className="group flex items-center gap-1.5 bg-white border border-emerald-300 text-emerald-900 pl-2.5 pr-1.5 py-1 rounded-xl text-[11px] font-bold shadow-2xs hover:border-emerald-400 transition-all"
+                              >
+                                <Phone size={11} className="text-emerald-600 shrink-0" />
+                                <span>{c.contact_name}</span>
+                                <span className="text-[9px] text-emerald-600 font-mono">({formatPhoneNumber(c.phone)})</span>
+                                
+                                {/* Botão para tirar/remover contato não correto */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRemoveContact(c)
+                                  }}
+                                  className="ml-1 p-0.5 rounded-md hover:bg-red-50 hover:text-red-600 text-slate-400 transition-colors cursor-pointer shrink-0"
+                                  title={`Tirar ${c.contact_name} do lembrete`}
+                                >
+                                  <X size={13} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500">
+                          {excludedList.length > 0
+                            ? 'Todos os contatos correspondentes foram removidos dos lembretes deste treinamento.'
+                            : 'Nenhum contato da agenda foi identificado ainda no texto digitado. Use o botão + Agenda acima para selecionar.'}
+                        </p>
+                      )}
+
+                      {/* Lista de contatos removidos com opção de restaurar */}
+                      {excludedList.length > 0 && (
+                        <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between flex-wrap gap-2 text-[10px]">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-slate-500 flex items-center gap-1">
+                              🚫 Removido(s) do lembrete ({excludedList.length}):
+                            </span>
+                            {excludedList.map(c => {
+                              const cId = getContactIdentifier(c)
+                              return (
+                                <span
+                                  key={cId}
+                                  className="inline-flex items-center gap-1 bg-slate-200/80 text-slate-700 px-2 py-0.5 rounded-lg font-medium"
+                                >
+                                  <span className="line-through">{c.contact_name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRestoreContact(cId)}
+                                    style={{ color: '#4f46e5' }}
+                                    className="font-bold hover:underline cursor-pointer ml-1"
+                                    title="Restaurar este contato no lembrete"
+                                  >
+                                    Restaurar
+                                  </button>
+                                </span>
+                              )
+                            })}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setExcludedContactIds([])}
+                            style={{ color: '#4f46e5' }}
+                            className="font-bold hover:underline cursor-pointer ml-auto"
+                          >
+                            Restaurar todos
+                          </button>
+                        </div>
+                      )}
+
+                      {unmatchedNames.length > 0 && (
+                        <div className="pt-2 border-t border-slate-200/80 flex items-start gap-1.5 text-[10px] text-amber-700">
+                          <AlertCircle size={12} className="shrink-0 mt-0.5 text-amber-600" />
+                          <span>
+                            Nomes não localizados na agenda com esse formato exato: <strong>{unmatchedNames.join(', ')}</strong>. Você pode clicar em <strong>+ Agenda</strong> para vincular o contato correto.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
               </div>
             </div>
 
@@ -943,6 +1345,225 @@ export const TreinamentosModal: React.FC<TreinamentosModalProps> = ({ onClose, u
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Modal Interativo de Disparo de Lembrete WhatsApp (Uazapi) */}
+      <AnimatePresence>
+        {isWhatsAppModalOpen && treinamentoParaLembrete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#25D366] text-white flex items-center justify-center shadow-md shadow-emerald-500/30 shrink-0">
+                    <MessageCircle size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-black text-slate-800 text-lg">
+                      Disparar Lembrete no WhatsApp
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Instância Uazapi conectada • {treinamentoParaLembrete.titulo}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsWhatsAppModalOpen(false)}
+                  className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                
+                {/* Resumo da Reunião */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span>📅 Data: {treinamentoParaLembrete.data.split('-').reverse().join('/')}</span>
+                    <span>⏰ Horário: {treinamentoParaLembrete.horario}</span>
+                  </div>
+                  {treinamentoParaLembrete.link_video ? (
+                    <div className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5 truncate">
+                      <LinkIcon size={13} className="shrink-0 text-emerald-600" />
+                      <span className="truncate">Link: {treinamentoParaLembrete.link_video}</span>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-amber-700 font-medium">
+                      ⚠️ Este treinamento não possui link de chamada cadastrado. O lembrete avisará que o organizador disponibilizará o link no início.
+                    </p>
+                  )}
+                </div>
+
+                {/* Preview da Mensagem */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">
+                    Preview da Mensagem que será Enviada:
+                  </label>
+                  <div className="bg-[#e7f8ec] p-4 rounded-2xl border border-emerald-200 text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed shadow-2xs">
+                    {buildTrainingReminderMessage(treinamentoParaLembrete, 'Colaborador')}
+                  </div>
+                </div>
+
+                {/* Seleção de Contatos */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <Users size={14} className="text-emerald-600" />
+                      Participantes Localizados na Agenda ({matchedReminderContacts.length}):
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedContactIdsForReminder(new Set(matchedReminderContacts.map(c => getContactIdentifier(c))))}
+                        className="text-[11px] text-indigo-600 hover:underline font-bold"
+                      >
+                        Selecionar Todos
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedContactIdsForReminder(new Set())}
+                        className="text-[11px] text-slate-500 hover:underline font-medium"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+
+                  {matchedReminderContacts.length === 0 ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 space-y-1">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <AlertCircle size={14} /> Nenhum contato da agenda foi identificado automaticamente pelo texto.
+                      </p>
+                      <p className="text-[11px] text-amber-700">
+                        Edite o treinamento e use o botão <strong>+ Agenda</strong> no campo de público-alvo para selecionar os contatos da lista do WhatsApp.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="max-h-48 overflow-y-auto space-y-1.5 border border-slate-200 rounded-2xl p-2 bg-slate-50/50">
+                      {matchedReminderContacts.map(contact => {
+                        const cId = getContactIdentifier(contact)
+                        const isChecked = selectedContactIdsForReminder.has(cId)
+                        return (
+                          <div
+                            key={cId}
+                            onClick={() => {
+                              const next = new Set(selectedContactIdsForReminder)
+                              if (isChecked) next.delete(cId)
+                              else next.add(cId)
+                              setSelectedContactIdsForReminder(next)
+                            }}
+                            className={`p-2.5 rounded-xl border flex items-center justify-between text-xs transition-all cursor-pointer ${
+                              isChecked
+                                ? 'bg-white border-emerald-300 text-slate-900 shadow-2xs'
+                                : 'bg-transparent border-transparent opacity-60 hover:opacity-100 text-slate-600'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}} // Tratado no onClick do pai
+                                className="w-4 h-4 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                              />
+                              <div>
+                                <span className="font-bold block">{contact.contact_name}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">{formatPhoneNumber(contact.phone)}</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                              WhatsApp Ativo ✓
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Feedback de Progresso e Resultado */}
+                {isDispatchingReminders && dispatchProgress && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2 animate-fade-in">
+                    <div className="flex items-center justify-between text-xs font-bold text-emerald-800">
+                      <span className="flex items-center gap-2">
+                        <Loader2 size={14} className="animate-spin text-emerald-600" />
+                        Enviando mensagem {dispatchProgress.current} de {dispatchProgress.total}...
+                      </span>
+                      <span>{Math.round((dispatchProgress.current / dispatchProgress.total) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-emerald-600 h-full transition-all duration-300"
+                        style={{ width: `${(dispatchProgress.current / dispatchProgress.total) * 100}%` }}
+                      />
+                    </div>
+                    {dispatchProgress.contactName && (
+                      <p className="text-[10px] text-emerald-700 truncate">
+                        Destinatário atual: <strong>{dispatchProgress.contactName}</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {dispatchResult && (
+                  <div className="p-4 bg-emerald-100/70 border border-emerald-300 rounded-2xl space-y-1 text-xs text-emerald-900 animate-fade-in">
+                    <p className="font-extrabold flex items-center gap-2">
+                      <Check size={16} className="text-emerald-700" /> Disparo concluído com sucesso!
+                    </p>
+                    <p className="text-[11px]">
+                      {dispatchResult.sent} mensagem(ns) enviada(s) pelo WhatsApp.{' '}
+                      {dispatchResult.failed > 0 && `(${dispatchResult.failed} falha(s))`}.
+                    </p>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
+                <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
+                  Lembrete automático programado para 30 min antes.
+                </p>
+                <div className="flex items-center gap-2.5 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsWhatsAppModalOpen(false)}
+                    className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDispatchReminders}
+                    disabled={isDispatchingReminders || selectedContactIdsForReminder.size === 0}
+                    style={{ backgroundColor: selectedContactIdsForReminder.size === 0 ? '#94a3b8' : '#25D366', color: '#ffffff' }}
+                    className="px-6 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 shadow-md shadow-emerald-500/25 hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDispatchingReminders ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin text-white" />
+                        <span>Enviando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={14} className="text-white" />
+                        <span>Disparar para {selectedContactIdsForReminder.size} Contatos</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles, Mail, X, Users, Terminal } from 'lucide-react'
+import { Bot, Layers, BookOpen, ArrowRight, ExternalLink, Stethoscope, Monitor, FolderKanban, Sparkles, Mail, X, Users, Terminal, BarChart3 } from 'lucide-react'
 import { BrandLockup } from '../common/BrandLockup'
 import { supabase } from '../../lib/supabase'
 import { getTodaysBirthdays } from '../../data/birthdays'
@@ -40,6 +40,8 @@ interface ChatOnboardingProps {
   onOpenTreinamentos?: () => void;
   onOpenTreinaFlix?: () => void;
   onOpenDevDocs?: () => void;
+  onOpenMetrics?: () => void;
+  isAuthenticated?: boolean;
 }
 
 export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ 
@@ -51,7 +53,9 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
   onOpenChamadosTi,
   onOpenTreinamentos,
   onOpenTreinaFlix,
-  onOpenDevDocs
+  onOpenDevDocs,
+  onOpenMetrics,
+  isAuthenticated = false
 }) => {
   const [unreadTi, setUnreadTi] = useState(false)
   const [unreadTiCount, setUnreadTiCount] = useState(0)
@@ -405,13 +409,10 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
     }
   ]
 
+
+
   return (
-    <motion.div
-      key="onboarding"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.3 }}
+    <div
       className="flex-1 flex flex-col items-center p-4 sm:p-6 lg:p-10 bg-[#f8fafc] overflow-y-auto w-full min-h-full"
     >
       <div className="w-full max-w-6xl flex flex-col items-center py-2 sm:py-6">
@@ -521,21 +522,37 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
           ))}
         </div>
 
-        {/* Link sutil no canto para Documentação e API Reference */}
-        {onOpenDevDocs && (
-          <div className="w-full flex justify-end items-center mt-6 pt-3 px-1">
-            <button
-              type="button"
-              onClick={onOpenDevDocs}
-              className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-[#1f29de] hover:bg-white border border-transparent hover:border-slate-200/80 hover:shadow-2xs transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 select-none"
-              title="Abrir Documentação Técnica e Referência de APIs"
-            >
-              <Terminal size={13} className="text-slate-400 group-hover:text-[#1f29de] transition-colors shrink-0" />
-              <span>Documentação & API Reference</span>
-              <ArrowRight size={12} className="text-slate-400 group-hover:text-[#1f29de] group-hover:translate-x-0.5 transition-all shrink-0" />
-            </button>
+        {/* Rodapé sutil com links administrativos e técnicos (visível apenas para usuários autenticados) */}
+        {isAuthenticated && (
+          <div className="w-full flex justify-between items-center mt-6 pt-3 px-1 border-t border-slate-200/40">
+            {onOpenMetrics && (
+              <button
+                type="button"
+                onClick={onOpenMetrics}
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-[#1f29de] hover:bg-white border border-transparent hover:border-slate-200/80 hover:shadow-2xs transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 select-none"
+                title="Abrir Painel Executivo de Métricas & Eficiência IA"
+              >
+                <BarChart3 size={13} className="text-slate-400 group-hover:text-[#1f29de] transition-colors shrink-0" />
+                <span>Métricas de IA</span>
+                <ArrowRight size={12} className="text-slate-400 group-hover:text-[#1f29de] group-hover:translate-x-0.5 transition-all shrink-0" />
+              </button>
+            )}
+
+            {onOpenDevDocs && (
+              <button
+                type="button"
+                onClick={onOpenDevDocs}
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-[#1f29de] hover:bg-white border border-transparent hover:border-slate-200/80 hover:shadow-2xs transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 select-none ml-auto"
+                title="Abrir Documentação Técnica e Referência de APIs"
+              >
+                <Terminal size={13} className="text-slate-400 group-hover:text-[#1f29de] transition-colors shrink-0" />
+                <span>Documentação & API Reference</span>
+                <ArrowRight size={12} className="text-slate-400 group-hover:text-[#1f29de] group-hover:translate-x-0.5 transition-all shrink-0" />
+              </button>
+            )}
           </div>
         )}
+
 
       </div>
 
@@ -624,6 +641,6 @@ export const ChatOnboarding: React.FC<ChatOnboardingProps> = ({
         </motion.div>
       )}
 
-    </motion.div>
+    </div>
   )
 }

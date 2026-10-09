@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   X, 
@@ -44,13 +44,15 @@ import {
   HardDrive,
   GitBranch,
   Workflow,
-  ArrowRight
+  ArrowRight,
+  BarChart3
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface DeveloperDocsModalProps {
   isOpen: boolean
   onClose: () => void
+  onRequireLogin?: () => void
 }
 
 type SectionId = 
@@ -62,6 +64,7 @@ type SectionId =
   | 'noc_gop_process'
   | 'ti_chamados_process'
   | 'trainings_qr_process'
+  | 'executive_metrics_telemetry'
   | 'auth_rbac_cascade'
   | 'portal_passwords_deep'
   | 'storage_lgpd_audit'
@@ -70,10 +73,31 @@ type SectionId =
   | 'env_deploy_troubleshooting'
   | 'live_playground'
 
-export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, onClose }) => {
+export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, onClose, onRequireLogin }) => {
   const [activeSection, setActiveSection] = useState<SectionId>('overview_deep')
   const [searchQuery, setSearchQuery] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  // Autenticação obrigatória para acessar documentação técnica e playground
+  const [sessionUser, setSessionUser] = useState<any>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    let isMounted = true
+    import('../../lib/supabase').then(({ supabase }) => {
+      supabase.auth.getSession().then((res: any) => {
+        if (isMounted) {
+          const session = res?.data?.session
+          setSessionUser(session?.user || null)
+          setAuthChecked(true)
+        }
+      })
+    })
+    return () => {
+      isMounted = false
+    }
+  }, [isOpen])
 
   // Estados do API Playground
   const [testEndpoint, setTestEndpoint] = useState<'getContext' | 'generateResponse' | 'storageTest' | 'sessionCheck' | 'dbHealth'>('getContext')
@@ -165,6 +189,7 @@ export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, 
         { id: 'noc_gop_process', label: '2.2. NOC / NCO Gestão de Gargalos', icon: <Layers size={15} /> },
         { id: 'ti_chamados_process', label: '2.3. Helpdesk & Chamados de T.I', icon: <Laptop size={15} /> },
         { id: 'trainings_qr_process', label: '2.4. Treinamentos, Atas & QR Code', icon: <QrCode size={15} /> },
+        { id: 'executive_metrics_telemetry', label: '2.5. Métricas, Framer Motion & Telemetria', icon: <BarChart3 size={15} /> },
       ]
     },
     {
@@ -190,6 +215,56 @@ export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, 
   const filteredNavItems = searchQuery 
     ? ALL_ITEMS.filter(item => item.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : null
+
+  if (authChecked && !sessionUser) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#070b14]/85 backdrop-blur-md flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white dark:bg-[#0c1222] w-full max-w-md rounded-3xl p-6 sm:p-8 text-center border border-slate-200 dark:border-slate-800 shadow-2xl relative"
+        >
+          <button 
+            onClick={onClose} 
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <X size={18} />
+          </button>
+          
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/40 text-[#1f29de] dark:text-blue-400 flex items-center justify-center mx-auto mb-5 shadow-inner">
+            <Lock size={30} />
+          </div>
+
+          <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">
+            Acesso Restrito à Documentação
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+            A especificação técnica profunda, os schemas de banco de dados e o API Playground estão disponíveis exclusivamente para desenvolvedores e colaboradores autenticados.
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                onClose()
+                if (onRequireLogin) onRequireLogin()
+              }}
+              className="w-full py-3 px-4 rounded-xl bg-[#1f29de] text-white font-bold text-sm shadow-lg shadow-blue-600/30 hover:bg-[#1a22b8] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Key size={16} />
+              <span>Fazer Login Corporativo</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
+            >
+              Voltar ao Início
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-[#070b14]/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-6 overflow-hidden">
@@ -823,6 +898,77 @@ export const DeveloperDocsModal: React.FC<DeveloperDocsModalProps> = ({ isOpen, 
               </div>
             )}
 
+            {/* 2.5. MÉTRICAS EXECUTIVAS, FRAMER MOTION & TELEMETRIA */}
+            {activeSection === 'executive_metrics_telemetry' && (
+              <div className="space-y-6 max-w-5xl">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    2.5. Painel de Métricas Executivas, Framer Motion & Telemetria em Tempo Real
+                  </h1>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                    Módulo de inteligência operacional que consolida métricas do Helpdesk T.I, Não Conformidades (GOP/NCO) e Telemetria da IA MedIA em componentes fluidos com spring physics e alto padrão visual.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-2">
+                    <div className="flex items-center gap-2 text-purple-600 font-bold text-sm">
+                      <Laptop size={16} />
+                      <span>Chamados de T.I (ti_chamados)</span>
+                    </div>
+                    <p className="text-slate-500 leading-relaxed">
+                      Agregação direta da tabela de suporte: total de chamados, taxa de sucesso, tempo médio de resolução calculado a partir da diferença de carimbos <code>created_at</code> vs <code>finished_at</code> e divisão por setor solicitante.
+                    </p>
+                  </div>
+
+                  <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-2">
+                    <div className="flex items-center gap-2 text-amber-600 font-bold text-sm">
+                      <AlertTriangle size={16} />
+                      <span>Não Conformidades (gargalos)</span>
+                    </div>
+                    <p className="text-slate-500 leading-relaxed">
+                      Rastreamento de gargalos corporativos e falhas de processo: percentual de resolução, status em andamento e volume de ocorrências agrupadas por setor afetado.
+                    </p>
+                  </div>
+
+                  <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-2">
+                    <div className="flex items-center gap-2 text-blue-600 font-bold text-sm">
+                      <Activity size={16} />
+                      <span>Telemetria IA & Feedbacks</span>
+                    </div>
+                    <p className="text-slate-500 leading-relaxed">
+                      Tabelas <code>media_ai_usage</code> e <code>media_ai_feedbacks</code> registram pedidos processados, estimativa de horas de trabalho humano poupadas e taxa de aprovação com auditoria de ajustes dos colaboradores.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs space-y-3">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">Design System & Animações com Framer Motion</span>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                      <code className="text-blue-600 font-bold font-mono">AnimatedCounter.tsx</code>
+                      <p className="text-slate-500 mt-1 leading-relaxed">Utiliza física de molas com <code>useSpring</code> para suavização de valores numéricos, horas e taxas percentuais sem gargalos de renderização.</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                      <code className="text-purple-600 font-bold font-mono">AnimatedMetricCard.tsx</code>
+                      <p className="text-slate-500 mt-1 leading-relaxed">Entrada em cascata (stagger), micro-interações de elevação ao hover, ícones com contraste WCAG e badges com proteção <code>whitespace-nowrap shrink-0</code>.</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                      <code className="text-emerald-600 font-bold font-mono">AnimatedProgressBar.tsx</code>
+                      <p className="text-slate-500 mt-1 leading-relaxed">Barras de progresso com animação de largura suave (curva cúbica 0.16, 1, 0.3, 1) e contadores numéricos sincronizados.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs space-y-3">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">Segurança em 4 Camadas no Módulo de Métricas</span>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    O acesso ao Dashboard de Métricas é estritamente restrito a colaboradores autenticados. Tanto via rota direta (<code>/admin</code>) quanto pelo link sutil no rodapé da plataforma, a função <code>executeWithAuth('dashboard')</code> intercepta acessos anônimos e exige autenticação corporativa. O DDL em <code>modulo_metricas_ia.sql</code> protege os dados analíticos com Row Level Security (RLS) e regras <code>TO authenticated</code>.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* 3.1. AUTENTICAÇÃO JWT & RBAC */}
             {activeSection === 'auth_rbac_cascade' && (
               <div className="space-y-6 max-w-5xl">
@@ -1017,6 +1163,41 @@ await sendPushNotification({
   notes text,
   criado_em timestamptz DEFAULT now()
 );`
+                    },
+                    {
+                      name: '6. media_ai_usage (Telemetria Executiva IA)',
+                      sql: `CREATE TABLE media_ai_usage (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_name text NOT NULL,
+  user_sector text NOT NULL,
+  tipo_operacao text NOT NULL CHECK (tipo_operacao IN ('leitura_guia', 'chat', 'solicitacao_medica', 'analise_opme')),
+  convenio text,
+  tempo_economizado_minutos integer NOT NULL DEFAULT 3,
+  sucesso boolean NOT NULL DEFAULT true,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS: Leitura analítica para autenticados e inserção
+ALTER TABLE media_ai_usage ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir insercao de telemetria" ON media_ai_usage FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Permitir leitura para dashboard" ON media_ai_usage FOR SELECT TO authenticated USING (true);`
+                    },
+                    {
+                      name: '7. media_ai_feedbacks (Auditoria de Feedbacks dos Colaboradores)',
+                      sql: `CREATE TABLE media_ai_feedbacks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_name text NOT NULL,
+  user_sector text NOT NULL,
+  tipo text NOT NULL CHECK (tipo IN ('up', 'down')),
+  comentario text,
+  mensagem_preview text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE media_ai_feedbacks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir insercao de feedbacks" ON media_ai_feedbacks FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Permitir leitura de feedbacks" ON media_ai_feedbacks FOR SELECT TO authenticated USING (true);`
                     }
                   ].map((table, idx) => (
                     <div key={idx} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs space-y-2">

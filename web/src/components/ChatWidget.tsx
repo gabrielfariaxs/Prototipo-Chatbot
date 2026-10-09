@@ -7,8 +7,12 @@ import { FatureIA } from './FatureIA'
 import { GopPanel } from './GOP/GopPanel'
 import { ChatOnboarding } from './Chat/ChatOnboarding'
 import { ChatSectorSelect } from './Chat/ChatSectorSelect'
-import { ChatDashboard } from './Chat/ChatDashboard'
+import { AdminDashboard } from './Metrics/AdminDashboard'
+import { logAiUsage, saveAiFeedback } from '../lib/metrics-service'
+
 import { FilePreviewModal } from './Chat/FilePreviewModal'
+
+
 import { ProcedureManageModal } from './Chat/ProcedureManageModal'
 import { ProcedureHistoryModal } from './Chat/ProcedureHistoryModal'
 import { getCustomProcedures, canAccessProcedureHistory, type ProcedureItem } from '../lib/procedures-service'
@@ -124,7 +128,15 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       })
     }
     localStorage.setItem('media_feedbacks', JSON.stringify(existing))
+
+    // Dispara persistência em tempo real no Supabase
+    saveAiFeedback({
+      tipo: type,
+      comentario: comment,
+      mensagemPreview: messageText
+    })
   }
+
 
   const handleFeedback = (msgId: string, type: 'up' | 'down', messageText?: string) => {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedback: type } : m))
@@ -137,7 +149,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
   }
   const [step, setStep] = useState<'onboarding' | 'sector' | 'chat' | 'dashboard' | 'fature_ia' | 'gop' | 'login' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix'>('onboarding')
   const [session, setSession] = useState<Session | null>(null)
-  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | 'dev_docs' | null>(null)
+  const [pendingModule, setPendingModule] = useState<'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | 'dev_docs' | 'dashboard' | null>(null)
 
   useEffect(() => {
     const initAuth = async () => {
@@ -166,7 +178,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     return () => subscription.unsubscribe()
   }, [])
 
-  const executeWithAuth = async (moduleKey: 'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | 'dev_docs', action: () => void) => {
+  const executeWithAuth = async (moduleKey: 'chatbot' | 'noc' | 'doc_clinica' | 'chamados_ti' | 'treinamentos' | 'treinaflix' | 'dev_docs' | 'dashboard', action: () => void) => {
     let activeSession = session
     if (!activeSession) {
       const { data: { session: refreshedSession } } = await supabase.auth.getSession()
@@ -214,6 +226,10 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     executeWithAuth('dev_docs', () => setIsDevDocsModalOpen(true))
   }
 
+  const handleSelectMetrics = () => {
+    executeWithAuth('dashboard', () => setStep('dashboard'))
+  }
+
   const handleLoginSuccess = () => {
     if (pendingModule === 'noc') {
       setStep('gop')
@@ -228,6 +244,8 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
     } else if (pendingModule === 'dev_docs') {
       setIsDevDocsModalOpen(true)
       setStep('onboarding')
+    } else if (pendingModule === 'dashboard') {
+      setStep('dashboard')
     } else {
       handleStart()
     }
@@ -589,7 +607,14 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       if (botResponse?.includes('Paciente:') || botResponse?.includes('Médico:')) {
         setSessionContext((prev) => prev + '\n\n' + botResponse)
       }
+
+      // Registra telemetria de uso real no Supabase
+      logAiUsage({
+        tipo: filesToSend.length > 0 ? 'leitura_guia' : 'chat',
+        tempoEconomizado: filesToSend.length > 0 ? 3 : 1
+      })
     } catch (error) {
+
       console.error(error)
       setMessages((prev) => [
         ...prev,
@@ -1187,7 +1212,7 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                 }}
                 isSpeechEnabled={isSpeechEnabled}
                 onToggleSpeech={toggleSpeech}
-                onOpenDashboard={() => setStep('dashboard')}
+                onOpenDashboard={handleSelectMetrics}
                 onOpenFatureIA={() => setStep('fature_ia')}
                 onClearHistory={() => {
                   if (confirm('Deseja limpar o histórico desta conversa?')) {
@@ -1208,90 +1233,113 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
             <div className="flex-1 flex flex-col overflow-hidden relative">
               <AnimatePresence mode="wait">
                 {step === 'onboarding' && (
-                  <ChatOnboarding 
-                    onStart={handleSelectChatbotModule} 
-                    onOpenNoc={handleSelectNocModule}
-                    onOpenPortfolio={() => {
-                      const portfolioUrl = localStorage.getItem('portfolio_url') || 'https://portifolioarthromed-medic.vercel.app'
-                      window.open(portfolioUrl, '_blank')
-                    }}
-                    onOpenMedicPortfolio={() => {
-                      const medicPortfolioUrl = localStorage.getItem('medic_portfolio_url') || 'https://medic-portfolio.vercel.app/'
-                      window.open(medicPortfolioUrl, '_blank')
-                    }}
-                    onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
-                    onOpenChamadosTi={handleSelectChamadosTiModule}
-                    onOpenTreinamentos={handleSelectTreinamentosModule}
-                    onOpenTreinaFlix={handleSelectTreinaFlixModule}
-                    onOpenDevDocs={handleSelectDevDocs}
-                  />
+                  <motion.div key="step-onboarding" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <ChatOnboarding 
+                      onStart={handleSelectChatbotModule} 
+                      onOpenNoc={handleSelectNocModule}
+                      onOpenPortfolio={() => {
+                        const portfolioUrl = localStorage.getItem('portfolio_url') || 'https://portifolioarthromed-medic.vercel.app'
+                        window.open(portfolioUrl, '_blank')
+                      }}
+                      onOpenMedicPortfolio={() => {
+                        const medicPortfolioUrl = localStorage.getItem('medic_portfolio_url') || 'https://medic-portfolio.vercel.app/'
+                        window.open(medicPortfolioUrl, '_blank')
+                      }}
+                      onOpenSolicitacaoMedica={handleSelectDocClinicaModule}
+                      onOpenChamadosTi={handleSelectChamadosTiModule}
+                      onOpenTreinamentos={handleSelectTreinamentosModule}
+                      onOpenTreinaFlix={handleSelectTreinaFlixModule}
+                      onOpenDevDocs={handleSelectDevDocs}
+                      onOpenMetrics={handleSelectMetrics}
+                      isAuthenticated={!!session?.user}
+                    />
+                  </motion.div>
+                )}
+
+                {step === 'dashboard' && (
+                  <motion.div key="step-dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 overflow-y-auto w-full bg-[#f8fafc]">
+                    <AdminDashboard onBack={() => setStep('onboarding')} />
+                  </motion.div>
                 )}
 
                 {step === 'login' && (
-                  <div className="flex-1 overflow-y-auto w-full flex items-center justify-center p-4">
+                  <motion.div key="step-login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 overflow-y-auto w-full flex items-center justify-center p-4">
                     <LoginScreen 
                       onSuccess={handleLoginSuccess}
                       onBackToMenu={() => setStep('onboarding')}
                     />
-                  </div>
+                  </motion.div>
                 )}
 
                 {step === 'gop' && (
-                  <GopPanel 
-                    onPreviewFile={setPreviewFile}
-                    onBackToMenu={() => setStep('onboarding')}
-                    onClose={handleClose}
-                    onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
-                  />
+                  <motion.div key="step-gop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <GopPanel 
+                      onPreviewFile={setPreviewFile}
+                      onBackToMenu={() => setStep('onboarding')}
+                      onClose={handleClose}
+                      onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
+                    />
+                  </motion.div>
                 )}
 
                 {step === 'doc_clinica' && (
-                  <ClinicalDocPanel />
+                  <motion.div key="step-doc-clinica" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <ClinicalDocPanel />
+                  </motion.div>
                 )}
 
                 {step === 'chamados_ti' && (
-                  <ChamadosTiPanel 
-                    onBackToMenu={() => setStep('onboarding')}
-                    onClose={handleClose}
-                    onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
-                    onOpenAgendasModal={() => setIsAgendasModalOpen(true)}
-                    onOpenHospedagemModal={() => setIsHospedagemModalOpen(true)}
-                  />
+                  <motion.div key="step-chamados-ti" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <ChamadosTiPanel 
+                      onBackToMenu={() => setStep('onboarding')}
+                      onClose={handleClose}
+                      onOpenPortalPasswords={() => setIsPortalPasswordsModalOpen(true)}
+                      onOpenAgendasModal={() => setIsAgendasModalOpen(true)}
+                      onOpenHospedagemModal={() => setIsHospedagemModalOpen(true)}
+                    />
+                  </motion.div>
                 )}
 
                 {step === 'treinamentos' && (
-                  <TreinamentosModal 
-                    onClose={() => setStep('onboarding')} 
-                    userSector={sector || (typeof window !== 'undefined' ? localStorage.getItem('userSector') : null) || ''}
-                    userLevel={typeof window !== 'undefined' ? localStorage.getItem('userLevel') || '' : ''}
-                    userName={typeof window !== 'undefined' ? localStorage.getItem('userName') || '' : ''}
-                  />
+                  <motion.div key="step-treinamentos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <TreinamentosModal 
+                      onClose={() => setStep('onboarding')} 
+                      userSector={sector || (typeof window !== 'undefined' ? localStorage.getItem('userSector') : null) || ''}
+                      userLevel={typeof window !== 'undefined' ? localStorage.getItem('userLevel') || '' : ''}
+                      userName={typeof window !== 'undefined' ? localStorage.getItem('userName') || '' : ''}
+                    />
+                  </motion.div>
                 )}
 
                 {step === 'treinaflix' && (
-                  <CatalogoVideosModal 
-                    onClose={() => setStep('onboarding')} 
-                  />
+                  <motion.div key="step-treinaflix" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <CatalogoVideosModal 
+                      onClose={() => setStep('onboarding')} 
+                    />
+                  </motion.div>
                 )}
 
                 {step === 'sector' && (
-                  <ChatSectorSelect availableSectors={availableSectors} onSelectSector={handleSelectSector} />
+                  <motion.div key="step-sector" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <ChatSectorSelect availableSectors={availableSectors} onSelectSector={handleSelectSector} />
+                  </motion.div>
                 )}
 
                 {step === 'chat' && (
                   <motion.div
-                    key="chat"
+                    key="step-chat"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     className="flex-1 flex flex-col overflow-hidden bg-white"
                   >
                     <div
                       ref={scrollRef}
                       className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#f8fafc] dark:bg-[#090d16] transition-colors"
                     >
-                      {messages.map((msg) => (
+                      {messages.map((msg, idx) => (
                         <ChatMessageItem
-                          key={msg.id}
+                          key={`${msg.id || 'msg'}-${idx}`}
                           message={msg}
                           onPreviewFile={setPreviewFile}
                           onFeedback={saveGlobalFeedback}
@@ -1331,13 +1379,12 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
                   </motion.div>
                 )}
 
-                {step === 'dashboard' && (
-                  <ChatDashboard onClose={() => setStep('chat')} />
+                {step === 'fature_ia' && (
+                  <motion.div key="step-fature-ia" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                    <FatureIA onBack={() => setStep('chat')} />
+                  </motion.div>
                 )}
 
-                {step === 'fature_ia' && (
-                  <FatureIA onBack={() => setStep('chat')} />
-                )}
               </AnimatePresence>
             </div>
           </motion.div>
@@ -1418,6 +1465,11 @@ export const ChatWidget = ({ isDesktop = false, hideToggle = false }: { isDeskto
       <DeveloperDocsModal
         isOpen={isDevDocsModalOpen}
         onClose={() => setIsDevDocsModalOpen(false)}
+        onRequireLogin={() => {
+          setIsDevDocsModalOpen(false)
+          setPendingModule('dev_docs')
+          setStep('login')
+        }}
       />
 
       {/* Toggle Button */}

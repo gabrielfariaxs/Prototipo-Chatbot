@@ -1,0 +1,3 @@
+@echo off
+echo Executando deploy na Vercel (Producao)...
+npx vercel --prod

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Play, Plus, Edit, Trash2, Search, Video as VideoIcon, Clock, Link as LinkIcon, Save, Eye, Users, Sparkles, Check, Film, Layers, Filter, Image as ImageIcon, ExternalLink, AlertCircle, Info, CheckCircle2 } from 'lucide-react';
+import { X, Play, Plus, Edit, Trash2, Search, Video as VideoIcon, Clock, Link as LinkIcon, Save, Eye, Users, Sparkles, Check, Film, Layers, Filter, Image as ImageIcon, ExternalLink, AlertCircle, Info, CheckCircle2, BarChart3, UserCheck, TrendingUp, Calendar, RotateCcw } from 'lucide-react';
 import { LinkifiedText } from '../common/LinkifiedText';
 
 interface CatalogoVideosModalProps {
@@ -135,15 +135,15 @@ const getYouTubeThumbnail = (url: string): string | null => {
   return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
 };
 
-const getEffectiveThumbnail = (video: Partial<Video>): string | null => {
-  if (video.thumbnailUrl && video.thumbnailUrl.trim()) {
+const getEffectiveThumbnail = (video?: Partial<Video> | null): string => {
+  if (!video) return DEFAULT_GLOBAL_COVER;
+  if (video.thumbnailUrl && typeof video.thumbnailUrl === 'string' && video.thumbnailUrl.trim()) {
     return video.thumbnailUrl.trim();
   }
-  if (video.driveLink) {
+  if (video.driveLink && typeof video.driveLink === 'string') {
     const yt = getYouTubeThumbnail(video.driveLink);
     if (yt) return yt;
   }
-  // Capa oficial Treinaflix padrão
   return DEFAULT_GLOBAL_COVER;
 };
 
@@ -214,16 +214,113 @@ export const CatalogoVideosModal: React.FC<CatalogoVideosModalProps> = ({ onClos
   const [autoDetected, setAutoDetected] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
 
-  const userName = typeof window !== 'undefined' ? (localStorage.getItem('userName') || 'Usuário') : 'Usuário';
+  // Estados dos Filtros de Histórico de Acessos
+  const [logSearchTerm, setLogSearchTerm] = useState('');
+  const [logSectorFilter, setLogSectorFilter] = useState<string>('Todos');
+  const [logPeriodFilter, setLogPeriodFilter] = useState<'todos' | 'hoje' | '7d' | '30d'>('todos');
+  const [hideDeletedVideos, setHideDeletedVideos] = useState<boolean>(true);
+
+  const rawStoredName = typeof window !== 'undefined' ? (localStorage.getItem('userName') || '') : '';
+  const isGenericName = !rawStoredName || ['usuário', 'usuario', 'user', 'undefined', 'null'].includes(rawStoredName.trim().toLowerCase());
+  const effectiveUserName = isGenericName ? '' : rawStoredName.trim();
+  const userName = effectiveUserName || (typeof window !== 'undefined' ? (localStorage.getItem('userSector') || 'Usuário') : 'Usuário');
   const userSector = typeof window !== 'undefined' ? (localStorage.getItem('userSector') || '') : '';
   const userLevel = typeof window !== 'undefined' ? (localStorage.getItem('userLevel') || '') : '';
 
-  const normalizedSector = userSector.toLowerCase();
-  const isTiOrOps = normalizedSector.includes('ti') || normalizedSector.includes('tecnologia') || normalizedSector.includes('operaç') || normalizedSector.includes('operac');
-  const isGestor = normalizedSector.includes('gestor') || normalizedSector.includes('diretor') || userLevel === 'coo';
+  const rawSector = (userSector || '')
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 
-  // Apenas líderes de T.I, Operações ou o Gestor Geral têm acesso para ver logs.
-  const isLeader = isTiOrOps || isGestor;
+  const isTi = rawSector.includes('ti') || rawSector.includes('tecnologia') || userSector.toLowerCase().includes('t.i');
+  const isOps = rawSector.includes('operac');
+  const isGestor = rawSector.includes('gestor') || rawSector.includes('diretor') || userLevel === 'coo';
+  const isComercialInterno = rawSector.includes('comercialinterno') || (rawSector.includes('comercial') && rawSector.includes('interno')) || userSector.toLowerCase().includes('comercial interno');
+
+  // Permissão total para T.I, Operações, Gestor/Diretoria e Comercial Interno (ou líderes) gerenciarem, editarem e removerem vídeos
+  const canManageVideos = isTi || isOps || isGestor || isComercialInterno || userLevel === 'lider' || userLevel === 'coo';
+  const isLeader = canManageVideos;
+
+  // Filtragem inteligente de logs de acesso
+  const filteredLogs = useMemo(() => {
+    return accessLogs.filter(log => {
+      const video = videos.find(v => v.id === log.videoId);
+      
+      // Ocultar vídeos excluídos se o toggle estiver ativo
+      if (hideDeletedVideos && !video) {
+        return false;
+      }
+
+      // Filtro de texto (nome do usuário, setor ou título do vídeo)
+      if (logSearchTerm.trim()) {
+        const term = logSearchTerm.toLowerCase().trim();
+        const matchesName = (log.userName || '').toLowerCase().includes(term);
+        const matchesSector = (log.userSector || '').toLowerCase().includes(term);
+        const matchesVideo = (video?.title || 'Vídeo excluído').toLowerCase().includes(term);
+        if (!matchesName && !matchesSector && !matchesVideo) return false;
+      }
+
+      // Filtro por setor
+      if (logSectorFilter !== 'Todos') {
+        if ((log.userSector || '').toLowerCase() !== logSectorFilter.toLowerCase()) {
+          return false;
+        }
+      }
+
+      // Filtro por período
+      if (logPeriodFilter !== 'todos') {
+        const logDate = new Date(log.accessedAt).getTime();
+        if (isNaN(logDate)) return true;
+        const now = Date.now();
+        const diffHours = (now - logDate) / (1000 * 60 * 60);
+
+        if (logPeriodFilter === 'hoje' && diffHours > 24) return false;
+        if (logPeriodFilter === '7d' && diffHours > 24 * 7) return false;
+        if (logPeriodFilter === '30d' && diffHours > 24 * 30) return false;
+      }
+
+      return true;
+    });
+  }, [accessLogs, videos, logSearchTerm, logSectorFilter, logPeriodFilter, hideDeletedVideos]);
+
+  // Estatísticas calculadas em cima dos logs filtrados
+  const logStats = useMemo(() => {
+    const totalViews = filteredLogs.length;
+    const uniqueUsers = new Set(filteredLogs.map(l => (l.userName || 'Usuário').trim())).size;
+    
+    const videoCounts: Record<string, number> = {};
+    filteredLogs.forEach(l => {
+      const video = videos.find(v => v.id === l.videoId);
+      const title = video?.title || 'Vídeo excluído';
+      videoCounts[title] = (videoCounts[title] || 0) + 1;
+    });
+
+    let topVideo = '-';
+    let topCount = 0;
+    Object.entries(videoCounts).forEach(([title, count]) => {
+      if (count > topCount && title !== 'Vídeo excluído') {
+        topCount = count;
+        topVideo = title;
+      }
+    });
+
+    return { totalViews, uniqueUsers, topVideo, topCount };
+  }, [filteredLogs, videos]);
+
+  const handlePurgeAllLogs = () => {
+    if (window.confirm('Tem certeza que deseja limpar todo o histórico de acessos?')) {
+      setAccessLogs([]);
+      localStorage.removeItem('treinaflix_logs');
+    }
+  };
+
+  const handleCleanDeletedVideoLogs = () => {
+    const activeVideoIds = new Set(videos.map(v => v.id));
+    const cleaned = accessLogs.filter(l => activeVideoIds.has(l.videoId));
+    setAccessLogs(cleaned);
+    localStorage.setItem('treinaflix_logs', JSON.stringify(cleaned));
+  };
 
 const formatDuration = (seconds: number): string => {
   if (!seconds || isNaN(seconds) || seconds === Infinity || seconds <= 0) return '45:00';
@@ -256,11 +353,17 @@ const extractDurationFromUrlOrText = (text: string): string => {
 };
 
   useEffect(() => {
+    const deletedIds: string[] = JSON.parse(localStorage.getItem('treinaflix_deleted_ids') || '[]');
+    const deletedSet = new Set(deletedIds);
+
     const storedVideos = localStorage.getItem('treinaflix_videos');
     if (storedVideos) {
       try {
         let parsed: Video[] = JSON.parse(storedVideos);
-        // Atualizar se houver o v2 antigo e preencher durações 00:00 automaticamente
+        // Exclui da lista ativa os vídeos que foram marcados como deletados
+        parsed = parsed.filter(v => !deletedSet.has(v.id) && !deletedSet.has(v.driveLink));
+
+        // Atualizar durações e links normalizados
         parsed = parsed.map(v => {
           let link = v.driveLink;
           let duration = v.duration;
@@ -279,17 +382,19 @@ const extractDurationFromUrlOrText = (text: string): string => {
         });
 
         const existingLinks = new Set(parsed.map(v => v.driveLink || v.id));
-        const toAdd = DEFAULT_VIDEOS.filter(dv => !existingLinks.has(dv.driveLink) && !existingLinks.has(dv.id));
+        const toAdd = DEFAULT_VIDEOS.filter(dv => !deletedSet.has(dv.id) && !deletedSet.has(dv.driveLink) && !existingLinks.has(dv.driveLink) && !existingLinks.has(dv.id));
         const merged = [...parsed, ...toAdd];
         setVideos(merged);
         localStorage.setItem('treinaflix_videos', JSON.stringify(merged));
       } catch {
-        setVideos(DEFAULT_VIDEOS);
-        localStorage.setItem('treinaflix_videos', JSON.stringify(DEFAULT_VIDEOS));
+        const initial = DEFAULT_VIDEOS.filter(dv => !deletedSet.has(dv.id));
+        setVideos(initial);
+        localStorage.setItem('treinaflix_videos', JSON.stringify(initial));
       }
     } else {
-      setVideos(DEFAULT_VIDEOS);
-      localStorage.setItem('treinaflix_videos', JSON.stringify(DEFAULT_VIDEOS));
+      const initial = DEFAULT_VIDEOS.filter(dv => !deletedSet.has(dv.id));
+      setVideos(initial);
+      localStorage.setItem('treinaflix_videos', JSON.stringify(initial));
     }
     
     const storedLogs = localStorage.getItem('treinaflix_logs');
@@ -322,7 +427,7 @@ const extractDurationFromUrlOrText = (text: string): string => {
       category: 'Geral',
       moduleTopic: '',
       duration: '45:00',
-      addedBy: userName,
+      addedBy: effectiveUserName || '',
       description: ''
     });
     setIsEditing(true);
@@ -331,7 +436,7 @@ const extractDurationFromUrlOrText = (text: string): string => {
   const handleStartEdit = (video: Video) => {
     setEditingVideo({
       ...video,
-      addedBy: video.addedBy || userName,
+      addedBy: video.addedBy || '',
       category: video.category || 'Geral',
       moduleTopic: video.moduleTopic || '',
       duration: (video.duration && video.duration !== '00:00') ? video.duration : '45:00'
@@ -345,7 +450,7 @@ const extractDurationFromUrlOrText = (text: string): string => {
     const finalTitle = editingVideo.title?.trim() || `Treinamento ${editingVideo.moduleTopic ? '- ' + editingVideo.moduleTopic : (editingVideo.category || 'Geral')}`;
     const finalAddedBy = editingVideo.addedBy !== undefined && editingVideo.addedBy.trim() !== ''
       ? editingVideo.addedBy.trim()
-      : userName;
+      : (effectiveUserName || (userSector && userSector !== 'Geral' ? userSector : '') || 'Instrutor');
     const finalDuration = (editingVideo.duration && editingVideo.duration.trim() !== '' && editingVideo.duration !== '00:00' && editingVideo.duration !== '0:00')
       ? editingVideo.duration.trim()
       : extractDurationFromUrlOrText(finalTitle + ' ' + (editingVideo.driveLink || ''));
@@ -384,7 +489,12 @@ const extractDurationFromUrlOrText = (text: string): string => {
   };
 
   const handleDeleteVideo = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este vídeo?')) {
+    if (window.confirm('Tem certeza que deseja excluir este treinamento?')) {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('treinaflix_deleted_ids') || '[]');
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('treinaflix_deleted_ids', JSON.stringify(deletedIds));
+      }
       saveVideos(videos.filter(v => v.id !== id));
     }
   };
@@ -546,7 +656,10 @@ const extractDurationFromUrlOrText = (text: string): string => {
         url = match[1];
       }
     }
-    url = url.replace(/^["']|["']$/g, '').trim();
+    url = url
+      .replace(/&amp;/g, '&')
+      .replace(/^["']|["']$/g, '')
+      .trim();
     return url;
   };
 
@@ -719,39 +832,227 @@ const extractDurationFromUrlOrText = (text: string): string => {
         <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
           
           {showLogsMode ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                  <Users className="text-amber-500" />
-                  Histórico de Acessos
-                </h3>
+            <div className="space-y-6 animate-in fade-in duration-200">
+              
+              {/* Header com Título e Ações */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center font-bold">
+                      <BarChart3 size={18} />
+                    </div>
+                    <span>Histórico de Visualizações & Engajamento</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Acompanhe quais colaboradores assistiram aos treinamentos corporativos.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCleanDeletedVideoLogs}
+                    className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
+                    title="Remover entradas de vídeos que já foram excluídos do catálogo"
+                  >
+                    <RotateCcw size={13} />
+                    <span>Limpar Vídeos Excluídos</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handlePurgeAllLogs}
+                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    title="Zerar todos os registros de acessos"
+                  >
+                    <Trash2 size={13} />
+                    <span>Zerar Histórico</span>
+                  </button>
+                </div>
               </div>
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+
+              {/* 3 Metric Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#1f29de] flex items-center justify-center font-bold shrink-0">
+                    <Eye size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Visualizações</p>
+                    <p className="text-xl font-black text-slate-800">{logStats.totalViews}</p>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+                    <UserCheck size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Colaboradores Únicos</p>
+                    <p className="text-xl font-black text-slate-800">{logStats.uniqueUsers}</p>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+                    <TrendingUp size={20} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Treinamento Mais Visto</p>
+                    <p className="text-xs font-bold text-slate-800 truncate" title={logStats.topVideo}>
+                      {logStats.topVideo}
+                    </p>
+                    {logStats.topCount > 0 && (
+                      <span className="text-[10px] text-amber-700 font-extrabold bg-amber-100/70 px-1.5 py-0.2 rounded mt-0.5 inline-block">
+                        {logStats.topCount} visualizações
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Filtros em Linha: Busca + Setor + Período + Toggle Excluídos */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                  
+                  {/* Busca por Colaborador ou Vídeo */}
+                  <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Filtrar colaborador, setor ou vídeo..."
+                      value={logSearchTerm}
+                      onChange={(e) => setLogSearchTerm(e.target.value)}
+                      className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+                    />
+                    {logSearchTerm && (
+                      <button 
+                        type="button"
+                        onClick={() => setLogSearchTerm('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown de Setor */}
+                  <div className="flex items-center gap-2 w-full md:w-auto">
+                    <span className="text-xs font-bold text-slate-500 shrink-0">Setor:</span>
+                    <select
+                      value={logSectorFilter}
+                      onChange={(e) => setLogSectorFilter(e.target.value)}
+                      className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer w-full md:w-44"
+                    >
+                      <option value="Todos">Todos os Setores</option>
+                      {SETORES_TREINAMENTO.map(sec => (
+                        <option key={sec} value={sec}>{sec}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Período */}
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0 w-full md:w-auto justify-center">
+                    {[
+                      { key: 'todos', label: 'Todos' },
+                      { key: 'hoje', label: 'Hoje' },
+                      { key: '7d', label: '7 Dias' },
+                      { key: '30d', label: '30 Dias' },
+                    ].map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setLogPeriodFilter(tab.key as any)}
+                        style={logPeriodFilter === tab.key ? { backgroundColor: '#ffffff', color: '#1f29de' } : undefined}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          logPeriodFilter === tab.key 
+                            ? 'bg-white text-[#1f29de] shadow-xs' 
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                </div>
+
+                {/* Toggle para Ocultar Vídeos Excluídos */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                  <label className="flex items-center gap-2 text-slate-600 font-semibold cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={hideDeletedVideos}
+                      onChange={(e) => setHideDeletedVideos(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                    />
+                    <span>Ocultar registros de vídeos excluídos do catálogo</span>
+                  </label>
+
+                  <span className="text-[11px] font-bold text-slate-400">
+                    Mostrando <strong>{filteredLogs.length}</strong> de {accessLogs.length} registros
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabela de Acessos Formatada e Limpa */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-extrabold uppercase text-[10px] tracking-wider">
                     <tr>
                       <th className="p-4">Colaborador</th>
                       <th className="p-4">Setor</th>
-                      <th className="p-4">Vídeo Acessado</th>
-                      <th className="p-4">Data e Hora</th>
+                      <th className="p-4">Treinamento Assistido</th>
+                      <th className="p-4 text-right">Data e Horário</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {accessLogs.length === 0 ? (
+                    {filteredLogs.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="p-8 text-center text-slate-400 font-medium">
-                          Nenhum acesso registrado ainda.
+                        <td colSpan={4} className="p-12 text-center text-slate-400">
+                          <Users size={36} className="mx-auto text-slate-300 mb-2" />
+                          <p className="font-bold text-slate-600 text-sm mb-0.5">Nenhum registro encontrado</p>
+                          <p className="text-xs text-slate-400">Tente ajustar os filtros de busca, setor ou período acima.</p>
                         </td>
                       </tr>
                     ) : (
-                      accessLogs.map(log => {
+                      filteredLogs.map(log => {
                         const video = videos.find(v => v.id === log.videoId);
+                        const initials = (log.userName || 'U')
+                          .split(' ')
+                          .map((n: string) => n[0])
+                          .join('')
+                          .substring(0, 2)
+                          .toUpperCase();
+
                         return (
-                          <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-4 font-bold text-slate-700">{log.userName}</td>
-                            <td className="p-4 text-slate-600 font-medium">{log.userSector}</td>
-                            <td className="p-4 text-slate-700">{video?.title || 'Vídeo excluído'}</td>
-                            <td className="p-4 text-slate-500 font-medium">{new Date(log.accessedAt).toLocaleString('pt-BR')}</td>
+                          <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="p-4 font-bold text-slate-800">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-600 shrink-0">
+                                  {initials}
+                                </div>
+                                <span className="truncate max-w-[180px]">{log.userName || 'Usuário'}</span>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <span className="px-2.5 py-1 bg-slate-100/90 border border-slate-200 text-slate-700 font-bold rounded-lg text-[10px] tracking-wide inline-block">
+                                {log.userSector || 'Geral'}
+                              </span>
+                            </td>
+                            <td className="p-4 font-semibold text-slate-700">
+                              <div className="flex items-center gap-2">
+                                <Film size={13} className={video ? "text-[#1f29de] shrink-0" : "text-slate-400 shrink-0"} />
+                                <span className={video ? "truncate max-w-[360px] text-slate-800" : "truncate max-w-[360px] text-slate-400 italic"}>
+                                  {video?.title || 'Vídeo excluído do catálogo'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-right font-medium text-slate-500 whitespace-nowrap">
+                              <span className="px-2.5 py-1 bg-slate-50 border border-slate-200/80 rounded-lg text-[11px] font-mono text-slate-600">
+                                {new Date(log.accessedAt).toLocaleString('pt-BR')}
+                              </span>
+                            </td>
                           </tr>
                         );
                       })
@@ -759,6 +1060,7 @@ const extractDurationFromUrlOrText = (text: string): string => {
                   </tbody>
                 </table>
               </div>
+
             </div>
           ) : (
             <>
@@ -784,6 +1086,7 @@ const extractDurationFromUrlOrText = (text: string): string => {
                       </button>
                     )}
                   </div>
+
                   <button
                     type="button"
                     onClick={handleStartCreate}
@@ -826,31 +1129,46 @@ const extractDurationFromUrlOrText = (text: string): string => {
                 </div>
               </div>
 
-              {/* Editing Form */}
+              {/* Modern & Intuitive Video Form */}
               {isEditing && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-8 animate-in fade-in slide-in-from-top-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2">
-                      {editingVideo.id ? <Edit size={16} /> : <Plus size={16} />}
-                      {editingVideo.id ? 'Editar Treinamento' : 'Novo Treinamento'}
-                    </h3>
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 mb-8 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-slate-200/50">
+                  
+                  {/* Form Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-6 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#1f29de] shrink-0">
+                        {editingVideo.id ? <Edit size={20} /> : <Plus size={20} />}
+                      </div>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900 leading-tight">
+                          {editingVideo.id ? 'Editar Treinamento' : 'Novo Treinamento no Catálogo'}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium">
+                          {editingVideo.id ? 'Atualize as informações, links e capa do vídeo' : 'Insira o link e preencha as informações do treinamento'}
+                        </p>
+                      </div>
+                    </div>
 
                     {autoDetected && (
-                      <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold rounded-full animate-bounce">
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-full shadow-2xs">
                         <Sparkles size={14} className="text-emerald-600" />
-                        Informações preenchidas automaticamente!
+                        Informações detectadas automaticamente!
                       </div>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {/* Link do Vídeo com Auto-Preenchimento */}
-                    <div className="md:col-span-2">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <label className="block text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                            <LinkIcon size={14} className="text-blue-600" />
-                            Link da Gravação (Google Drive, OneDrive, Teams, YouTube) *
+                  {/* Two-column layout: Form (Left) + Live Card Preview (Right) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    {/* Left Column: Form Fields (7 cols) */}
+                    <div className="lg:col-span-7 space-y-5">
+                      
+                      {/* 1. Link da Gravação */}
+                      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <LinkIcon size={14} className="text-[#1f29de]" />
+                            <span>Link da Gravação ou Código HTML Inserir (OneDrive, Drive, Teams, YouTube) *</span>
                           </label>
                           {editingVideo.driveLink && getProviderInfo(editingVideo.driveLink) && (
                             <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${getProviderInfo(editingVideo.driveLink)?.color}`}>
@@ -858,203 +1176,310 @@ const extractDurationFromUrlOrText = (text: string): string => {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isExtracting && (
-                            <span className="text-[11px] text-blue-600 font-bold animate-pulse flex items-center gap-1">
-                              <Sparkles size={12} />
-                              Analisando gravação...
-                            </span>
-                          )}
+
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            value={editingVideo.driveLink || ''}
+                            onChange={e => {
+                              const val = sanitizeVideoUrl(e.target.value);
+                              setEditingVideo(prev => ({ ...prev, driveLink: val }));
+                              autoFillFromLink(val);
+                            }}
+                            onPaste={e => {
+                              const pasted = e.clipboardData.getData('text');
+                              if (pasted) {
+                                const cleaned = sanitizeVideoUrl(pasted);
+                                setEditingVideo(prev => ({ ...prev, driveLink: cleaned }));
+                                autoFillFromLink(cleaned);
+                              }
+                            }}
+                            className="w-full pl-3.5 pr-24 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1f29de]/30 focus:border-[#1f29de] focus:outline-none font-medium text-slate-800 shadow-2xs"
+                            placeholder="Cole o link ou código de inserção HTML (OneDrive, Drive, Teams, YouTube)..."
+                          />
+
                           {editingVideo.driveLink && (
                             <a
                               href={editingVideo.driveLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-blue-200 shadow-xs"
-                              title="Testar abertura do link em nova guia"
+                              className="absolute right-2 px-2.5 py-1 text-[11px] font-bold text-[#1f29de] hover:bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-1 transition-colors"
+                              title="Testar abertura em nova guia"
                             >
                               <ExternalLink size={11} />
-                              Testar Link
+                              <span>Testar</span>
                             </a>
                           )}
                         </div>
+
+                        {isExtracting && (
+                          <div className="flex items-center gap-1.5 text-xs text-[#1f29de] font-bold animate-pulse pt-1">
+                            <Sparkles size={13} />
+                            <span>Analisando link e identificando dados do treinamento...</span>
+                          </div>
+                        )}
                       </div>
-                      <input
-                        type="text"
-                        value={editingVideo.driveLink || ''}
-                        onChange={e => {
-                          const val = sanitizeVideoUrl(e.target.value);
-                          setEditingVideo(prev => ({ ...prev, driveLink: val }));
-                          autoFillFromLink(val);
-                        }}
-                        onPaste={e => {
-                          const pasted = e.clipboardData.getData('text');
-                          if (pasted) {
-                            const cleaned = sanitizeVideoUrl(pasted);
-                            setEditingVideo(prev => ({ ...prev, driveLink: cleaned }));
-                            autoFillFromLink(cleaned);
-                          }
-                        }}
-                        className="w-full px-3.5 py-2.5 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
-                        placeholder="Cole aqui o link compartilhado do Google Drive, OneDrive, Teams, YouTube ou arquivo direto..."
-                      />
 
-                      {/* Guia Rápido de Compartilhamento do Google Drive / OneDrive */}
-                      <div className="mt-2 p-2.5 bg-blue-100/60 border border-blue-200/80 rounded-lg text-[11px] text-blue-900 space-y-1">
-                        <p className="font-bold flex items-center gap-1.5 text-blue-950">
-                          <Info size={13} className="text-blue-600 shrink-0" />
-                          Como garantir que qualquer pessoa acerte o acesso:
-                        </p>
-                        <p className="text-slate-700 pl-4.5 leading-relaxed">
-                          • <strong>Google Drive:</strong> No arquivo, clique em <em>Compartilhar</em> &gt; em <em>Acesso geral</em> selecione <strong>Qualquer pessoa com o link</strong> (como Leitor) &gt; clique em <strong>Copiar link</strong>.
-                        </p>
-                        <p className="text-slate-700 pl-4.5 leading-relaxed">
-                          • <strong>OneDrive / SharePoint:</strong> Clique em <em>Compartilhar</em> &gt; <em>Qualquer pessoa com o link</em> &gt; Copiar link.
-                        </p>
+                      {/* 2. Título do Treinamento */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          Título do Treinamento *
+                        </label>
+                        <input
+                          type="text"
+                          value={editingVideo.title || ''}
+                          onChange={e => {
+                            const newTitle = e.target.value;
+                            const detected = detectCategoryFromText(newTitle);
+                            setEditingVideo(prev => ({
+                              ...prev,
+                              title: newTitle,
+                              category: (!prev.category || prev.category === 'Geral') && detected !== 'Geral' ? detected : (prev.category || 'Geral'),
+                              description: (!prev.description || prev.description.startsWith('Gravação de capacitação'))
+                                ? (newTitle.trim() ? `Gravação de capacitação e alinhamento operacional sobre ${newTitle.trim()}.` : '')
+                                : prev.description
+                            }));
+                          }}
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1f29de]/30 focus:border-[#1f29de] focus:outline-none font-medium text-slate-800 shadow-2xs"
+                          placeholder="Ex: Treinamento – Plataforma NAT SUIT e Portal do Fornecedor"
+                        />
                       </div>
-                    </div>
 
-                    {/* Título */}
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-blue-800 mb-1">Título do Treinamento *</label>
-                      <input
-                        type="text"
-                        value={editingVideo.title || ''}
-                        onChange={e => {
-                          const newTitle = e.target.value;
-                          const detected = detectCategoryFromText(newTitle);
-                          setEditingVideo(prev => ({
-                            ...prev,
-                            title: newTitle,
-                            category: (!prev.category || prev.category === 'Geral') && detected !== 'Geral' ? detected : (prev.category || 'Geral'),
-                            description: (!prev.description || prev.description.startsWith('Gravação de capacitação'))
-                              ? (newTitle.trim() ? `Gravação de capacitação e alinhamento operacional sobre ${newTitle.trim()}.` : '')
-                              : prev.description
-                          }));
-                        }}
-                        className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
-                        placeholder="Ex: Treinamento - Plataforma NAT SUIT e Portal do Fornecedor"
-                      />
-                    </div>
-
-                    {/* Setor (Lista Suspensa) */}
-                    <div>
-                      <label className="block text-xs font-bold text-blue-800 mb-1">Setor *</label>
-                      <select
-                        value={editingVideo.category || 'Geral'}
-                        onChange={e => setEditingVideo(prev => ({ ...prev, category: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium text-slate-700 cursor-pointer"
-                      >
-                        {SETORES_TREINAMENTO.map(sec => (
-                          <option key={sec} value={sec}>{sec}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Módulo / Processo (Entrada Manual) */}
-                    <div>
-                      <label className="block text-xs font-bold text-blue-800 mb-1">Módulo / Processo</label>
-                      <input
-                        type="text"
-                        value={editingVideo.moduleTopic || ''}
-                        onChange={e => setEditingVideo(prev => ({ ...prev, moduleTopic: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium text-slate-700"
-                        placeholder="Ex: Faturamento, Emissão de Propostas, Acessos..."
-                      />
-                    </div>
-
-                    {/* Duração com Seletor Rápido e Detecção */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-bold text-blue-800">Duração do Treinamento *</label>
-                        <span className="text-[10px] text-blue-600 font-bold">⏱️ 1-Clique ou Manual</span>
-                      </div>
-                      <input
-                        type="text"
-                        value={editingVideo.duration || ''}
-                        onChange={e => setEditingVideo(prev => ({ ...prev, duration: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium mb-1.5"
-                        placeholder="Ex: 45:00 ou 01:15:00"
-                      />
-                      <div className="flex flex-wrap items-center gap-1">
-                        {['15:00', '30:00', '45:00', '50:00', '01:00:00', '01:30:00'].map(preset => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => setEditingVideo(prev => ({ ...prev, duration: preset }))}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
-                              editingVideo.duration === preset
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-100'
-                            }`}
+                      {/* 3. Setor & Módulo / Processo (2 colunas) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Setor Responsável *
+                          </label>
+                          <select
+                            value={editingVideo.category || 'Geral'}
+                            onChange={e => setEditingVideo(prev => ({ ...prev, category: e.target.value }))}
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1f29de]/30 focus:border-[#1f29de] focus:outline-none font-semibold text-slate-700 cursor-pointer shadow-2xs"
                           >
-                            {preset.startsWith('01:00') ? '1h' : preset.startsWith('01:30') ? '1h 30' : `${parseInt(preset)}m`}
-                          </button>
-                        ))}
+                            {SETORES_TREINAMENTO.map(sec => (
+                              <option key={sec} value={sec}>{sec}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Módulo / Processo
+                          </label>
+                          <input
+                            type="text"
+                            value={editingVideo.moduleTopic || ''}
+                            onChange={e => setEditingVideo(prev => ({ ...prev, moduleTopic: e.target.value }))}
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1f29de]/30 focus:border-[#1f29de] focus:outline-none font-medium text-slate-800 shadow-2xs"
+                            placeholder="Ex: Faturamento, Emissão de Propostas..."
+                          />
+                        </div>
                       </div>
+
+                      {/* 4. Duração & Instrutor (2 colunas) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Duração do Treinamento *
+                          </label>
+                          <input
+                            type="text"
+                            value={editingVideo.duration || ''}
+                            onChange={e => setEditingVideo(prev => ({ ...prev, duration: e.target.value }))}
+                            className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1f29de]/30 focus:border-[#1f29de] focus:outline-none font-medium text-slate-800 shadow-2xs mb-2"
+                            placeholder="Ex: 45:00 ou 01:15:00"
+                          />
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {['15:00', '30:00', '45:00', '50:00', '01:00:00', '01:30:00'].map(preset => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setEditingVideo(prev => ({ ...prev, duration: preset }))}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
+                                  editingVideo.duration === preset
+                                    ? 'bg-[#1f29de] text-white border-[#1f29de] shadow-xs'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                                }`}
+                              >
+                                {preset.startsWith('01:00') ? '1h' : preset.startsWith('01:30') ? '1h 30' : `${parseInt(preset)}m`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Instrutor / Responsável *
+                          </label>
+                          <input
+                            type="text"
+                            value={editingVideo.addedBy ?? ''}
+                            onChange={e => setEditingVideo(prev => ({ ...prev, addedBy: e.target.value }))}
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#1f29de]/30 focus:border-[#1f29de] focus:outline-none font-medium text-slate-800 shadow-2xs"
+                            placeholder="Nome do instrutor ou setor"
+                          />
+                        </div>
+                      </div>
+
+                      {/* 5. Descrição */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          Descrição do Conteúdo
+                        </label>
+                        <textarea
+                          value={editingVideo.description || ''}
+                          onChange={e => setEditingVideo(prev => ({ ...prev, description: e.target.value }))}
+                          rows={2}
+                          className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs resize-none focus:ring-2 focus:ring-[#1f29de]/30 focus:border-[#1f29de] focus:outline-none text-slate-700 shadow-2xs"
+                          placeholder="Breve resumo dos tópicos abordados..."
+                        />
+                      </div>
+
                     </div>
 
-                    {/* Instrutor / Responsável */}
+                    {/* Right Column: Live Card Preview (5 cols) */}
+                    <div className="lg:col-span-5 bg-slate-50 border border-slate-200/90 rounded-2xl p-4.5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <Eye size={13} className="text-[#1f29de]" />
+                          Prévia do Card no Catálogo
+                        </span>
+                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          Tempo Real
+                        </span>
+                      </div>
+
+                      {/* Simulated Card */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-md group flex flex-col pointer-events-none">
+                        
+                        {/* Card Thumbnail */}
+                        <div className="h-38 relative overflow-hidden flex flex-col justify-between border-b border-slate-700/80 bg-slate-900">
+                          {getEffectiveThumbnail(editingVideo) ? (
+                            <>
+                              <img
+                                src={getEffectiveThumbnail(editingVideo)!}
+                                alt={editingVideo.title || 'Prévia'}
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-black/30" />
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-indigo-950" />
+                          )}
+
+                          {/* Top Badges */}
+                          <div className="relative z-10 p-2.5 flex flex-wrap items-center gap-1.5 max-w-[90%]">
+                            <div className="bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-extrabold text-white tracking-wider shadow-sm border border-white/20">
+                              {editingVideo.category || 'Geral'}
+                            </div>
+                            {editingVideo.moduleTopic && (
+                              <div 
+                                style={{ backgroundColor: '#1f29de' }}
+                                className="px-2 py-0.5 rounded-md text-[9px] font-bold text-white tracking-wider shadow-md border border-blue-400/40 truncate max-w-[120px]" 
+                              >
+                                {editingVideo.moduleTopic}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Central Play Icon */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div 
+                              style={{ backgroundColor: '#1f29de' }}
+                              className="w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg shadow-blue-900/60 ring-2 ring-white/30"
+                            >
+                              <Play size={16} fill="white" className="ml-0.5 text-white" />
+                            </div>
+                          </div>
+
+                          {/* Bottom Info Bar */}
+                          <div className="relative z-10 p-2.5 flex items-center justify-between">
+                            <div className="text-[10px] text-slate-300 drop-shadow-sm truncate max-w-[65%] font-medium">
+                              {editingVideo.moduleTopic || editingVideo.category || 'Treinamento'}
+                            </div>
+                            <div className="bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-bold text-white flex items-center gap-1 border border-white/15">
+                              <Clock size={10} className="text-slate-300" />
+                              <span>{editingVideo.duration || '45:00'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="p-3.5 flex flex-col space-y-1.5">
+                          <h4 className="font-bold text-slate-800 text-xs leading-snug line-clamp-2">
+                            {editingVideo.title?.trim() || 'Título do Treinamento'}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 line-clamp-2">
+                            {editingVideo.description?.trim() || 'Descrição e tópicos do treinamento...'}
+                          </p>
+                          
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                            <span className="font-bold text-slate-400 uppercase">Instrutor:</span>
+                            <span className="font-bold text-slate-700 truncate max-w-[140px]">
+                              {editingVideo.addedBy?.trim() || effectiveUserName || (userSector && userSector !== 'Geral' ? userSector : '') || 'A definir'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Helpful tip card */}
+                      <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl text-[11px] text-blue-900 space-y-1">
+                        <p className="font-bold flex items-center gap-1 text-[#1f29de]">
+                          <Info size={13} className="shrink-0" />
+                          <span>Dica de Compartilhamento</span>
+                        </p>
+                        <p className="text-slate-600 leading-relaxed text-[10.5px]">
+                          No OneDrive ou Google Drive, configure o link como <strong>Qualquer pessoa com o link</strong> (Leitor) para visualização universal.
+                        </p>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  {/* Form Footer Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-6 border-t border-slate-100">
                     <div>
-                      <label className="block text-xs font-bold text-blue-800 mb-1">Instrutor / Responsável *</label>
-                      <input
-                        type="text"
-                        value={editingVideo.addedBy !== undefined ? editingVideo.addedBy : userName}
-                        onChange={e => setEditingVideo(prev => ({ ...prev, addedBy: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
-                        placeholder="Digite o nome do instrutor ou responsável"
-                      />
+                      {editingVideo.id && (canManageVideos || editingVideo.addedBy === userName) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDeleteVideo(editingVideo.id!);
+                            setIsEditing(false);
+                            setEditingVideo({});
+                          }}
+                          className="px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors border border-red-200"
+                        >
+                          <Trash2 size={15} />
+                          <span>Excluir Treinamento</span>
+                        </button>
+                      )}
                     </div>
 
-                    {/* Capa Personalizada (Opcional) */}
-                    <div>
-                      <label className="block text-xs font-bold text-blue-800 mb-1 flex items-center gap-1">
-                        <ImageIcon size={13} className="text-blue-600" />
-                        <span>Capa do Vídeo (URL Opcional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={editingVideo.thumbnailUrl || ''}
-                        onChange={e => setEditingVideo(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="https://.../capa.jpg (ou gerada automaticamente)"
-                      />
-                    </div>
-
-                    {/* Descrição */}
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-blue-800 mb-1">Descrição do Conteúdo</label>
-                      <textarea
-                        value={editingVideo.description || ''}
-                        onChange={e => setEditingVideo(prev => ({ ...prev, description: e.target.value }))}
-                        rows={2}
-                        className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="Breve resumo dos tópicos abordados no treinamento..."
-                      />
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditingVideo({});
+                        }}
+                        className="px-4 py-2.5 text-slate-600 hover:text-slate-900 font-bold text-xs hover:bg-slate-100 rounded-xl cursor-pointer transition-colors border border-slate-200"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveVideo}
+                        disabled={!editingVideo.driveLink?.trim()}
+                        style={{ backgroundColor: '#1f29de', color: '#ffffff' }}
+                        className="px-6 py-2.5 bg-[#1f29de] hover:bg-[#1a22b8] text-white font-bold text-xs rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer transition-all shadow-md shadow-blue-600/30 hover:shadow-lg active:scale-[0.98]"
+                      >
+                        {editingVideo.id ? <Save size={16} className="text-white" /> : <Plus size={16} className="text-white" />}
+                        <span>{editingVideo.id ? 'Salvar Alterações' : 'Adicionar Treinamento'}</span>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-blue-200/80">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(false);
-                        setEditingVideo({});
-                      }}
-                      className="px-4 py-2 text-slate-600 hover:text-slate-900 font-bold text-sm hover:bg-slate-200/60 rounded-xl cursor-pointer transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveVideo}
-                      disabled={!editingVideo.driveLink?.trim()}
-                      style={{ backgroundColor: '#1f29de', color: '#ffffff' }}
-                      className="px-5 py-2.5 bg-[#1f29de] hover:bg-[#1a22b8] text-white font-bold text-sm rounded-xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer transition-all shadow-md shadow-blue-600/30 hover:shadow-lg active:scale-[0.98]"
-                    >
-                      {editingVideo.id ? <Save size={18} className="text-white" /> : <Plus size={18} className="text-white" />}
-                      <span>{editingVideo.id ? 'Salvar Alterações' : 'Adicionar Treinamento'}</span>
-                    </button>
-                  </div>
+
                 </div>
               )}
 
@@ -1062,7 +1487,11 @@ const extractDurationFromUrlOrText = (text: string): string => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredVideos.map(video => {
                   const effectiveThumb = getEffectiveThumbnail(video);
-                  const theme = SECTOR_THEMES[video.category] || SECTOR_THEMES['Geral'];
+                  const theme = (video?.category && SECTOR_THEMES[video.category]) || SECTOR_THEMES['Geral'] || {
+                    bg: 'from-[#0d1522] via-[#1b497d] to-[#17a398]',
+                    accent: '#38bdf8',
+                    glow: 'bg-teal-500/30'
+                  };
 
                   return (
                     <div key={video.id} className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden hover:border-slate-300 hover:shadow-xl transition-all group flex flex-col">
@@ -1158,19 +1587,21 @@ const extractDurationFromUrlOrText = (text: string): string => {
                           <p className="text-xs font-bold text-slate-700">{video.addedBy}</p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleStartEdit(video)}
-                            className="px-2.5 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
-                            title="Editar Treinamento"
-                          >
-                            <Edit size={14} />
-                            <span>Editar</span>
-                          </button>
-                          {(isLeader || video.addedBy === userName) && (
+                          {(canManageVideos || video.addedBy === userName) && (
+                            <button
+                              onClick={() => handleStartEdit(video)}
+                              className="px-2.5 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+                              title="Editar Treinamento"
+                            >
+                              <Edit size={14} />
+                              <span>Editar</span>
+                            </button>
+                          )}
+                          {(canManageVideos || video.addedBy === userName) && (
                             <button
                               onClick={() => handleDeleteVideo(video.id)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                              title="Excluir"
+                              title="Excluir Treinamento"
                             >
                               <Trash2 size={14} />
                             </button>

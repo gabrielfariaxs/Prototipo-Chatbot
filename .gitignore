@@ -62,3 +62,15 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# ==========================================
+# 🗜️ Arquivos Comprimidos & Templates Locais
+# ==========================================
+*.zip
+*.tar.gz
+*.rar
+*.7z
+00589031-642f-4660-99a8-76fb365da3e2/
+00589031-642f-4660-99a8-76fb365da3e2*
+ai-coders-starter-kit*
+

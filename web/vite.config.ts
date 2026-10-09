@@ -11,7 +11,7 @@ const isDev = process.argv.includes('dev') || process.env.NODE_ENV === 'developm
 const config = defineConfig({
   server: { host: true },
   resolve: { tsconfigPaths: true },
-  envPrefix: ['VITE_', 'SUPABASE_', 'AI_GATEWAY_'],
+  envPrefix: ['VITE_'],
   ssr: isDev
     ? {
         external: ['react', 'react-dom'],

@@ -5,5 +5,11 @@
   "framework": null,
   "alias": [
     "media.q2medical.net"
+  ],
+  "crons": [
+    {
+      "path": "/api/cron-treinamentos-whatsapp",
+      "schedule": "*/10 * * * *"
+    }
   ]
 }
